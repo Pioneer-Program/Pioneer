@@ -1,6 +1,7 @@
 *
 !.gitignore
-#!gradle.properties
+!gradle.properties
+
 !README.md
 !build.gradle
 !gradlew
