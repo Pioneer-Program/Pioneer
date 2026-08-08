@@ -1,0 +1,16 @@
+{
+  "type": "auralithpioneerinitiative:arid",
+  "generator": {
+    "type": "auralithpioneerinitiative:arid_generator",
+    "seed": 0,
+    "biome_source": {
+      "type": "auralithpioneerinitiative:arid_biome_source",
+      "biomes": [
+        "auralithpioneerinitiative:arid_dust_desert",
+        "auralithpioneerinitiative:arid_canyon",
+        "auralithpioneerinitiative:arid_crystal_caverns",
+        "auralithpioneerinitiative:arid_impact_crater"
+      ]
+    }
+  }
+}

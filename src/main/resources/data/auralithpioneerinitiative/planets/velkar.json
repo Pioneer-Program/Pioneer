@@ -1,0 +1,41 @@
+{
+  "procedural": {
+    "type": "lava",
+    "seed": 7331,
+    "primary_color": [
+      1.0,
+      0.35,
+      0.05
+    ],
+    "secondary_color": [
+      0.08,
+      0.04,
+      0.02
+    ],
+    "resolution": 16,
+    "octaves": 7,
+    "roughness": 0.62
+  },
+  "size": 2440,
+  "axial_rotation_speed": 0.4,
+  "axial_tilt": 2.0,
+  "orbit": {
+    "radius": 113074.96,
+    "period_days": 88.0,
+    "start_angle": 90,
+    "inclination": 0.12,
+    "ascending_node": 0.6,
+    "eccentricity": 0.206
+  },
+  "atmosphere": {
+    "scale": 1.1,
+    "color": [
+      1.0,
+      0.45,
+      0.1
+    ],
+    "opacity": 0.8,
+    "fresnel_power": 0.2
+  },
+  "gravity": 0.38
+}

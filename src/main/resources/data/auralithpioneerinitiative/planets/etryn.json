@@ -1,0 +1,41 @@
+{
+  "procedural": {
+    "type": "ice",
+    "seed": 2048,
+    "primary_color": [
+      0.85,
+      0.92,
+      1.0
+    ],
+    "secondary_color": [
+      0.25,
+      0.4,
+      0.65
+    ],
+    "resolution": 16,
+    "octaves": 8,
+    "roughness": 0.5
+  },
+  "size": 25362,
+  "axial_rotation_speed": 0.7,
+  "axial_tilt": 97.0,
+  "orbit": {
+    "radius": 5607290.48,
+    "period_days": 30589.0,
+    "start_angle": 48,
+    "inclination": 0.5,
+    "ascending_node": 2.7,
+    "eccentricity": 0.046
+  },
+  "atmosphere": {
+    "scale": 1.09,
+    "color": [
+      0.7,
+      0.88,
+      1.0
+    ],
+    "opacity": 0.4,
+    "fresnel_power": 4.5
+  },
+  "gravity": 0.82
+}

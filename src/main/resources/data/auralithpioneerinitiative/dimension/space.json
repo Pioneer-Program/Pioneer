@@ -1,0 +1,11 @@
+{
+  "type": "auralithpioneerinitiative:space",
+  "generator": {
+    "type": "auralithpioneerinitiative:space",
+    "biome_source": {
+      "type": "minecraft:fixed",
+      "biome": "minecraft:the_void"
+    },
+    "settings": "auralithpioneerinitiative:space"
+  }
+}

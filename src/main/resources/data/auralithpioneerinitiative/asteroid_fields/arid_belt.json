@@ -1,0 +1,16 @@
+{
+  "dimension": "auralithpioneerinitiative:space",
+  "count_min": 8,
+  "count_max": 15,
+  "radius_min": 8,
+  "radius_max": 24,
+  "belt_inner_au": 300.0,
+  "belt_outer_au": 700.0,
+  "angular_velocity_min": 0.0005,
+  "angular_velocity_max": 0.015,
+  "type_weights": {
+    "rocky":    0.55,
+    "metallic": 0.30,
+    "crystal":  0.15
+  }
+}

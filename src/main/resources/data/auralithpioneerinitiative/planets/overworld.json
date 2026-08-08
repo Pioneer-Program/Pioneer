@@ -1,0 +1,68 @@
+{
+  "procedural": {
+    "type": "telluric",
+    "seed": 8609,
+    "resolution": 16,
+    "octaves": 8,
+    "roughness": 0.55,
+    "primary_color": [
+      0.08,
+      0.22,
+      0.65
+    ],
+    "secondary_color": [
+      0.22,
+      0.5,
+      0.12
+    ]
+  },
+  "size": 6371,
+  "axial_rotation_speed": 1.2,
+  "axial_tilt": 23.5,
+  "orbit": {
+    "radius": 292183.36,
+    "period_days": 365.0,
+    "start_angle": 695,
+    "inclination": 0.0,
+    "ascending_node": 0.0,
+    "eccentricity": 0.017
+  },
+  "atmosphere": {
+    "breathable": true,
+    "scale": 1.35,
+    "color": [
+      0.3,
+      0.6,
+      1.0
+    ],
+    "opacity": 0.75,
+    "fresnel_power": 1.2
+  },
+  "clouds": {
+    "color": [
+      1.0,
+      1.0,
+      1.0
+    ],
+    "inner_altitude": 0.015,
+    "outer_altitude": 0.05,
+    "coverage": 0.5,
+    "density": 1.0,
+    "noise_scale": 6.0,
+    "erosion": 0.55,
+    "wind_speed": 0.4,
+    "wind_direction": [
+      1.0,
+      0.0
+    ],
+    "mie_g": 0.85,
+    "sun_intensity": 6.0,
+    "multi_scatter_strength": 0.4,
+    "powder_strength": 1.0
+  },
+  "dimension": "minecraft:overworld",
+  "gravity": 1.0,
+  "moons": [
+    "auralithpioneerinitiative:luna"
+  ]
+}
