@@ -1,7 +1,8 @@
 package cute.ame.auralithpioneerinitiative.Planet.Common.Event;
 
-import cute.ame.auralithpioneerinitiative.Core.API.AuralithAPI;
 import cute.ame.auralithpioneerinitiative.Auralithpioneerinitiative;
+import cute.ame.auralithpioneerinitiative.Core.API.AuralithAPI;
+import dev.ryanhcode.sable.companion.SableCompanion;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -9,22 +10,23 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 @EventBusSubscriber(modid = Auralithpioneerinitiative.MODID)
-public class ZeroGDragEvent
+public final class ZeroGDragEvent
 {
   private static final double DRAG = 0.85;
+  private static final double MIN_SPEED_SQR = 1.0e-6;
+
+  private ZeroGDragEvent() {}
 
   @SubscribeEvent
   public static void onPlayerTick(PlayerTickEvent.Pre event)
   {
     if (!(event.getEntity() instanceof ServerPlayer player)) return;
-    float gravity = AuralithAPI.getGravityFor(player.level().dimension());
+    if (AuralithAPI.getGravityFor(player.level().dimension()) != 0.0f) return;
 
-    boolean isZeroG = (gravity == 0.0f);
-    if (gravity != 0.0f) return;
     Vec3 vel = player.getDeltaMovement();
+    if (vel.lengthSqr() < MIN_SPEED_SQR) return;
 
-    if (player.isSwimming() != isZeroG) player.setSwimming(isZeroG);
-    if (vel.lengthSqr() < 1e-6) return;
+    if (SableCompanion.INSTANCE.getTrackingOrVehicleSubLevel(player) != null) return;
 
     player.setDeltaMovement(vel.scale(DRAG));
     player.hurtMarked = true;

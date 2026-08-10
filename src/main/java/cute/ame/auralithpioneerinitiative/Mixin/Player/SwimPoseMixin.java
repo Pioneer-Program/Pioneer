@@ -14,9 +14,9 @@ public abstract class SwimPoseMixin
   private void auralith$overrideSwimPose(CallbackInfo ci)
   {
     Player self = (Player) (Object) this;
-    float gravity = AuralithAPI.getGravityFor(self.level().dimension());
-    boolean shouldSwim = (gravity == 0.0f);
+    if (self.isInWater()) return;
 
-    if (self.isSwimming() != shouldSwim ^ self.isInWater() || self.onGround()) self.setSwimming(shouldSwim);
+    boolean shouldSwim = AuralithAPI.getGravityFor(self.level().dimension()) == 0.0f;
+    if (self.isSwimming() != shouldSwim) self.setSwimming(shouldSwim);
   }
 }

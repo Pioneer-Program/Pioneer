@@ -55,6 +55,11 @@ repositories {
         url = "https://maven.ryanhcode.dev/releases"
         name = "RyanHCode Maven"
     }
+
+    maven {
+        url = "https://maven.caffeinemc.net/releases"
+        name = "CaffeineMC"
+    }
     maven {
         name = 'BlameJared Maven (CrT / Bookshelf)'
         url = 'https://maven.blamejared.com'
@@ -129,25 +134,31 @@ neoForge {
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
+// Mods that must reach the dev run as FILES in run/mods rather than as classpath entries.
+// See the note in `dependencies` for why. Anything added here is invisible at compile time,
+// so only put mods that Pioneer accesses reflectively (or not at all) in this bucket.
+configurations {
+    runMods
+}
+
 dependencies {
 
-    implementation "maven.modrinth:sodium:mc${minecraft_version}-${sodium_version}-neoforge"
-    implementation "maven.modrinth:iris:${iris_version}+${minecraft_version}-neoforge"
+    // RENDERING STUFF
+    runMods "maven.modrinth:sodium:mc${minecraft_version}-${sodium_version}-neoforge"
+    implementation "maven.modrinth:iris:${iris_version}"
 
-    additionalRuntimeClasspath "org.sinytra:connector:2.0.0-beta.9+1.21.1"
-    runtimeOnly "org.sinytra.forgified-fabric-api:forgified-fabric-api:0.115.6+2.1.4+1.21.1"
-    runtimeOnly "me.lucko:spark-api:0.1-SNAPSHOT"
-
-    implementation("foundry.veil:veil-neoforge-${minecraft_version}:${veil_version}") {
+    implementation("foundry.veil:veil-neoforge-${minecraft_version}:${veil_version}")
+    {
         exclude group: "maven.modrinth"
         exclude group: "me.fallenbreath"
     }
+    runMods "curse.maven:iris-veil-compat-1541252:8280410"
 
-    implementation "curse.maven:iris-veil-compat-1541252:8280410"
+    // GAMEPLAY STUFF
+    implementation "dev.ryanhcode.sable:sable-neoforge-${minecraft_version}:${sable_version}"
+    compileOnly "dev.ryanhcode.sable-companion:sable-companion-common-${minecraft_version}:${sable_companion_version}"
 
-    implementation "aztech:Modern-Industrialization:${mi_version}"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-
+    // THINGS TO CHECK IF WE FUCKED UP
     runtimeOnly "maven.modrinth:l6YH9Als:v5qtqRQi" // SPARK TPS
 }
 
@@ -162,7 +173,11 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
                              mod_license            : mod_license,
                              mod_version            : mod_version,
                              mod_authors            : mod_authors,
-                             mod_description        : mod_description]
+                             mod_description        : mod_description,
+                             sable_version_range    : sable_version_range,
+                             veil_version_range     : veil_version_range,
+                             iris_version_range     : iris_version_range,
+                             irisveil_version_range : irisveil_version_range]
     inputs.properties replaceProperties
     expand replaceProperties
     from "src/main/templates"
@@ -194,4 +209,15 @@ idea {
 }
 kotlin {
     jvmToolchain(21)
+}
+
+def runModsDir = layout.projectDirectory.dir('run/mods')
+
+tasks.register('copyRunMods', Sync) {
+    from configurations.runMods
+    into runModsDir
+}
+
+tasks.matching { it.name in ['runClient', 'runServer', 'runData', 'runGameTestServer'] }.configureEach {
+    dependsOn 'copyRunMods'
 }
