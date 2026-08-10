@@ -3,8 +3,6 @@ plugins {
     id 'maven-publish'
     id 'idea'
     id 'net.neoforged.moddev' version '2.0.116'
-
-    id 'org.sinytra.adapter.userdev' version '1.2.1-SNAPSHOT'
     id 'org.jetbrains.kotlin.jvm'
 }
 
@@ -15,51 +13,21 @@ repositories {
     mavenLocal()
 
     maven { url = "https://api.modrinth.com/maven/" }
-    maven {url 'https://maven.blakesmods.com'}
-    maven { url 'https://modmaven.dev/'}
-    maven { url 'https://maven.terraformersmc.com/'}
-    maven {url 'https://maven.blamejared.com'}
 
-    maven {
+    maven
+    {
         url 'https://cursemaven.com'
-        content {
-            includeGroup "curse.maven"
-        }
-    }
-
-    maven {
-        url = "https://squiddev.cc/maven"
-    }
-
-    maven {
-        name = "Sinytra"
-        url = "https://maven.sinytra.org/"
+        content {includeGroup "curse.maven" }
     }
 
     maven { url = "https://maven.createmod.net" }
     maven { url = "https://maven.ithundxr.dev/snapshots" }
 
     maven {
-        name 'luck-repo'
-        url 'https://repo.lucko.me/'
-        content {
-            includeModule 'me.lucko', 'spark-api'
-        }
-    }
-
-    maven {
-        url = "https://squiddev.cc/maven"
-    }
-
-    maven {
         url = "https://maven.ryanhcode.dev/releases"
         name = "RyanHCode Maven"
     }
 
-    maven {
-        url = "https://maven.caffeinemc.net/releases"
-        name = "CaffeineMC"
-    }
     maven {
         name = 'BlameJared Maven (CrT / Bookshelf)'
         url = 'https://maven.blamejared.com'
@@ -134,10 +102,8 @@ neoForge {
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
-// Mods that must reach the dev run as FILES in run/mods rather than as classpath entries.
-// See the note in `dependencies` for why. Anything added here is invisible at compile time,
-// so only put mods that Pioneer accesses reflectively (or not at all) in this bucket.
-configurations {
+configurations
+{
     runMods
 }
 
@@ -163,21 +129,23 @@ dependencies {
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
-    var replaceProperties = [minecraft_version      : minecraft_version,
-                             minecraft_version_range: minecraft_version_range,
-                             neo_version            : neo_version,
-                             neo_version_range      : neo_version_range,
-                             loader_version_range   : loader_version_range,
-                             mod_id                 : mod_id,
-                             mod_name               : mod_name,
-                             mod_license            : mod_license,
-                             mod_version            : mod_version,
-                             mod_authors            : mod_authors,
-                             mod_description        : mod_description,
-                             sable_version_range    : sable_version_range,
-                             veil_version_range     : veil_version_range,
-                             iris_version_range     : iris_version_range,
-                             irisveil_version_range : irisveil_version_range]
+    var replaceProperties = [
+         minecraft_version: minecraft_version,
+         minecraft_version_range: minecraft_version_range,
+         neo_version: neo_version,
+         neo_version_range: neo_version_range,
+         loader_version_range: loader_version_range,
+         mod_id: mod_id,
+         mod_name: mod_name,
+         mod_license: mod_license,
+         mod_version: mod_version,
+         mod_authors: mod_authors,
+         mod_description: mod_description,
+         sable_version_range: sable_version_range,
+         veil_version_range: veil_version_range,
+         iris_version_range: iris_version_range,
+         irisveil_version_range: irisveil_version_range
+    ]
     inputs.properties replaceProperties
     expand replaceProperties
     from "src/main/templates"
