@@ -3,8 +3,6 @@ plugins {
     id 'maven-publish'
     id 'idea'
     id 'net.neoforged.moddev' version '2.0.116'
-
-    id 'org.sinytra.adapter.userdev' version '1.2.1-SNAPSHOT'
     id 'org.jetbrains.kotlin.jvm'
 }
 
@@ -15,46 +13,21 @@ repositories {
     mavenLocal()
 
     maven { url = "https://api.modrinth.com/maven/" }
-    maven {url 'https://maven.blakesmods.com'}
-    maven { url 'https://modmaven.dev/'}
-    maven { url 'https://maven.terraformersmc.com/'}
-    maven {url 'https://maven.blamejared.com'}
 
-    maven {
+    maven
+    {
         url 'https://cursemaven.com'
-        content {
-            includeGroup "curse.maven"
-        }
-    }
-
-    maven {
-        url = "https://squiddev.cc/maven"
-    }
-
-    maven {
-        name = "Sinytra"
-        url = "https://maven.sinytra.org/"
+        content {includeGroup "curse.maven" }
     }
 
     maven { url = "https://maven.createmod.net" }
     maven { url = "https://maven.ithundxr.dev/snapshots" }
 
     maven {
-        name 'luck-repo'
-        url 'https://repo.lucko.me/'
-        content {
-            includeModule 'me.lucko', 'spark-api'
-        }
-    }
-
-    maven {
-        url = "https://squiddev.cc/maven"
-    }
-
-    maven {
         url = "https://maven.ryanhcode.dev/releases"
         name = "RyanHCode Maven"
     }
+
     maven {
         name = 'BlameJared Maven (CrT / Bookshelf)'
         url = 'https://maven.blamejared.com'
@@ -129,40 +102,50 @@ neoForge {
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
+configurations
+{
+    runMods
+}
+
 dependencies {
 
-    implementation "maven.modrinth:sodium:mc${minecraft_version}-${sodium_version}-neoforge"
-    implementation "maven.modrinth:iris:${iris_version}+${minecraft_version}-neoforge"
+    // RENDERING STUFF
+    runMods "maven.modrinth:sodium:mc${minecraft_version}-${sodium_version}-neoforge"
+    implementation "maven.modrinth:iris:${iris_version}"
 
-    additionalRuntimeClasspath "org.sinytra:connector:2.0.0-beta.9+1.21.1"
-    runtimeOnly "org.sinytra.forgified-fabric-api:forgified-fabric-api:0.115.6+2.1.4+1.21.1"
-    runtimeOnly "me.lucko:spark-api:0.1-SNAPSHOT"
-
-    implementation("foundry.veil:veil-neoforge-${minecraft_version}:${veil_version}") {
+    implementation("foundry.veil:veil-neoforge-${minecraft_version}:${veil_version}")
+    {
         exclude group: "maven.modrinth"
         exclude group: "me.fallenbreath"
     }
+    runMods "curse.maven:iris-veil-compat-1541252:8280410"
 
-    implementation "curse.maven:iris-veil-compat-1541252:8280410"
+    // GAMEPLAY STUFF
+    implementation "dev.ryanhcode.sable:sable-neoforge-${minecraft_version}:${sable_version}"
+    compileOnly "dev.ryanhcode.sable-companion:sable-companion-common-${minecraft_version}:${sable_companion_version}"
 
-    implementation "aztech:Modern-Industrialization:${mi_version}"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
-
+    // THINGS TO CHECK IF WE FUCKED UP
     runtimeOnly "maven.modrinth:l6YH9Als:v5qtqRQi" // SPARK TPS
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
-    var replaceProperties = [minecraft_version      : minecraft_version,
-                             minecraft_version_range: minecraft_version_range,
-                             neo_version            : neo_version,
-                             neo_version_range      : neo_version_range,
-                             loader_version_range   : loader_version_range,
-                             mod_id                 : mod_id,
-                             mod_name               : mod_name,
-                             mod_license            : mod_license,
-                             mod_version            : mod_version,
-                             mod_authors            : mod_authors,
-                             mod_description        : mod_description]
+    var replaceProperties = [
+         minecraft_version: minecraft_version,
+         minecraft_version_range: minecraft_version_range,
+         neo_version: neo_version,
+         neo_version_range: neo_version_range,
+         loader_version_range: loader_version_range,
+         mod_id: mod_id,
+         mod_name: mod_name,
+         mod_license: mod_license,
+         mod_version: mod_version,
+         mod_authors: mod_authors,
+         mod_description: mod_description,
+         sable_version_range: sable_version_range,
+         veil_version_range: veil_version_range,
+         iris_version_range: iris_version_range,
+         irisveil_version_range: irisveil_version_range
+    ]
     inputs.properties replaceProperties
     expand replaceProperties
     from "src/main/templates"
@@ -194,4 +177,15 @@ idea {
 }
 kotlin {
     jvmToolchain(21)
+}
+
+def runModsDir = layout.projectDirectory.dir('run/mods')
+
+tasks.register('copyRunMods', Sync) {
+    from configurations.runMods
+    into runModsDir
+}
+
+tasks.matching { it.name in ['runClient', 'runServer', 'runData', 'runGameTestServer'] }.configureEach {
+    dependsOn 'copyRunMods'
 }

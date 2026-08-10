@@ -1,0 +1,13 @@
+{
+  "format": "POSITION_COLOR_NORMAL",
+  "mode": "QUADS",
+  "bufferSize": "TRANSIENT",
+  "sort": false,
+  "layers": [
+    { "type": "veil:shader", "name": "pioneer:clouds" },
+    { "type": "minecraft:transparency", "mode": "translucent" },
+    { "type": "minecraft:depth_test", "mode": "lequal" },
+    { "type": "minecraft:cull", "face": "back" },
+    { "type": "minecraft:write_mask", "color": true, "depth": false }
+  ]
+}

@@ -1,7 +1,0 @@
-{
-  "vertex": "veil:blit_screen",
-  "fragment": "auralithpioneerinitiative:black_hole",
-  "blend": {
-    "enabled": false
-  }
-}

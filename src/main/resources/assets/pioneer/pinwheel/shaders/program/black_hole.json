@@ -1,0 +1,7 @@
+{
+  "vertex": "veil:blit_screen",
+  "fragment": "pioneer:black_hole",
+  "blend": {
+    "enabled": false
+  }
+}

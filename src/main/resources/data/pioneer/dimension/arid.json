@@ -1,0 +1,16 @@
+{
+  "type": "pioneer:arid",
+  "generator": {
+    "type": "pioneer:arid_generator",
+    "seed": 0,
+    "biome_source": {
+      "type": "pioneer:arid_biome_source",
+      "biomes": [
+        "pioneer:arid_dust_desert",
+        "pioneer:arid_canyon",
+        "pioneer:arid_crystal_caverns",
+        "pioneer:arid_impact_crater"
+      ]
+    }
+  }
+}

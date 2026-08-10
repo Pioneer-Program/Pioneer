@@ -1,0 +1,11 @@
+{
+  "type": "pioneer:space",
+  "generator": {
+    "type": "pioneer:space",
+    "biome_source": {
+      "type": "minecraft:fixed",
+      "biome": "minecraft:the_void"
+    },
+    "settings": "pioneer:space"
+  }
+}

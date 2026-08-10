@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "cute.ame.pioneer.Mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "MinecraftLevelRendererAccessor",
+    "Player.DebugSpectatorFlightSpeedMixin",
+    "Player.SpaceFallDamageMixin",
+    "Player.SwimPoseMixin"
+  ],
+  "client": [
+    "Rendering.BlackHolePostProcessMixin",
+    "Rendering.GameRendererMixin",
+    "Rendering.SeamlessLoadingScreenMixin",
+    "Rendering.SkyMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
