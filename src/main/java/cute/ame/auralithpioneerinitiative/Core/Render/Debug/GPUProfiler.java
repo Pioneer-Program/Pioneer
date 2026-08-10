@@ -6,15 +6,14 @@ import net.neoforged.fml.loading.FMLLoader;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL33;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class GPUProfiler
 {
     public static final boolean DEBUG = !FMLLoader.isProduction() || Boolean.getBoolean("auralith.gpuprofiler");
-
     private static final int RING = 3;
-    private static final int LOG_EVERY_FRAMES = 120;
 
     private static final class Section
     {
@@ -112,7 +111,7 @@ public final class GPUProfiler
             if (GL15.glGetQueryObjecti(s.endQueries[readSlot], GL15.GL_QUERY_RESULT_AVAILABLE) == 0) continue;
 
             long t0 = GL33.glGetQueryObjectui64(s.startQueries[readSlot], GL15.GL_QUERY_RESULT);
-            long t1 = GL33.glGetQueryObjectui64(s.endQueries[readSlot],   GL15.GL_QUERY_RESULT);
+            long t1 = GL33.glGetQueryObjectui64(s.endQueries[readSlot], GL15.GL_QUERY_RESULT);
 
             s.inFlight[readSlot] = false;
             double millis = (t1 - t0) / 1_000_000.0;
@@ -120,19 +119,27 @@ public final class GPUProfiler
         }
 
         frame++;
+    }
 
-        if (frame % LOG_EVERY_FRAMES == 0 && !SECTIONS.isEmpty())
-        {
-            StringBuilder sb = new StringBuilder("[Auralith] GPU ms:");
-            double total = 0.0;
-            for (Map.Entry<String, Section> e : SECTIONS.entrySet())
-            {
-                sb.append(String.format("  %s=%.3f", e.getKey(), e.getValue().emaMillis));
-                total += e.getValue().emaMillis;
-            }
-            sb.append(String.format("  | total=%.3f", total));
-            Auralithpioneerinitiative.LOGGER.info(sb.toString());
-        }
+    public static Map<String, Double> snapshot()
+    {
+        if (!DEBUG || SECTIONS.isEmpty()) return Collections.emptyMap();
+
+        Map<String, Double> out = new LinkedHashMap<>(SECTIONS.size());
+        for (Map.Entry<String, Section> e : SECTIONS.entrySet())
+            out.put(e.getKey(), e.getValue().emaMillis);
+
+        return out;
+    }
+
+    public static double totalMillis()
+    {
+        if (!DEBUG) return 0.0;
+
+        double total = 0.0;
+        for (Section s : SECTIONS.values()) total += s.emaMillis;
+
+        return total;
     }
 
     public static double millis(String name)

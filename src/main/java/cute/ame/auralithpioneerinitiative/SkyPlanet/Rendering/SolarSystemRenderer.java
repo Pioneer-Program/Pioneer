@@ -131,7 +131,7 @@ public final class SolarSystemRenderer
         Vec3 effectiveCamPos = ctx.effectiveCamPos();
         long tick = ctx.tick();
 
-        GPUProfiler.begin("galaxy_skybox");
+        GPUProfiler.begin("skybox.galaxy");
         GalaxyRenderer.render(ps, projMat, tick, partialTick);
         GPUProfiler.end();
 
@@ -234,7 +234,7 @@ public final class SolarSystemRenderer
 
             float camDistObj = (float) Math.sqrt(proj.dx * proj.dx + proj.dy * proj.dy + proj.dz * proj.dz) / apparentSize;
 
-            GPUProfiler.begin("atmosphere");
+            GPUProfiler.begin("planets.volumetrics.atmosphere");
             AtmosphereRenderer.render(ps, atmo, -camLX, -camLY, -camLZ, sunLX, sunLY, sunLZ, camDistObj);
             GPUProfiler.end();
 
@@ -257,7 +257,7 @@ public final class SolarSystemRenderer
             float camDistObj = (float) Math.sqrt(proj.dx * proj.dx + proj.dy * proj.dy + proj.dz * proj.dz) / apparentSize;
             float timeSeconds = (tick + partialTick) / 20.0f;
 
-            GPUProfiler.begin("clouds");
+            GPUProfiler.begin("planets.volumetrics.clouds");
             CloudsRenderer.render(ps, clouds, -camLX, -camLY, -camLZ, sunLX, sunLY, sunLZ, camDistObj, timeSeconds);
             GPUProfiler.end();
 
