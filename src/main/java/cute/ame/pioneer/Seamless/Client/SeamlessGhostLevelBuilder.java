@@ -71,7 +71,7 @@ public final class SeamlessGhostLevelBuilder
         ResourceKey<DimensionType> dimTypeKey = SeamlessGhostDimensionTypes.get(target);
         if (dimTypeKey == null)
         {
-            Pioneer.LOGGER.warn("[Auralith] No known dimension_type for {}, can't build ghost level yet (preload hint missing/late?)", target.location());
+            Pioneer.LOGGER.warn("[Pioneer] No known dimension_type for {}, can't build ghost level yet (preload hint missing/late?)", target.location());
             return null;
         }
 
@@ -92,12 +92,12 @@ public final class SeamlessGhostLevelBuilder
             }
 
             resyncGameTime(ghost);
-            Pioneer.LOGGER.debug("[Auralith] Built static ghost ClientLevel for {} (dimension_type={})", target.location(), dimTypeKey.location());
+            Pioneer.LOGGER.debug("[Pioneer] Built static ghost ClientLevel for {} (dimension_type={})", target.location(), dimTypeKey.location());
             return ghost;
         }
         catch (Exception e)
         {
-            Pioneer.LOGGER.warn("[Auralith] Failed to construct ghost ClientLevel for {}: {}", target.location(), e.toString());
+            Pioneer.LOGGER.warn("[Pioneer] Failed to construct ghost ClientLevel for {}: {}", target.location(), e.toString());
             return null;
         }
     }
@@ -135,12 +135,12 @@ public final class SeamlessGhostLevelBuilder
             SeamlessGhostSectionRenderer.meshChunk(ghost, target, pos);
             scheduleNeighborRemeshes(ghost, target, pos);
 
-            Pioneer.LOGGER.debug("[Auralith] Injected ghost chunk {} into static level {}", pos, target.location());
-            if (!ghost.hasChunk(pos.x, pos.z)) Pioneer.LOGGER.warn("[Auralith] Ghost chunk {} for {} reported injected but is NOT present in the level afterward (likely dropped by ClientChunkCache view range)", pos, target.location());
+            Pioneer.LOGGER.debug("[Pioneer] Injected ghost chunk {} into static level {}", pos, target.location());
+            if (!ghost.hasChunk(pos.x, pos.z)) Pioneer.LOGGER.warn("[Pioneer] Ghost chunk {} for {} reported injected but is NOT present in the level afterward (likely dropped by ClientChunkCache view range)", pos, target.location());
         }
         catch (Exception e)
         {
-            Pioneer.LOGGER.warn("[Auralith] Failed to inject ghost chunk {} for {}: {}", pos, target.location(), e.toString());
+            Pioneer.LOGGER.warn("[Pioneer] Failed to inject ghost chunk {} for {}: {}", pos, target.location(), e.toString());
         }
     }
 

@@ -1,7 +1,7 @@
 package cute.ame.pioneer.SkyPlanet.Loader;
 
+import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.Pioneer;
-import cute.ame.pioneer.Core.API.AuralithAPI;
 import cute.ame.pioneer.SkyPlanet.Network.SolarSystemSyncPayload;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -24,7 +24,7 @@ public final class SolarSystemDataEvents
     @SubscribeEvent
     public static void onDatapackSync(OnDatapackSyncEvent event)
     {
-        SolarSystemSyncPayload payload = new SolarSystemSyncPayload(Map.copyOf(AuralithAPI.getAllSystems()));
+        SolarSystemSyncPayload payload = new SolarSystemSyncPayload(Map.copyOf(PioneerAPI.getAllSystems()));
         ServerPlayer player = event.getPlayer();
 
         if (player != null) PacketDistributor.sendToPlayer(player, payload);

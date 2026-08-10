@@ -2,7 +2,7 @@ package cute.ame.pioneer.SkyPlanet.Rendering;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
-import cute.ame.pioneer.Core.API.AuralithAPI;
+import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Core.Render.Debug.GPUProfiler;
 import cute.ame.pioneer.Seamless.Client.SeamlessGhostSurfacePatchRenderer;
@@ -56,16 +56,16 @@ public final class SolarSystemRenderer
 
     private void renderCelestials(PoseStack ps, Camera camera, ClientLevel level, float partialTick, Matrix4f projMat)
     {
-        Optional<AuralithAPI.DimensionBinding> bOpt = AuralithAPI.getBindingForDimension(level.dimension());
+        Optional<PioneerAPI.DimensionBinding> bOpt = PioneerAPI.getBindingForDimension(level.dimension());
         if (bOpt.isEmpty()) return;
-        AuralithAPI.DimensionBinding binding = bOpt.get();
+        PioneerAPI.DimensionBinding binding = bOpt.get();
 
-        Optional<SolarSystemDefinition> sOpt = AuralithAPI.getSolarSystem(binding.systemId());
+        Optional<SolarSystemDefinition> sOpt = PioneerAPI.getSolarSystem(binding.systemId());
         if (sOpt.isEmpty()) return;
         SolarSystemDefinition system = sOpt.get();
 
         Vec3 effectiveCamPos = computeEffectiveCamPos(binding, system, camera, level);
-        boolean isPlanetLocked = binding.type() == AuralithAPI.BindingType.SURFACE;
+        boolean isPlanetLocked = binding.type() == PioneerAPI.BindingType.SURFACE;
 
         ResourceLocation selfPlanetId = null;
         float selfPlanetAlpha = 1.0f;
@@ -104,15 +104,15 @@ public final class SolarSystemRenderer
         CelestialFrameContext ctx = new CelestialFrameContext(
                 effectiveCamPos, selfPlanetId, selfPlanetAlpha, excludedPlanetId,
                 selfClimbOffset, selfAscensionProgress, tick, !isPlanetLocked,
-                binding.type() == AuralithAPI.BindingType.SURFACE, selfTiltProgress);
+                binding.type() == PioneerAPI.BindingType.SURFACE, selfTiltProgress);
         renderSystemUnified(ps, system, ctx, partialTick, camera.getPosition(), projMat);
         ps.popPose();
     }
 
-    private Vec3 computeEffectiveCamPos(AuralithAPI.DimensionBinding binding, SolarSystemDefinition system, Camera camera, ClientLevel level)
+    private Vec3 computeEffectiveCamPos(PioneerAPI.DimensionBinding binding, SolarSystemDefinition system, Camera camera, ClientLevel level)
     {
 
-        if ((binding.type() == AuralithAPI.BindingType.SURFACE) && binding.planetId() != null)
+        if ((binding.type() == PioneerAPI.BindingType.SURFACE) && binding.planetId() != null)
         {
             Optional<PlanetDefinition> planetOpt = system.findById(binding.planetId());
             if (planetOpt.isPresent())

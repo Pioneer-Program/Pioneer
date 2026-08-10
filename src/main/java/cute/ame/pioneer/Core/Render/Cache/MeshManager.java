@@ -62,7 +62,7 @@ public final class MeshManager<K>
             var entry = it.next();
             entry.getValue().close();
             it.remove();
-            Pioneer.LOGGER.debug("[Auralith] MeshManager evicted '{}' ({} entries)", entry.getKey(), cache.size());
+            Pioneer.LOGGER.debug("[Pioneer] MeshManager evicted '{}' ({} entries)", entry.getKey(), cache.size());
         }
     }
 }

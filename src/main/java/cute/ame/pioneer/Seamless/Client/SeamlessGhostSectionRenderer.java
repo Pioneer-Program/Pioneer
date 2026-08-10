@@ -75,7 +75,7 @@ public final class SeamlessGhostSectionRenderer
             }
             catch (Exception e)
             {
-                Pioneer.LOGGER.warn("[Auralith] Failed to mesh ghost section {},{},{} for {}: {}", chunkPos.x, sy, chunkPos.z, dimension.location(), e.toString());
+                Pioneer.LOGGER.warn("[Pioneer] Failed to mesh ghost section {},{},{} for {}: {}", chunkPos.x, sy, chunkPos.z, dimension.location(), e.toString());
             }
         }
     }

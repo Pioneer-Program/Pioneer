@@ -1,6 +1,6 @@
 package cute.ame.pioneer.Mixin.Player;
 
-import cute.ame.pioneer.Core.API.AuralithAPI;
+import cute.ame.pioneer.Core.API.PioneerAPI;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -11,12 +11,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class SwimPoseMixin
 {
   @Inject(method = "aiStep", at = @At("RETURN"))
-  private void auralith$overrideSwimPose(CallbackInfo ci)
+  private void pioneer$overrideSwimPose(CallbackInfo ci)
   {
     Player self = (Player) (Object) this;
     if (self.isInWater()) return;
 
-    boolean shouldSwim = AuralithAPI.getGravityFor(self.level().dimension()) == 0.0f;
+    boolean shouldSwim = PioneerAPI.getGravityFor(self.level().dimension()) == 0.0f;
     if (self.isSwimming() != shouldSwim) self.setSwimming(shouldSwim);
   }
 }

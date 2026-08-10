@@ -28,8 +28,7 @@ public final class PlanetTextureManager
             CubemapTextures.FACE_NAMES,
             face ->
             {
-                Pioneer.LOGGER.debug("[Auralith] Generating '{}' face {} for '{}' ({}x{}, seed={})",
-                    generatorId, CubemapTextures.FACE_NAMES[face], planetId, res, res, cfg.seed());
+                Pioneer.LOGGER.debug("[Pioneer] Generating '{}' face {} for '{}' ({}x{}, seed={})", generatorId, CubemapTextures.FACE_NAMES[face], planetId, res, res, cfg.seed());
                 return generator.generateFace(cfg, res, face);
             },
             CubemapTextures::of);

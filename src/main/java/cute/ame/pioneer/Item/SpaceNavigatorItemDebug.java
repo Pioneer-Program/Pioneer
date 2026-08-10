@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import cute.ame.pioneer.Core.API.AuralithAPI;
+import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
 import net.minecraft.network.chat.Component;
@@ -34,15 +34,15 @@ public class SpaceNavigatorItemDebug extends Item
     if (!(leveld instanceof ServerLevel level)) return InteractionResultHolder.success(stack);
     if (!(player instanceof ServerPlayer sp)) return InteractionResultHolder.pass(stack);
 
-    Optional<AuralithAPI.DimensionBinding> bindingOpt = AuralithAPI.getBindingForDimension(level.dimension());
+    Optional<PioneerAPI.DimensionBinding> bindingOpt = PioneerAPI.getBindingForDimension(level.dimension());
     if (bindingOpt.isEmpty() || !bindingOpt.get().isSpaceDimension())
     {
       player.sendSystemMessage(Component.literal("Only usable in the space dimension."));
       return InteractionResultHolder.fail(stack);
     }
 
-    AuralithAPI.DimensionBinding binding = bindingOpt.get();
-    Optional<SolarSystemDefinition> systemOpt = AuralithAPI.getSolarSystem(binding.systemId());
+    PioneerAPI.DimensionBinding binding = bindingOpt.get();
+    Optional<SolarSystemDefinition> systemOpt = PioneerAPI.getSolarSystem(binding.systemId());
     if (systemOpt.isEmpty()) return InteractionResultHolder.fail(stack);
 
     SolarSystemDefinition system = systemOpt.get();

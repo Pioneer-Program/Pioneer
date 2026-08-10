@@ -1,6 +1,6 @@
 package cute.ame.pioneer.Mixin.Rendering;
 
-import cute.ame.pioneer.Core.API.AuralithAPI;
+import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.Seamless.Client.SeamlessGhostRenderer;
 import cute.ame.pioneer.SkyPlanet.Dimension.SpaceDimensionEffect;
 import cute.ame.pioneer.SkyPlanet.Rendering.SolarSystemRenderer;
@@ -31,7 +31,7 @@ public abstract class SkyMixin
         }
 
         if (level.effects() instanceof SpaceDimensionEffect) return;
-        if (!AuralithAPI.hasSkyFor(level.dimension())) return;
+        if (!PioneerAPI.hasSkyFor(level.dimension())) return;
 
         SolarSystemRenderer.getInstance().renderSky(frustumMatrix, projectionMatrix, partialTick, camera, isFoggy, skyFogSetup, level);
         ci.cancel();

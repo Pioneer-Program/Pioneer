@@ -1,5 +1,6 @@
 package cute.ame.pioneer.Seamless;
 
+import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Seamless.Network.PreloadCancelPayload;
@@ -71,7 +72,7 @@ public final class TransitionManager
         pt.anchor = target.anchor();
         pt.state = State.APPROACHING;
 
-        Pioneer.LOGGER.debug("[Auralith] {} APPROACHING {}", player.getScoreboardName(), pt.targetDim.location());
+        Pioneer.LOGGER.debug("[Pioneer] {} APPROACHING {}", player.getScoreboardName(), pt.targetDim.location());
     }
 
     private static void tickApproaching(ServerPlayer player, PlayerTransition pt)
@@ -116,7 +117,7 @@ public final class TransitionManager
 
         PacketDistributor.sendToPlayer(player, new PreloadDimensionPayload(pt.fromDim, pt.targetDim, pt.anchor, targetLevel.dimensionTypeRegistration().unwrapKey().orElseThrow()));
 
-        Pioneer.LOGGER.debug("[Auralith] {} PRELOADING {} (radius={} chunks, anchor={})",
+        Pioneer.LOGGER.debug("[Pioneer] {} PRELOADING {} (radius={} chunks, anchor={})",
                 player.getScoreboardName(), pt.targetDim.location(), radiusChunks, pt.anchor.toShortString());
     }
 
@@ -155,7 +156,7 @@ public final class TransitionManager
         if (isPreloadReady(player, targetLevel, pt.targetDim, pt.anchor))
         {
             pt.state = State.READY;
-            Pioneer.LOGGER.debug("[Auralith] {} READY for {}", player.getScoreboardName(), pt.targetDim.location());
+            Pioneer.LOGGER.debug("[Pioneer] {} READY for {}", player.getScoreboardName(), pt.targetDim.location());
         }
 
         if (crossedRealThreshold(player, pt))
@@ -198,7 +199,7 @@ public final class TransitionManager
         }
 
         player.teleportTo(targetLevel, landing.getX() + 0.5, landing.getY(), landing.getZ() + 0.5, java.util.Set.of(), player.getYRot(), player.getXRot());
-        Pioneer.LOGGER.debug("[Auralith] {} SWAPPING {} -> {}", player.getScoreboardName(), pt.fromDim.location(), pt.targetDim.location());
+        Pioneer.LOGGER.debug("[Pioneer] {} SWAPPING {} -> {}", player.getScoreboardName(), pt.fromDim.location(), pt.targetDim.location());
 
         pt.state = State.SETTLING;
         pt.settleTicksRemaining = SETTLE_TICKS;
@@ -218,7 +219,7 @@ public final class TransitionManager
 
         SeamlessChunkStreamer.release(player.getUUID(), pt.fromDim);
 
-        Pioneer.LOGGER.debug("[Auralith] {} SETTLED in {}", player.getScoreboardName(), pt.targetDim.location());
+        Pioneer.LOGGER.debug("[Pioneer] {} SETTLED in {}", player.getScoreboardName(), pt.targetDim.location());
 
         PacketDistributor.sendToPlayer(player, new cute.ame.pioneer.Seamless.Network.TransitionCompletePayload(pt.fromDim, pt.targetDim));
         resetToIdle(pt);
@@ -236,7 +237,7 @@ public final class TransitionManager
             }
             SeamlessChunkStreamer.release(player.getUUID(), pt.targetDim);
             PacketDistributor.sendToPlayer(player, new PreloadCancelPayload(pt.targetDim));
-            Pioneer.LOGGER.debug("[Auralith] {} CANCELLED transition to {}", player.getScoreboardName(), pt.targetDim.location());
+            Pioneer.LOGGER.debug("[Pioneer] {} CANCELLED transition to {}", player.getScoreboardName(), pt.targetDim.location());
         }
         resetToIdle(pt);
     }
@@ -276,10 +277,10 @@ public final class TransitionManager
         {
             case SURFACE_APPROACHING_ORBIT ->
             {
-                var bindingOpt = cute.ame.pioneer.Core.API.AuralithAPI.getBindingForDimension(player.level().dimension());
+                var bindingOpt = PioneerAPI.getBindingForDimension(player.level().dimension());
                 if (bindingOpt.isEmpty()) { yield Optional.empty(); }
                 var binding = bindingOpt.get();
-                var systemOpt = cute.ame.pioneer.Core.API.AuralithAPI.getSolarSystem(binding.systemId());
+                var systemOpt = PioneerAPI.getSolarSystem(binding.systemId());
                 if (systemOpt.isEmpty()) { yield Optional.empty(); }
 
                 var planetOpt = systemOpt.get().findById(binding.planetId());
@@ -395,7 +396,7 @@ public final class TransitionManager
             pt.ticksInPreloading++;
             if (pt.ticksInPreloading >= PRELOAD_STALL_TICKS_BEFORE_FALLBACK)
             {
-                Pioneer.LOGGER.warn("[Auralith] {} preload to {} stalled after {} ticks, falling back to anchor-only readiness",
+                Pioneer.LOGGER.warn("[Pioneer] {} preload to {} stalled after {} ticks, falling back to anchor-only readiness",
                         player.getScoreboardName(), targetDim.location(), pt.ticksInPreloading);
                 return targetLevel.hasChunk(anchor.getX() >> 4, anchor.getZ() >> 4);
             }

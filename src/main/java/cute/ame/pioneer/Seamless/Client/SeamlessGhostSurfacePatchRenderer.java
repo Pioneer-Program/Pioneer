@@ -64,7 +64,7 @@ public final class SeamlessGhostSurfacePatchRenderer
         float worldRadius = Math.max(16, Config.SURFACE_PATCH_WORLD_RADIUS.get());
         float blockToUnit = 0.5f / worldRadius;
         int surfaceY = Config.SURFACE_PATCH_SEA_LEVEL.get() + 1;
-        Pioneer.LOGGER.debug("[Auralith] Surface patch for {}: anchor={} surfaceY={} nearestFaceNormal=({},{},{}) sections={}", dimension.location(), anchor.toShortString(), surfaceY, face.normal().x, face.normal().y, face.normal().z, sections.size());
+        Pioneer.LOGGER.debug("[Pioneer] Surface patch for {}: anchor={} surfaceY={} nearestFaceNormal=({},{},{}) sections={}", dimension.location(), anchor.toShortString(), surfaceY, face.normal().x, face.normal().y, face.normal().z, sections.size());
 
         ps.pushPose();
         ps.translate(face.normal().x * 0.5f + face.normal().x * SURFACE_OFFSET, face.normal().y * 0.5f + face.normal().y * SURFACE_OFFSET, face.normal().z * 0.5f + face.normal().z * SURFACE_OFFSET);

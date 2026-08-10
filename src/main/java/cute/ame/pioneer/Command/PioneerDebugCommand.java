@@ -2,6 +2,7 @@ package cute.ame.pioneer.Command;
 
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.Seamless.Network.PreloadCancelPayload;
 import cute.ame.pioneer.Seamless.Network.PreloadDimensionPayload;
 import cute.ame.pioneer.Seamless.SeamlessChunkStreamer;
@@ -40,11 +41,11 @@ public final class PioneerDebugCommand
 
         if (!net.neoforged.fml.loading.FMLEnvironment.dist.isClient())
         {
-            source.sendFailure(Component.literal("[Auralith][debug] seamless-test-render requires a physical client (singleplayer/LAN host) — not available on a dedicated server"));
+            source.sendFailure(Component.literal("[Pioneer][debug] seamless-test-render requires a physical client (singleplayer/LAN host) — not available on a dedicated server"));
             return 0;
         }
 
-        source.sendSuccess(() -> Component.literal("[Auralith][debug] Ghost debug frame capture for " + targetDim.location() + " queued on the render thread — single frame, check the client log for the result"), false);
+        source.sendSuccess(() -> Component.literal("[Pioneer][debug] Ghost debug frame capture for " + targetDim.location() + " queued on the render thread — single frame, check the client log for the result"), false);
 
         return 1;
     }
@@ -59,12 +60,12 @@ public final class PioneerDebugCommand
         var forced = SeamlessPreloadManager.getForcedSnapshot(player.getUUID(), targetDim);
         if (forced.isEmpty())
         {
-            source.sendFailure(Component.literal("[Auralith][debug] Nothing forced for " + targetDim.location() + " — run seamless-test-preload first"));
+            source.sendFailure(Component.literal("[Pioneer][debug] Nothing forced for " + targetDim.location() + " — run seamless-test-preload first"));
             return 0;
         }
 
         int sentThisCall = SeamlessChunkStreamer.streamReadyChunks(player, targetLevel, forced);
-        source.sendSuccess(() -> Component.literal("[Auralith][debug] Streamed " + sentThisCall + " new chunk(s) this call (" + forced.size() + " total forced) for " + targetDim.location()), false);
+        source.sendSuccess(() -> Component.literal("[Pioneer][debug] Streamed " + sentThisCall + " new chunk(s) this call (" + forced.size() + " total forced) for " + targetDim.location()), false);
         return 1;
     }
 
@@ -81,7 +82,7 @@ public final class PioneerDebugCommand
         BlockPos anchor = player.blockPosition();
         SeamlessPreloadManager.preload(player.getUUID(), targetLevel, anchor, radiusChunks);
         PacketDistributor.sendToPlayer(player, new PreloadDimensionPayload(fromDim, targetDim, anchor, targetLevel.dimensionTypeRegistration().unwrapKey().orElseThrow()));
-        source.sendSuccess(() -> Component.literal("[Auralith][debug] Preloading " + radiusChunks + " chunk radius around " + anchor.toShortString() + " in " + targetDim.location() + " (server ticket + client hint sent)"), false);
+        source.sendSuccess(() -> Component.literal("[Pioneer][debug] Preloading " + radiusChunks + " chunk radius around " + anchor.toShortString() + " in " + targetDim.location() + " (server ticket + client hint sent)"), false);
         return 1;
     }
 
@@ -95,25 +96,25 @@ public final class PioneerDebugCommand
 
         ResourceKey<Level> fromDim = player.level().dimension();
 
-        var bindingOpt = cute.ame.pioneer.Core.API.AuralithAPI.getBindingForDimension(targetDim);
+        var bindingOpt = PioneerAPI.getBindingForDimension(targetDim);
         if (bindingOpt.isEmpty())
         {
-            source.sendFailure(Component.literal("[Auralith][debug] " + targetDim.location() + " has no known dimension binding (not registered to a solar system) — can't resolve a planet"));
+            source.sendFailure(Component.literal("[Pioneer][debug] " + targetDim.location() + " has no known dimension binding (not registered to a solar system) — can't resolve a planet"));
             return 0;
         }
 
         var binding = bindingOpt.get();
-        var systemOpt = cute.ame.pioneer.Core.API.AuralithAPI.getSolarSystem(binding.systemId());
+        var systemOpt = PioneerAPI.getSolarSystem(binding.systemId());
         if (systemOpt.isEmpty())
         {
-            source.sendFailure(Component.literal("[Auralith][debug] Solar system " + binding.systemId() + " not found for " + targetDim.location()));
+            source.sendFailure(Component.literal("[Pioneer][debug] Solar system " + binding.systemId() + " not found for " + targetDim.location()));
             return 0;
         }
 
         var planetOpt = systemOpt.get().findById(binding.planetId());
         if (planetOpt.isEmpty())
         {
-            source.sendFailure(Component.literal("[Auralith][debug] Planet " + binding.planetId() + " not found in system " + binding.systemId()));
+            source.sendFailure(Component.literal("[Pioneer][debug] Planet " + binding.planetId() + " not found in system " + binding.systemId()));
             return 0;
         }
 
@@ -122,7 +123,7 @@ public final class PioneerDebugCommand
         SeamlessPreloadManager.preload(player.getUUID(), targetLevel, anchor, radiusChunks);
         PacketDistributor.sendToPlayer(player, new PreloadDimensionPayload(fromDim, targetDim, anchor, targetLevel.dimensionTypeRegistration().unwrapKey().orElseThrow()));
 
-        source.sendSuccess(() -> Component.literal("[Auralith][debug] Preloading " + radiusChunks + " chunk radius around planet-projected anchor " + anchor.toShortString() + " in " + targetDim.location() + " (server ticket + client hint sent)"), false);
+        source.sendSuccess(() -> Component.literal("[Pioneer][debug] Preloading " + radiusChunks + " chunk radius around planet-projected anchor " + anchor.toShortString() + " in " + targetDim.location() + " (server ticket + client hint sent)"), false);
         return 1;
     }
 
@@ -136,7 +137,7 @@ public final class PioneerDebugCommand
         SeamlessPreloadManager.release(player.getUUID(), targetDim, targetLevel);
         PacketDistributor.sendToPlayer(player, new PreloadCancelPayload(targetDim));
 
-        source.sendSuccess(() -> Component.literal("[Auralith][debug] Released preload for " + targetDim.location() + " (server ticket + client hint sent)"), false);
+        source.sendSuccess(() -> Component.literal("[Pioneer][debug] Released preload for " + targetDim.location() + " (server ticket + client hint sent)"), false);
         return 1;
     }
 }

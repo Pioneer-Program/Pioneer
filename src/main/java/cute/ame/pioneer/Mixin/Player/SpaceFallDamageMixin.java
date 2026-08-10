@@ -1,6 +1,6 @@
 package cute.ame.pioneer.Mixin.Player;
 
-import cute.ame.pioneer.Core.API.AuralithAPI;
+import cute.ame.pioneer.Core.API.PioneerAPI;
 import net.minecraft.world.entity.Entity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -11,9 +11,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class SpaceFallDamageMixin
 {
     @Inject(method = "checkBelowWorld", at = @At("HEAD"), cancellable = true)
-    private void auralith$cancelVoidDamage(CallbackInfo ci)
+    private void pioneer$cancelVoidDamage(CallbackInfo ci)
     {
         Entity self = (Entity) (Object) this;
-        if (AuralithAPI.isSpaceDimension(self.level().dimension())) ci.cancel();
+        if (PioneerAPI.isSpaceDimension(self.level().dimension())) ci.cancel();
     }
 }

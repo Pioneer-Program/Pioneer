@@ -41,7 +41,7 @@ public final class SeamlessLevelRegistry
             {
                 ResourceKey<Level> evictKey = findEvictionCandidate();
                 if (evictKey != null) forceRelease(evictKey);
-                else Pioneer.LOGGER.warn("[Auralith] SeamlessLevelRegistry at cap ({}) with no evictable entry, retaining {} anyway, exceeding cap", MAX_RETAINED, key.location());
+                else Pioneer.LOGGER.warn("[Pioneer] SeamlessLevelRegistry at cap ({}) with no evictable entry, retaining {} anyway, exceeding cap", MAX_RETAINED, key.location());
             }
             entry = new Entry();
             entry.level = level;
@@ -60,7 +60,7 @@ public final class SeamlessLevelRegistry
         if (entry.refCount == 0)
         {
             RETAINED.remove(key);
-            Pioneer.LOGGER.debug("[Auralith] Released ClientLevel {} (refCount=0)", key.location());
+            Pioneer.LOGGER.debug("[Pioneer] Released ClientLevel {} (refCount=0)", key.location());
             dropAuxiliaryData(key);
         }
     }
@@ -68,7 +68,7 @@ public final class SeamlessLevelRegistry
     private static void forceRelease(ResourceKey<Level> key)
     {
         RETAINED.remove(key);
-        Pioneer.LOGGER.debug("[Auralith] Force-evicted ClientLevel {} to respect cap of {}", key.location(), MAX_RETAINED);
+        Pioneer.LOGGER.debug("[Pioneer] Force-evicted ClientLevel {} to respect cap of {}", key.location(), MAX_RETAINED);
         dropAuxiliaryData(key);
     }
 

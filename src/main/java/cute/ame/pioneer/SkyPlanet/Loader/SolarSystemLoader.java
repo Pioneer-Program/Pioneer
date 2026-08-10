@@ -4,7 +4,7 @@ import com.google.gson.JsonElement;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
-import cute.ame.pioneer.Core.API.AuralithAPI;
+import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetFile;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
@@ -42,7 +42,7 @@ public final class SolarSystemLoader extends SimplePreparableReloadListener<Map<
         forEachJson(manager, PLANET_FOLDER, PlanetFile.CODEC, (fileId, file) ->
         {
             ResourceLocation planetId = PlanetDefinition.MISSING.equals(file.base().id()) ? fileId : file.base().id();
-            if (rawPlanets.put(planetId, file) != null) LOGGER.warn("[Auralith] Duplicate planet '{}'", planetId);
+            if (rawPlanets.put(planetId, file) != null) LOGGER.warn("[Pioneer] Duplicate planet '{}'", planetId);
         });
 
         Map<ResourceLocation, PlanetDefinition> resolved = new HashMap<>(rawPlanets.size() * 2);
@@ -56,22 +56,22 @@ public final class SolarSystemLoader extends SimplePreparableReloadListener<Map<
             for (ResourceLocation ref : file.planets())
             {
                 PlanetDefinition planet = resolved.get(ref);
-                if (planet == null) LOGGER.error("[Auralith] System '{}' references unknown planet '{}'", systemId, ref);
+                if (planet == null) LOGGER.error("[Pioneer] System '{}' references unknown planet '{}'", systemId, ref);
                 else planets.add(planet);
             }
             systems.put(systemId, new SolarSystemDefinition(file.sun(), List.copyOf(planets), file.spaceDimension()));
         });
 
-        LOGGER.info("[Auralith] Prepared {} solar system(s) from {} planet file(s)", systems.size(), rawPlanets.size());
+        LOGGER.info("[Pioneer] Prepared {} solar system(s) from {} planet file(s)", systems.size(), rawPlanets.size());
         return systems;
     }
 
     @Override
     protected void apply(Map<ResourceLocation, SolarSystemDefinition> data, ResourceManager manager, ProfilerFiller profiler)
     {
-        AuralithAPI.clearAll();
-        data.forEach(AuralithAPI::registerSolarSystem);
-        LOGGER.info("[Auralith] Applied {} solar system(s)", data.size());
+        PioneerAPI.clearAll();
+        data.forEach(PioneerAPI::registerSolarSystem);
+        LOGGER.info("[Pioneer] Applied {} solar system(s)", data.size());
     }
 
     private static PlanetDefinition resolve(ResourceLocation id, Map<ResourceLocation, PlanetFile> raw, Map<ResourceLocation, PlanetDefinition> out, Set<ResourceLocation> visiting)
@@ -84,7 +84,7 @@ public final class SolarSystemLoader extends SimplePreparableReloadListener<Map<
 
         if (!visiting.add(id))
         {
-            LOGGER.error("[Auralith] Cyclic moon reference involving '{}' ({})", id, visiting);
+            LOGGER.error("[Pioneer] Cyclic moon reference involving '{}' ({})", id, visiting);
             return null;
         }
 
@@ -97,7 +97,7 @@ public final class SolarSystemLoader extends SimplePreparableReloadListener<Map<
             for (ResourceLocation ref : refs)
             {
                 PlanetDefinition moon = resolve(ref, raw, out, visiting);
-                if (moon == null) LOGGER.error("[Auralith] Planet '{}' references unknown moon '{}'", id, ref);
+                if (moon == null) LOGGER.error("[Pioneer] Planet '{}' references unknown moon '{}'", id, ref);
                 else buffer.add(moon);
             }
             moons = List.copyOf(buffer);
@@ -122,11 +122,11 @@ public final class SolarSystemLoader extends SimplePreparableReloadListener<Map<
             try (var reader = new InputStreamReader(entry.getValue().open()))
             {
                 JsonElement json = GsonHelper.parse(reader);
-                codec.parse(JsonOps.INSTANCE, json).ifSuccess(value -> sink.accept(id, value)).ifError(err -> LOGGER.error("[Auralith] Failed to parse {}/{}: {}", folder, id, err.message()));
+                codec.parse(JsonOps.INSTANCE, json).ifSuccess(value -> sink.accept(id, value)).ifError(err -> LOGGER.error("[Pioneer] Failed to parse {}/{}: {}", folder, id, err.message()));
             }
             catch (Exception e)
             {
-                LOGGER.error("[Auralith] Error reading '{}'", fileRl, e);
+                LOGGER.error("[Pioneer] Error reading '{}'", fileRl, e);
             }
         }
     }

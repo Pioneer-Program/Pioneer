@@ -12,7 +12,7 @@ import java.util.Map;
 
 public final class GPUProfiler
 {
-    public static final boolean DEBUG = !FMLLoader.isProduction() || Boolean.getBoolean("auralith.gpuprofiler");
+    public static final boolean DEBUG = !FMLLoader.isProduction() || Boolean.getBoolean("pioneer.gpuprofiler");
     private static final int RING = 3;
 
     private static final class Section
@@ -35,7 +35,7 @@ public final class GPUProfiler
 
     static
     {
-        if (DEBUG) Pioneer.LOGGER.info("[Auralith] GPUProfiler active (DEBUG=true)");
+        if (DEBUG) Pioneer.LOGGER.info("[Pioneer] GPUProfiler active (DEBUG=true)");
     }
 
     public static void setEnabled(boolean value)
@@ -97,7 +97,7 @@ public final class GPUProfiler
 
         if (active != null)
         {
-            Pioneer.LOGGER.warn("[Auralith] GPUProfiler: section '{}' left open at endFrame()", active);
+            Pioneer.LOGGER.warn("[Pioneer] GPUProfiler: section '{}' left open at endFrame()", active);
             activeSection = null;
             activeSlot = -1;
             active = null;

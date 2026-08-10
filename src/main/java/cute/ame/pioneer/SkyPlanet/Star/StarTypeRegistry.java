@@ -13,7 +13,7 @@ public final class StarTypeRegistry
     public static void register(ResourceLocation id, StarTypeRenderer renderer)
     {
         StarTypeRenderer existing = TYPES.putIfAbsent(id, renderer);
-        if (existing != null) Pioneer.LOGGER.warn("[Auralith] Star type '{}' registered twice — keeping the first registration", id);
+        if (existing != null) Pioneer.LOGGER.warn("[Pioneer] Star type '{}' registered twice: keeping the first registration", id);
     }
 
     public static StarTypeRenderer get(ResourceLocation id)
@@ -21,7 +21,7 @@ public final class StarTypeRegistry
         StarTypeRenderer renderer = TYPES.get(id);
         if (renderer == null)
         {
-            Pioneer.LOGGER.warn("[Auralith] No star type registered for '{}', falling back to main_sequence (registered ids: {})", id, TYPES.keySet());
+            Pioneer.LOGGER.warn("[Pioneer] No star type registered for '{}', falling back to main_sequence (registered ids: {})", id, TYPES.keySet());
             return TYPES.get(BuiltinStarTypes.MAIN_SEQUENCE);
         }
         return renderer;

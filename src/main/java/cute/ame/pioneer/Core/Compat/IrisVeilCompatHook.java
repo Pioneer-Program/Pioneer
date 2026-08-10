@@ -53,7 +53,7 @@ public final class IrisVeilCompatHook
         }
     }
 
-    public static void tryExcludeAuralithVfxShaders()
+    public static void tryExcludePioneerVfxShaders()
     {
         int count = 0;
         for (String path : VFX_SHADER_PATHS)

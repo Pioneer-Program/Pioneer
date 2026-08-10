@@ -1,6 +1,6 @@
 package cute.ame.pioneer.Planet.Common.Event;
 
-import cute.ame.pioneer.Core.API.AuralithAPI;
+import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.Pioneer;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -38,7 +38,7 @@ public class GravityEvent
       if (attr == null) return;
 
       attr.removeModifier(GRAVITY_ID);
-      float gravity = AuralithAPI.getGravityFor(dim);
+      float gravity = PioneerAPI.getGravityFor(dim);
       if (gravity != 1.0f) attr.addPermanentModifier(new AttributeModifier(GRAVITY_ID, gravity - 1.0f, AttributeModifier.Operation.ADD_MULTIPLIED_BASE));
     }
 }

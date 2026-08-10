@@ -59,7 +59,7 @@ public final class SeamlessGhostRenderer
         ClientLevel ghostLevel = SeamlessLevelRegistry.get(bridgeDimension).orElse(null);
         if (ghostLevel == null)
         {
-            Pioneer.LOGGER.warn("[Auralith] Bridge target {} no longer retained in SeamlessLevelRegistry, ending bridge", bridgeDimension.location());
+            Pioneer.LOGGER.warn("[Pioneer] Bridge target {} no longer retained in SeamlessLevelRegistry, ending bridge", bridgeDimension.location());
             setBridgeTarget(null);
             return;
         }
@@ -67,7 +67,7 @@ public final class SeamlessGhostRenderer
         BlockPos anchor = SeamlessGhostAnchors.get(bridgeDimension);
         if (anchor == null)
         {
-            Pioneer.LOGGER.warn("[Auralith] No known anchor for {}, ending bridge", bridgeDimension.location());
+            Pioneer.LOGGER.warn("[Pioneer] No known anchor for {}, ending bridge", bridgeDimension.location());
             setBridgeTarget(null);
             return;
         }
@@ -84,7 +84,7 @@ public final class SeamlessGhostRenderer
         }
         catch (Exception e)
         {
-            Pioneer.LOGGER.warn("[Auralith] renderBridgeFrame failed, ending bridge early: {}", e.toString());
+            Pioneer.LOGGER.warn("[Pioneer] renderBridgeFrame failed, ending bridge early: {}", e.toString());
             setBridgeTarget(null);
         }
         finally
@@ -147,16 +147,16 @@ public final class SeamlessGhostRenderer
             try
             {
                 String fileName = "ghost_debug_" + ghostLevel.dimension().location().getPath() + "_" + System.currentTimeMillis() + ".png";
-                Screenshot.grab(mc.gameDirectory, fileName, mc.getMainRenderTarget(), component -> Pioneer.LOGGER.info("[Auralith] Ghost debug frame captured: {}", component.getString()));
+                Screenshot.grab(mc.gameDirectory, fileName, mc.getMainRenderTarget(), component -> Pioneer.LOGGER.info("[Pioneer] Ghost debug frame captured: {}", component.getString()));
             }
             catch (Exception screenshotEx)
             {
-                Pioneer.LOGGER.warn("[Auralith] Ghost debug frame rendered but screenshot capture failed: {}", screenshotEx.toString());
+                Pioneer.LOGGER.warn("[Pioneer] Ghost debug frame rendered but screenshot capture failed: {}", screenshotEx.toString());
             }
         }
         catch (Exception e)
         {
-            Pioneer.LOGGER.warn("[Auralith] renderSingleDebugFrame failed while rendering the swapped-in frame: {}", e.toString());
+            Pioneer.LOGGER.warn("[Pioneer] renderSingleDebugFrame failed while rendering the swapped-in frame: {}", e.toString());
         }
         finally
         {
@@ -184,7 +184,7 @@ public final class SeamlessGhostRenderer
         catch (Exception e)
         {
 
-            Pioneer.LOGGER.warn("[Auralith] enterGhostLevel failed, attempting to restore real level: {}", e.toString());
+            Pioneer.LOGGER.warn("[Pioneer] enterGhostLevel failed, attempting to restore real level: {}", e.toString());
             accessor.pioneer$setLevel(realLevel);
             return false;
         }
@@ -204,11 +204,11 @@ public final class SeamlessGhostRenderer
             player.setPos(anchor.getX() + 0.5, surfaceY + 2.0, anchor.getZ() + 0.5);
 
             player.setXRot(30.0f);
-            Pioneer.LOGGER.debug("[Auralith] Entered ghost level mode for one frame, camera moved to anchor XZ {},{} at ghost-level surface height y={} (anchor.y={} was ignored — see comment)", anchor.getX(), anchor.getZ(), surfaceY, anchor.getY());
+            Pioneer.LOGGER.debug("[Pioneer] Entered ghost level mode for one frame, camera moved to anchor XZ {},{} at ghost-level surface height y={} (anchor.y={} was ignored — see comment)", anchor.getX(), anchor.getZ(), surfaceY, anchor.getY());
         }
         else if (player != null)
         {
-            Pioneer.LOGGER.warn("[Auralith] Entered ghost level mode but no known anchor for {} — camera staying at the real player's position, ghost terrain likely won't be visible", ghostLevel.dimension().location());
+            Pioneer.LOGGER.warn("[Pioneer] Entered ghost level mode but no known anchor for {} — camera staying at the real player's position, ghost terrain likely won't be visible", ghostLevel.dimension().location());
         }
 
         return true;
@@ -228,6 +228,6 @@ public final class SeamlessGhostRenderer
             player.setXRot(savedPlayerXRot);
         }
 
-        Pioneer.LOGGER.debug("[Auralith] Exited ghost level mode, real level + camera restored");
+        Pioneer.LOGGER.debug("[Pioneer] Exited ghost level mode, real level + camera restored");
     }
 }

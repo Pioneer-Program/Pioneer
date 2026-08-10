@@ -1,7 +1,7 @@
 package cute.ame.pioneer.Event;
 
 import cute.ame.pioneer.Pioneer;
-import cute.ame.pioneer.Core.API.AuralithAPI;
+import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.Item.PortableThrusterItem;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
@@ -19,7 +19,7 @@ public class PortableThrusterEvent
     if (!player.isUsingItem()) return;
     if (!(player.getUseItem().getItem() instanceof PortableThrusterItem)) return;
 
-    AuralithAPI.getBindingForDimension(player.level().dimension()).ifPresent(surface ->
+    PioneerAPI.getBindingForDimension(player.level().dimension()).ifPresent(surface ->
     {
       if(!surface.isSurfaceDimension()) applyThrust(player);
     });

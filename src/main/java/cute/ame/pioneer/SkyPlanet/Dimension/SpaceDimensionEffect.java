@@ -1,7 +1,7 @@
 package cute.ame.pioneer.SkyPlanet.Dimension;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import cute.ame.pioneer.Core.API.AuralithAPI;
+import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.SkyPlanet.Rendering.SolarSystemRenderer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -41,7 +41,7 @@ public class SpaceDimensionEffect extends DimensionSpecialEffects
     @Override
     public boolean renderSky(ClientLevel level, int ticks, float partialTick, Matrix4f modelViewMatrix, Camera camera, Matrix4f projectionMatrix, boolean isFoggy, Runnable setupFog)
     {
-        if (AuralithAPI.hasSkyFor(level.dimension())) SolarSystemRenderer.getInstance().renderSky(modelViewMatrix, projectionMatrix, partialTick, camera, isFoggy, setupFog, level);
+        if (PioneerAPI.hasSkyFor(level.dimension())) SolarSystemRenderer.getInstance().renderSky(modelViewMatrix, projectionMatrix, partialTick, camera, isFoggy, setupFog, level);
         return true;
     }
 

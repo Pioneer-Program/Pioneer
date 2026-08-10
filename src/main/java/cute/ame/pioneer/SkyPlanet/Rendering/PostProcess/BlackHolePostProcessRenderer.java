@@ -36,7 +36,7 @@ public final class BlackHolePostProcessRenderer
             if (!warnedMissingShader)
             {
                 warnedMissingShader = true;
-                LOGGER.warn("[Auralith] black_hole post-process shader not resolved yet (still compiling / failed to load) — skipping this frame");
+                LOGGER.warn("[Pioneer] black_hole post-process shader not resolved yet (still compiling / failed to load)... skipping this frame.. :c");
             }
             return;
         }

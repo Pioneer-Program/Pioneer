@@ -59,14 +59,14 @@ public final class SeamlessChunkStreamer
             }
             catch (Exception e)
             {
-                Pioneer.LOGGER.warn("[Auralith] Failed to stream chunk {} in {} to {}: {}", pos, targetLevel.dimension().location(), player.getScoreboardName(), e.toString());
+                Pioneer.LOGGER.warn("[Pioneer] Failed to stream chunk {} in {} to {}: {}", pos, targetLevel.dimension().location(), player.getScoreboardName(), e.toString());
             }
         }
 
         if (sentThisCall == 0 && !forcedChunks.isEmpty())
         {
             long readyNow = forcedChunks.stream().filter(p -> targetLevel.hasChunk(p.x, p.z)).count();
-            Pioneer.LOGGER.debug("[Auralith] streamReadyChunks for {} sent 0 new chunks this call ({} of {} forced chunks are actually loaded, {} already sent previously)", targetLevel.dimension().location(), readyNow, forcedChunks.size(), sent.size());
+            Pioneer.LOGGER.debug("[Pioneer] streamReadyChunks for {} sent 0 new chunks this call ({} of {} forced chunks are actually loaded, {} already sent previously)", targetLevel.dimension().location(), readyNow, forcedChunks.size(), sent.size());
         }
 
         return sentThisCall;

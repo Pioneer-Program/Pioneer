@@ -66,7 +66,7 @@ public final class LUTManager
             var e = it.next();
             closeTexture(e.getValue());
             it.remove();
-            Pioneer.LOGGER.debug("[Auralith] LUTManager evicted '{}' ({} entries)", e.getKey(), CACHE.size());
+            Pioneer.LOGGER.debug("[Pioneer] LUTManager evicted '{}' ({} entries)", e.getKey(), CACHE.size());
         }
     }
 

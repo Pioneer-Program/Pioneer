@@ -19,7 +19,7 @@ public final class SamplerBinder
         int location = GL20.glGetUniformLocation(program, uniformName);
         if (location < 0)
         {
-            Pioneer.LOGGER.warn("[Auralith] sampler uniform '{}' not found in program {}", uniformName, program);
+            Pioneer.LOGGER.warn("[Pioneer] sampler uniform '{}' not found in program {}", uniformName, program);
             return;
         }
 

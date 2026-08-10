@@ -1,6 +1,6 @@
 package cute.ame.pioneer.Seamless;
 
-import cute.ame.pioneer.Core.API.AuralithAPI;
+import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.Config;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
@@ -30,10 +30,10 @@ public final class SeamlessThresholdDetector
     public static ThresholdResult evaluate(ServerPlayer player)
     {
         ResourceKey<Level> dim = player.level().dimension();
-        Optional<AuralithAPI.DimensionBinding> bindingOpt = AuralithAPI.getBindingForDimension(dim);
+        Optional<PioneerAPI.DimensionBinding> bindingOpt = PioneerAPI.getBindingForDimension(dim);
         if (bindingOpt.isEmpty()) return ThresholdResult.NONE_RESULT;
 
-        AuralithAPI.DimensionBinding binding = bindingOpt.get();
+        PioneerAPI.DimensionBinding binding = bindingOpt.get();
 
         return switch (binding.type())
         {
@@ -52,9 +52,9 @@ public final class SeamlessThresholdDetector
         return new ThresholdResult(ThresholdKind.SURFACE_APPROACHING_ORBIT, Optional.empty(), player.getY());
     }
 
-    private static ThresholdResult evaluateSpaceProximity(ServerPlayer player, AuralithAPI.DimensionBinding binding)
+    private static ThresholdResult evaluateSpaceProximity(ServerPlayer player, PioneerAPI.DimensionBinding binding)
     {
-        Optional<SolarSystemDefinition> systemOpt = AuralithAPI.getSolarSystem(binding.systemId());
+        Optional<SolarSystemDefinition> systemOpt = PioneerAPI.getSolarSystem(binding.systemId());
         if (systemOpt.isEmpty()) return ThresholdResult.NONE_RESULT;
 
         SolarSystemDefinition system = systemOpt.get();

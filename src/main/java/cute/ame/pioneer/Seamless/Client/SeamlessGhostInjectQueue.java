@@ -47,12 +47,12 @@ public final class SeamlessGhostInjectQueue
             }
             catch (Exception e)
             {
-                Pioneer.LOGGER.warn("[Auralith] Queued ghost chunk {} failed for {} in {}: {}", p.kind(), p.pos(), p.target().location(), e.toString());
+                Pioneer.LOGGER.warn("[Pioneer] Queued ghost chunk {} failed for {} in {}: {}", p.kind(), p.pos(), p.target().location(), e.toString());
             }
             processed++;
         }
 
-        if (processed > 0) Pioneer.LOGGER.debug("[Auralith] Drained {} queued ghost chunk task(s), {} remaining", processed, QUEUE.size());
+        if (processed > 0) Pioneer.LOGGER.debug("[Pioneer] Drained {} queued ghost chunk task(s), {} remaining", processed, QUEUE.size());
     }
 
     public static void clear(ResourceKey<Level> target)

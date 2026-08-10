@@ -16,7 +16,7 @@ import java.util.UUID;
 
 public final class SeamlessPreloadManager
 {
-    private static final TicketType<ChunkPos> SEAMLESS_PRELOAD_TICKET = TicketType.create("auralith_seamless_preload", java.util.Comparator.comparingLong(ChunkPos::toLong), 100);
+    private static final TicketType<ChunkPos> SEAMLESS_PRELOAD_TICKET = TicketType.create("pioneer_seamless_preload", java.util.Comparator.comparingLong(ChunkPos::toLong), 100);
 
     private static final int TICKET_LEVEL = 31;
     private record PreloadKey(UUID player, ResourceKey<Level> target) {}
@@ -71,7 +71,7 @@ public final class SeamlessPreloadManager
         if (previous == null) return;
 
         for (ChunkPos pos : previous) targetLevel.getChunkSource().removeRegionTicket(SEAMLESS_PRELOAD_TICKET, pos, TICKET_LEVEL, pos);
-        Pioneer.LOGGER.debug("[Auralith] Released {} preloaded chunks for player {} in {}", previous.size(), player, targetKey.location());
+        Pioneer.LOGGER.debug("[Pioneer] Released {} preloaded chunks for player {} in {}", previous.size(), player, targetKey.location());
     }
 
     public static void releaseAllForPlayer(UUID player, java.util.function.Function<ResourceKey<Level>, ServerLevel> levelLookup)

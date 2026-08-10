@@ -89,7 +89,7 @@ public final class TextureManager<G>
 
             closeEntry(entry);
             it.remove();
-            Pioneer.LOGGER.debug("[Auralith] TextureManager evicted '{}' ({} entries)", mapEntry.getKey(), cache.size());
+            Pioneer.LOGGER.debug("[Pioneer] TextureManager evicted '{}' ({} entries)", mapEntry.getKey(), cache.size());
         }
     }
 

@@ -44,6 +44,6 @@ public final class PioneerClient
   public static void onRegisterParticleProviders(RegisterParticleProvidersEvent event)
   {
     event.registerSprite(ModParticles.ARID_GROUND_SCATTER.get(), new AridGroundScatterParticle.Provider());
-    Pioneer.LOGGER.debug("[Auralith] Registered particle providers");
+    Pioneer.LOGGER.debug("[Pioneer] Registered particle providers");
   }
 }

@@ -40,7 +40,7 @@ public final class BuiltinStarTypes
     {
         if (sun.blackHole() == null)
         {
-            Pioneer.LOGGER.warn("[Auralith] Sun uses black_hole type but has no black_hole config -- nothing to lens");
+            Pioneer.LOGGER.warn("[Pioneer] Sun uses black_hole type but has no black_hole config, nothing to lens");
             return;
         }
 

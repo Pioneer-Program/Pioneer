@@ -12,7 +12,7 @@ import net.minecraft.world.phys.Vec3;
 import java.util.*;
 import java.util.function.Supplier;
 
-public final class AuralithAPI
+public final class PioneerAPI
 {
   private static final Map<ResourceLocation, SolarSystemDefinition> SYSTEMS = new LinkedHashMap<>();
   private static final Map<ResourceLocation, DimensionBinding> DIM_BINDINGS = new HashMap<>();
