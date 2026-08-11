@@ -30,11 +30,6 @@ public record OrbitalElements
         return dest.set(m.x(), m.z(), -m.y());
     }
 
-    private static double clamp(double v)
-    {
-        return v < -1.0 ? -1.0 : (Math.min(v, 1.0));
-    }
-
     private static double wrapTau(double angle)
     {
         return ((angle % Math.TAU) + Math.TAU) % Math.TAU;
@@ -64,10 +59,10 @@ public record OrbitalElements
         double energy = v2 / 2.0 - mu / rLen;
 
         double a = (Math.abs(ecc - 1.0) < 1.0e-9) ? Double.POSITIVE_INFINITY : -mu / (2.0 * energy);
-        double i = Math.acos(clamp(h.z / h.length()));
+        double i = Math.acos(Math.clamp(h.z / h.length(), -1.0, 1.0));
 
         double nLen = n.length();
-        double raan = (nLen < EPS) ? 0.0 : Math.acos(clamp(n.x / nLen));
+        double raan = (nLen < EPS) ? 0.0 : Math.acos(Math.clamp(n.x / nLen, -1.0, 1.0));
         if (n.y < 0) raan = Math.TAU - raan;
 
         double argP;
@@ -79,7 +74,7 @@ public record OrbitalElements
         else if (ecc < EPS) argP = 0.0;
         else
         {
-            argP = Math.acos(clamp(n.dot(e) / (nLen * ecc)));
+            argP = Math.acos(Math.clamp(n.dot(e) / (nLen * ecc), -1.0, 1.0));
             if (e.z < 0) argP = Math.TAU - argP;
         }
 
@@ -87,12 +82,12 @@ public record OrbitalElements
         if (ecc < EPS)
         {
             Vector3d ref = (nLen < EPS) ? new Vector3d(1, 0, 0) : new Vector3d(n).normalize();
-            nu = Math.acos(clamp(ref.dot(r) / rLen));
+            nu = Math.acos(Math.clamp(ref.dot(r) / rLen, -1.0, 1.0));
             if (r.z < 0) nu = Math.TAU - nu;
         }
         else
         {
-            nu = Math.acos(clamp(e.dot(r) / (ecc * rLen)));
+            nu = Math.acos(Math.clamp(e.dot(r) / (ecc * rLen), -1.0, 1.0));
             if (r.dot(v) < 0) nu = Math.TAU - nu;
         }
 
@@ -118,12 +113,19 @@ public record OrbitalElements
         return n * n * radiusBlocks * radiusBlocks * radiusBlocks;
     }
 
+    //WARN: might be useless, not really sure of if it's practical in our system or not
     public static double semiMajorFromPeriod(double periodDays, double mu)
     {
         double n = Math.TAU / (periodDays * 24_000.0);
         return Math.cbrt(mu / (n * n));
     }
 
+    /**
+     * WARN: this is intentionally unimplemented, nothing execises it yet, fromOrbitDefinition only ever produces bound orbits, 
+     * planet JSON has no escape trajectories by construction, and the only place a real vessel could go hyperbolix is when we implement thrusting, which is not yet implemented. so this is a placeholder for now.
+     * 
+     * so ship elliptic first, then we can implement hyperbolic later, but for now this is a placeholder to make sure we don't accidentally call this on an unbound orbit.
+     */
     private void requireElliptic(String operation)
     {
         if (isEscaping()) throw new IllegalStateException(operation + " is elliptic-only; this trajectory is escaping (e = " + eccentricity + ", a = " + semiMajorAxis + "). to be implemented");
