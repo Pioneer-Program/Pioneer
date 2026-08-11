@@ -22,6 +22,7 @@ public final class RingRenderer
 
     private static final float BOUND_HEIGHT_FRAC = 0.05f;
     private static final float SHADOW_SOFT_FRAC = 0.06f;
+    private static final float EXPOSURE = 0.35f;
 
     public static void render(PoseStack ps, RingDefinition rings, float apparentSize, float camObjX, float camObjY, float camObjZ, float sunX, float sunY, float sunZ)
     {
@@ -62,6 +63,7 @@ public final class RingRenderer
             set(shader, "uShadowFloor", rings.shadowFloor());
             set(shader, "uShadowSoft", planetHalf * SHADOW_SOFT_FRAC);
             set(shader, "uForwardScatter", rings.forwardScatter());
+            set(shader, "uExposure", EXPOSURE);
         },
         renderType ->
         {

@@ -21,6 +21,7 @@ uniform float uSeed;
 uniform float uShadowFloor;
 uniform float uShadowSoft;
 uniform float uForwardScatter;
+uniform float uExposure;
 
 out vec4 fragColor;
 
@@ -111,7 +112,6 @@ void main()
 
     vec3 p = ro + rd * t;
     float r = mix(length(p.xz), max(abs(p.x), abs(p.z)), uSquareness);
-
     float rw = max(fwidth(r), 1e-5);
     float cover = smoothstep(uInnerR - rw, uInnerR + rw, r) * (1.0 - smoothstep(uOuterR - rw, uOuterR + rw, r));
     if (cover <= 0.001) discard;
@@ -138,7 +138,7 @@ void main()
 
     float translucency = exp(-tau) * fwd * uForwardScatter;
 
-    vec3 col = albedo * lit * phase + albedo * translucency;
+    vec3 col = (albedo * lit * phase + albedo * translucency) * uExposure;
     col = col / (1.0 + col * 0.35);
 
     fragColor = vec4(col, alpha);
