@@ -10,17 +10,12 @@ import static cute.ame.pioneer.SkyPlanet.Rendering.CelestialMath.poseAxialRotati
 
 public final class MoonRenderer
 {
-    public static void renderRealScale(PoseStack ps, PlanetDefinition moon, float[] parentPos, Vec3 camPos, long tick, float partialTick)
+    public static void renderRealScale(PoseStack ps, PlanetDefinition moon, double[] worldPos, Vec3 camPos, long tick, float partialTick)
     {
-        double angle = moon.orbit().computeAngle(tick, partialTick);
-        double radius = moon.orbit().computeCurrentRadius(angle);
-        float[] localPos = moon.orbit().compute3DPosition(angle, radius, 1.0f);
+        double dx = worldPos[0] - camPos.x;
+        double dy = worldPos[1] - camPos.y;
+        double dz = worldPos[2] - camPos.z;
 
-        double mx = parentPos[0] + localPos[0];
-        double my = parentPos[1] + localPos[1];
-        double mz = parentPos[2] + localPos[2];
-
-        double dx = mx - camPos.x, dy = my - camPos.y, dz = mz - camPos.z;
         double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
         if (dist < 1e-6) return;
 
@@ -31,7 +26,7 @@ public final class MoonRenderer
         ps.translate(proj.dx, proj.dy, proj.dz);
         poseAxialRotation(ps, moon.axialRotationSpeed(), tick, partialTick);
         ps.scale(proj.size, proj.size, proj.size);
-        CubeMeshRenderer.renderTextureCube(ps, moon.resolveTexture(), true);
+        CubeMeshRenderer.renderTextureCubeShaded(ps, moon.resolveTexture(), true, 0f, 0f, 1f, 1.0f, CubeMeshRenderer.NO_RINGS, CubeMeshRenderer.NO_RINGS);
         ps.popPose();
     }
 }

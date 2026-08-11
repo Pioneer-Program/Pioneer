@@ -5,6 +5,7 @@ import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.JsonOps;
 import cute.ame.pioneer.Core.API.PioneerAPI;
+import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetFile;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
@@ -15,8 +16,6 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.util.GsonHelper;
 import net.minecraft.util.profiling.ProfilerFiller;
-import org.slf4j.Logger;
-
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,7 +29,6 @@ public final class SolarSystemLoader extends SimplePreparableReloadListener<Map<
 {
     public static final SolarSystemLoader INSTANCE = new SolarSystemLoader();
 
-    private static final Logger LOGGER = LogUtils.getLogger();
     private static final String PLANET_FOLDER = "planets";
     private static final String SYSTEM_FOLDER = "solar_systems";
     private static final String EXT = ".json";
@@ -42,7 +40,7 @@ public final class SolarSystemLoader extends SimplePreparableReloadListener<Map<
         forEachJson(manager, PLANET_FOLDER, PlanetFile.CODEC, (fileId, file) ->
         {
             ResourceLocation planetId = PlanetDefinition.MISSING.equals(file.base().id()) ? fileId : file.base().id();
-            if (rawPlanets.put(planetId, file) != null) LOGGER.warn("[Pioneer] Duplicate planet '{}'", planetId);
+            if (rawPlanets.put(planetId, file) != null) Pioneer.LOGGER.warn("[Pioneer] Duplicate planet '{}'", planetId);
         });
 
         Map<ResourceLocation, PlanetDefinition> resolved = new HashMap<>(rawPlanets.size() * 2);
@@ -56,13 +54,13 @@ public final class SolarSystemLoader extends SimplePreparableReloadListener<Map<
             for (ResourceLocation ref : file.planets())
             {
                 PlanetDefinition planet = resolved.get(ref);
-                if (planet == null) LOGGER.error("[Pioneer] System '{}' references unknown planet '{}'", systemId, ref);
+                if (planet == null) Pioneer.LOGGER.error("[Pioneer] System '{}' references unknown planet '{}'", systemId, ref);
                 else planets.add(planet);
             }
             systems.put(systemId, new SolarSystemDefinition(file.sun(), List.copyOf(planets), file.spaceDimension()));
         });
 
-        LOGGER.info("[Pioneer] Prepared {} solar system(s) from {} planet file(s)", systems.size(), rawPlanets.size());
+        Pioneer.LOGGER.info("[Pioneer] Prepared {} solar system(s) from {} planet file(s)", systems.size(), rawPlanets.size());
         return systems;
     }
 
@@ -71,7 +69,7 @@ public final class SolarSystemLoader extends SimplePreparableReloadListener<Map<
     {
         PioneerAPI.clearAll();
         data.forEach(PioneerAPI::registerSolarSystem);
-        LOGGER.info("[Pioneer] Applied {} solar system(s)", data.size());
+        Pioneer.LOGGER.info("[Pioneer] Applied {} solar system(s)", data.size());
     }
 
     private static PlanetDefinition resolve(ResourceLocation id, Map<ResourceLocation, PlanetFile> raw, Map<ResourceLocation, PlanetDefinition> out, Set<ResourceLocation> visiting)
@@ -84,7 +82,7 @@ public final class SolarSystemLoader extends SimplePreparableReloadListener<Map<
 
         if (!visiting.add(id))
         {
-            LOGGER.error("[Pioneer] Cyclic moon reference involving '{}' ({})", id, visiting);
+            Pioneer.LOGGER.error("[Pioneer] Cyclic moon reference involving '{}' ({})", id, visiting);
             return null;
         }
 
@@ -97,7 +95,7 @@ public final class SolarSystemLoader extends SimplePreparableReloadListener<Map<
             for (ResourceLocation ref : refs)
             {
                 PlanetDefinition moon = resolve(ref, raw, out, visiting);
-                if (moon == null) LOGGER.error("[Pioneer] Planet '{}' references unknown moon '{}'", id, ref);
+                if (moon == null) Pioneer.LOGGER.error("[Pioneer] Planet '{}' references unknown moon '{}'", id, ref);
                 else buffer.add(moon);
             }
             moons = List.copyOf(buffer);
@@ -122,11 +120,11 @@ public final class SolarSystemLoader extends SimplePreparableReloadListener<Map<
             try (var reader = new InputStreamReader(entry.getValue().open()))
             {
                 JsonElement json = GsonHelper.parse(reader);
-                codec.parse(JsonOps.INSTANCE, json).ifSuccess(value -> sink.accept(id, value)).ifError(err -> LOGGER.error("[Pioneer] Failed to parse {}/{}: {}", folder, id, err.message()));
+                codec.parse(JsonOps.INSTANCE, json).ifSuccess(value -> sink.accept(id, value)).ifError(err -> Pioneer.LOGGER.error("[Pioneer] Failed to parse {}/{}: {}", folder, id, err.message()));
             }
             catch (Exception e)
             {
-                LOGGER.error("[Pioneer] Error reading '{}'", fileRl, e);
+                Pioneer.LOGGER.error("[Pioneer] Error reading '{}'", fileRl, e);
             }
         }
     }

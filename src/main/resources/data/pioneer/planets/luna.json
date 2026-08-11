@@ -20,8 +20,8 @@
   "axial_rotation_speed": 0.0,
   "axial_tilt": 6.7,
   "orbit": {
-    "radius": 384400,
-    "period_days": 31.0,
+    "radius": 1,
+    "period_days": 26.956,
     "start_angle": 17,
     "inclination": 0.35,
     "ascending_node": 5.5,

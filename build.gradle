@@ -126,6 +126,11 @@ dependencies {
 
     // THINGS TO CHECK IF WE FUCKED UP
     runtimeOnly "maven.modrinth:l6YH9Als:v5qtqRQi" // SPARK TPS
+
+    // TESTING UNIT
+    testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
+    testImplementation "org.joml:joml:1.10.5"
+    testImplementation "com.mojang:datafixerupper:8.0.16"
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
@@ -189,3 +194,5 @@ tasks.register('copyRunMods', Sync) {
 tasks.matching { it.name in ['runClient', 'runServer', 'runData', 'runGameTestServer'] }.configureEach {
     dependsOn 'copyRunMods'
 }
+
+test { useJUnitPlatform() }

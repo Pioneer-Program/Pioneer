@@ -1,6 +1,7 @@
 package cute.ame.pioneer.SkyPlanet.Star;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import cute.ame.pioneer.Core.Render.Debug.GPUProfiler;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.SkyPlanet.Data.SunDefinition;
 import cute.ame.pioneer.SkyPlanet.Rendering.PostProcess.BlackHolePostProcessManager;
@@ -33,7 +34,9 @@ public final class BuiltinStarTypes
 
     private static void renderJetsAndDiskIfPresent(PoseStack ps, SunDefinition sun, long tick, float partialTick, float apparentSize, MultiBufferSource.BufferSource bufferSource, double dx, double dy, double dz, Vec3 realCamPos)
     {
+        GPUProfiler.begin("celestial.jetcone");
         if (sun.jetCone() != null) JetConeRenderer.render(ps, sun.jetCone(), tick, partialTick, apparentSize, bufferSource);
+        GPUProfiler.end();
     }
 
     private static void renderBlackHole(PoseStack ps, SunDefinition sun, long tick, float partialTick, float apparentSize, MultiBufferSource.BufferSource bufferSource, double dx, double dy, double dz, Vec3 realCamPos)
