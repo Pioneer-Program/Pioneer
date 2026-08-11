@@ -18,6 +18,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
 
 public class SpaceNavigatorItemDebug extends Item
 {
@@ -27,7 +28,7 @@ public class SpaceNavigatorItemDebug extends Item
   public SpaceNavigatorItemDebug(Properties arg0) { super(arg0); }
 
   @Override
-  public InteractionResultHolder<ItemStack> use(Level leveld, Player player, InteractionHand usedHand)
+  public @NotNull InteractionResultHolder<ItemStack> use(@NotNull Level leveld, Player player, @NotNull InteractionHand usedHand)
   {
     ItemStack stack = player.getItemInHand(usedHand);
 
@@ -87,14 +88,14 @@ public class SpaceNavigatorItemDebug extends Item
   }
 
   @Override
-  public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag)
+  public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, List<Component> tooltip, @NotNull TooltipFlag flag)
   {
     tooltip.add(Component.literal("Aim at a planet and right-click to warp to its orbit."));
     tooltip.add(Component.literal("Only works in the space dimension."));
   }
 
   @Override
-  public int getUseDuration(ItemStack stack, net.minecraft.world.entity.LivingEntity entity)
+  public int getUseDuration(@NotNull ItemStack stack, net.minecraft.world.entity.@NotNull LivingEntity entity)
   {
     return 1;
   }
