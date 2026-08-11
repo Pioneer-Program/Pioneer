@@ -237,7 +237,6 @@ public final class SolarSystemRenderer
             ps.popPose();
         });
 
-        planet.rings().ifPresent(rings -> RingMeshRenderer.render(ps, rings, apparentSize, sunLX, sunLY, sunLZ));
         float ringInnerR = planet.rings().map(r -> r.innerRadius() * 0.5f).orElse(CubeMeshRenderer.NO_RINGS);
         float ringOuterR = planet.rings().map(r -> r.outerRadius() * 0.5f).orElse(CubeMeshRenderer.NO_RINGS);
 
@@ -245,6 +244,20 @@ public final class SolarSystemRenderer
         ps.scale(apparentSize, apparentSize, apparentSize);
 
         CubeMeshRenderer.renderTextureCubeShaded(ps, planet.resolveTexture(), true, sunLX, sunLY, sunLZ, alpha, ringInnerR, ringOuterR);
+
+        planet.rings().ifPresent(rings ->
+        {
+            ps.pushPose();
+            ps.scale(1.0f / apparentSize, 1.0f / apparentSize, 1.0f / apparentSize);
+
+            float camDistObj = (float) Math.sqrt(proj.dx * proj.dx + proj.dy * proj.dy + proj.dz * proj.dz);
+
+            GPUProfiler.begin("planet.rings");
+            RingRenderer.render(ps, rings, apparentSize, -camLX * camDistObj, -camLY * camDistObj, -camLZ * camDistObj, sunLX, sunLY, sunLZ);
+            GPUProfiler.end();
+
+            ps.popPose();
+        });
 
         planet.clouds().ifPresent(clouds ->
         {
