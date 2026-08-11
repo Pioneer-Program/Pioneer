@@ -44,7 +44,7 @@ public final class PlanetShaderRenderer
         final ResourceLocation[] faceTex =
         {
             cubemap.right(), cubemap.left(),
-            cubemap.top(),   cubemap.bottom(),
+            cubemap.top(), cubemap.bottom(),
             cubemap.front(), cubemap.back(),
         };
 

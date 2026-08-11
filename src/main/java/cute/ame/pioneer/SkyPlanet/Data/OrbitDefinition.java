@@ -3,31 +3,34 @@ package cute.ame.pioneer.SkyPlanet.Data;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-public record OrbitDefinition(
+public record OrbitDefinition
+        (
     double radius,
     double periodDays,
     double startAngle,
     double inclination,
     double eccentricity,
-    double ascendingNode
+    double ascendingNode,
+    double argPeriapsis
 )
 {
     public static final Codec<OrbitDefinition> CODEC = RecordCodecBuilder.create(instance ->
         instance.group(
             Codec.DOUBLE.fieldOf("radius").forGetter(OrbitDefinition::radius),
             Codec.DOUBLE.fieldOf("period_days").forGetter(OrbitDefinition::periodDays),
-            Codec.DOUBLE.optionalFieldOf("start_angle",    0.0).forGetter(OrbitDefinition::startAngle),
-            Codec.DOUBLE.optionalFieldOf("inclination",    0.0).forGetter(OrbitDefinition::inclination),
-            Codec.DOUBLE.optionalFieldOf("eccentricity",   0.0).forGetter(OrbitDefinition::eccentricity),
-            Codec.DOUBLE.optionalFieldOf("ascending_node", 0.0).forGetter(OrbitDefinition::ascendingNode)
+            Codec.DOUBLE.optionalFieldOf("start_angle", 0.0).forGetter(OrbitDefinition::startAngle),
+            Codec.DOUBLE.optionalFieldOf("inclination", 0.0).forGetter(OrbitDefinition::inclination),
+            Codec.DOUBLE.optionalFieldOf("eccentricity", 0.0).forGetter(OrbitDefinition::eccentricity),
+            Codec.DOUBLE.optionalFieldOf("ascending_node", 0.0).forGetter(OrbitDefinition::ascendingNode),
+            Codec.DOUBLE.optionalFieldOf("arg_periapsis", 0.0).forGetter(OrbitDefinition::argPeriapsis)
         ).apply(instance, OrbitDefinition::new)
     );
 
+    @Deprecated
     private double trueAnomaly(long absoluteTick, float partialTick)
     {
         double ticksPerOrbit = periodDays * 24_000.0;
         double M = ((absoluteTick + partialTick) % ticksPerOrbit) / ticksPerOrbit * 2.0 * Math.PI + startAngle;
-
         if (eccentricity < 1e-6) return M;
 
         double E = M;
@@ -37,17 +40,20 @@ public record OrbitDefinition(
         return Math.atan2(sinV, cosV);
     }
 
+    @Deprecated(forRemoval = true)
     public double computeAngle(long absoluteTick, float partialTick)
     {
         return trueAnomaly(absoluteTick, partialTick);
     }
 
+    @Deprecated(forRemoval = true)
     public double computeCurrentRadius(double trueAnomaly)
     {
         if (eccentricity < 1e-6) return radius;
         return radius * (1.0 - eccentricity * eccentricity) / (1.0 + eccentricity * Math.cos(trueAnomaly - startAngle));
     }
 
+    @Deprecated(forRemoval = true)
     public float[] compute3DPosition(double trueAnomaly, double r, float skyScale)
     {
         double ox = r * Math.cos(trueAnomaly);

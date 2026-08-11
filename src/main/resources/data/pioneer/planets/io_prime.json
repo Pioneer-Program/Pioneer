@@ -21,7 +21,7 @@
   "axial_tilt": 0.5,
   "orbit": {
     "radius": 421700,
-    "period_days": 1.77,
+    "period_days": 1.785,
     "start_angle": 28,
     "inclination": 0.05,
     "ascending_node": 1.1,
