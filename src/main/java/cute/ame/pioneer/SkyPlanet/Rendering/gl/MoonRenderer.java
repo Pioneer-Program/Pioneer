@@ -1,8 +1,6 @@
 package cute.ame.pioneer.SkyPlanet.Rendering.gl;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import cute.ame.pioneer.Core.Render.Helper.CubemapTextures;
-import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Rendering.ShellProjector;
 import cute.ame.pioneer.SkyPlanet.Rendering.ShellProjector.Projected;
@@ -23,9 +21,6 @@ public final class MoonRenderer
 
         float realSize = Math.max(moon.size(), ShellProjector.MIN_APPARENT * 0.3f);
         Projected proj = ShellProjector.projectToSafeShell(dx, dy, dz, dist, realSize);
-
-        CubemapTextures tex = moon.resolveTexture();
-        if (tick % 100 == 0) Pioneer.LOGGER.info("[Pioneer] moon {} tex={} procedural={}", moon.id(), tex, moon.procedural().isPresent());
 
         ps.pushPose();
         ps.translate(proj.dx, proj.dy, proj.dz);

@@ -54,11 +54,9 @@ public class SpaceNavigatorItemDebug extends Item
 
     for (PlanetDefinition planet : system.planets())
     {
-      double angle = planet.orbit().computeAngle(tick, 0f);
-      double radius = planet.orbit().computeCurrentRadius(angle);
-      float[] pos = planet.orbit().compute3DPosition(angle, radius, 1.0f);
-      float len = (float) Math.sqrt(pos[0] * pos[0] + pos[1] * pos[1] + pos[2] * pos[2]);
-      if (len < 1e-6f) continue;
+      double[] pos = planet.currentWorldPosition(tick);
+      double len = Math.sqrt(pos[0] * pos[0] + pos[1] * pos[1] + pos[2] * pos[2]);
+      if (len < 1e-6) continue;
 
       double dot = look.dot(new Vec3(pos[0] / len, pos[1] / len, pos[2] / len));
       if (dot > bestDot)
@@ -74,12 +72,15 @@ public class SpaceNavigatorItemDebug extends Item
       return InteractionResultHolder.success(stack);
     }
 
-    double angle = target.orbit().computeAngle(tick, 0f);
-    double radius = target.orbit().computeCurrentRadius(angle);
-    float[] targetPos = target.orbit().compute3DPosition(angle, radius, 1.0f);
+    double[] targetPos = target.currentWorldPosition(tick);
+
+    double approach = target.approachRadius() * 1.5f;
+    double px = targetPos[0] - look.x * approach;
+    double py = targetPos[1] - look.y * approach;
+    double pz = targetPos[2] - look.z * approach;
 
     player.sendSystemMessage(Component.literal("Warping toward " + target.id().getPath()));
-    sp.teleportTo((ServerLevel) level, targetPos[0], targetPos[1], targetPos[2], Set.of(), sp.getYRot(), sp.getXRot());
+    sp.teleportTo(level, px, py, pz, Set.of(), sp.getYRot(), sp.getXRot());
     sp.getCooldowns().addCooldown(this, WARP_COOLDOWN);
 
     return InteractionResultHolder.success(stack);
