@@ -15,6 +15,10 @@ uniform float uHalf;
 uniform float uAlpha;
 uniform float uNightFloor;
 uniform float uTerminator;
+uniform float uCurvature;
+uniform float uScatterWidth;
+uniform float uScatterStrength;
+uniform vec3  uScatterColor;
 
 uniform float uRingInner;
 uniform float uRingOuter;
@@ -159,11 +163,15 @@ void main()
         }
     }
 
-    float ndots = dot(nrm, uSunDir);
+    vec3 sn = normalize(mix(nrm, normalize(surf), uCurvature));
+    float ndots = dot(sn, uSunDir);
     float lit = smoothstep(-uTerminator, uTerminator, ndots);
     lit *= ringTransmittance(surf);
 
     float shade = uNightFloor + (1.0 - uNightFloor) * lit;
 
-    fragColor = vec4(tex.rgb * shade, tex.a * uAlpha);
+    float band = exp(-pow(ndots / max(uScatterWidth, 1e-3), 2.0));
+    vec3 scatter = uScatterColor * (band * uScatterStrength);
+
+    fragColor = vec4(tex.rgb * (shade + scatter), tex.a * uAlpha);
 }

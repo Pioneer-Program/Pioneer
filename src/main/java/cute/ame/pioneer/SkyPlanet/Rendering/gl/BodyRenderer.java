@@ -1,5 +1,4 @@
 package cute.ame.pioneer.SkyPlanet.Rendering.gl;
-
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -11,30 +10,29 @@ import cute.ame.pioneer.Core.Render.Helper.SamplerBinder;
 import cute.ame.pioneer.SkyPlanet.Data.RingDefinition;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
-
 import javax.annotation.Nullable;
-
 import static cute.ame.pioneer.Core.Render.Helper.UniformHelper.set;
-
 public final class BodyRenderer
 {
     private static final ResourceLocation BODY = ResourceLocation.fromNamespaceAndPath("pioneer", "body");
-
-    static { VeilSkyShaderHelper.registerVfxShader(BODY); }
-
-    private BodyRenderer() {}
-
+    static
+    {
+        VeilSkyShaderHelper.registerVfxShader(BODY);
+    }
+    
     private static final float NIGHT_FLOOR = 0.03f;
     private static final float TERMINATOR  = 0.35f;
     private static final float HALF = 0.5f;
+    private static final float CURVATURE = 0.45f;
+    private static final float SCATTER_WIDTH = 0.35f;
+    private static final float SCATTER_STRENGTH = 0.35f;
+    private static final float SCATTER_R = 1.00f, SCATTER_G = 0.62f, SCATTER_B = 0.36f;
 
     public static void render(PoseStack ps, CubemapTextures cubemap, float alpha, float camObjX, float camObjY, float camObjZ, float sunX, float sunY, float sunZ, @Nullable RingDefinition rings)
     {
         final Matrix4f model = new Matrix4f(ps.last().pose());
-
         RenderSystem.enableBlend();
         RenderSystem.depthMask(false);
-
         VeilSkyShaderHelper.draw(
         BODY,
         shader ->
@@ -46,7 +44,10 @@ public final class BodyRenderer
             set(shader, "uAlpha", alpha);
             set(shader, "uNightFloor", NIGHT_FLOOR);
             set(shader, "uTerminator", TERMINATOR);
-
+            set(shader, "uCurvature", CURVATURE);
+            set(shader, "uScatterWidth", SCATTER_WIDTH);
+            set(shader, "uScatterStrength", SCATTER_STRENGTH);
+            set(shader, "uScatterColor", SCATTER_R, SCATTER_G, SCATTER_B);
             if (rings != null)
             {
                 set(shader, "uRingInner", rings.innerRadius() * HALF);
@@ -62,7 +63,6 @@ public final class BodyRenderer
             {
                 set(shader, "uRingOuter", -1.0f);
             }
-
             SamplerBinder.bindNearest(shader, "uFaceFront", cubemap.front(), 0);
             SamplerBinder.bindNearest(shader, "uFaceBack", cubemap.back(), 1);
             SamplerBinder.bindNearest(shader, "uFaceLeft", cubemap.left(), 2);
