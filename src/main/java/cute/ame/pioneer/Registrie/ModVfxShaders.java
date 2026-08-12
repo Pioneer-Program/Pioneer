@@ -11,6 +11,7 @@ public class ModVfxShaders
         VeilSkyShaderHelper.registerVfxShader(ResourceLocation.fromNamespaceAndPath("pioneer", "atmosphere"));
         VeilSkyShaderHelper.registerVfxShader(ResourceLocation.fromNamespaceAndPath("pioneer", "rings"));
         VeilSkyShaderHelper.registerVfxShader(ResourceLocation.fromNamespaceAndPath("pioneer", "body"));
+        VeilSkyShaderHelper.registerVfxShader(ResourceLocation.fromNamespaceAndPath("pioneer", "star"));
         VeilSkyShaderHelper.registerVfxShader(ResourceLocation.fromNamespaceAndPath("pioneer", "accretion_disk"));
     }
 }

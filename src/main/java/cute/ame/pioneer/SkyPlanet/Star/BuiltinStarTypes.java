@@ -34,7 +34,7 @@ public final class BuiltinStarTypes
 
     private static void renderJetsAndDiskIfPresent(PoseStack ps, SunDefinition sun, long tick, float partialTick, float apparentSize, MultiBufferSource.BufferSource bufferSource, double dx, double dy, double dz, Vec3 realCamPos)
     {
-        GPUProfiler.begin("celestial.jetcone");
+        GPUProfiler.begin("celestial.star.jetcone");
         if (sun.jetCone() != null) JetConeRenderer.render(ps, sun.jetCone(), tick, partialTick, apparentSize, bufferSource);
         GPUProfiler.end();
     }

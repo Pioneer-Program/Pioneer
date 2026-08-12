@@ -67,9 +67,7 @@ public final class SolarSystemRenderer
         Vec3 effectiveCamPos = computeEffectiveCamPos(binding, system, camera, level, partialTick);
         boolean isPlanetLocked = binding.type() == PioneerAPI.BindingType.SURFACE;
 
-        ResourceLocation selfPlanetId = null;
-        float selfPlanetAlpha = 1.0f;
-
+        ResourceLocation selfPlanetId = binding.planetId();
         ResourceLocation excludedPlanetId = null;
         float selfClimbOffset = 0.0f;
         float selfAscensionProgress = 0.0f;
@@ -85,23 +83,12 @@ public final class SolarSystemRenderer
             int tiltStartY = Config.SELF_TILT_START_Y.get();
             int tiltEndY = endY - Config.SELF_TILT_END_OFFSET.get();
             selfTiltProgress = (tiltEndY > tiltStartY) ? Mth.clamp((altitude - tiltStartY) / (tiltEndY - tiltStartY), 0.0f, 1.0f) : 1.0f;
-
-            float alpha = Mth.clamp(selfAscensionProgress * 2.0f, 0.0f, 1.0f);
-            if (alpha > 0.0f)
-            {
-                selfPlanetId   = binding.planetId();
-                selfPlanetAlpha = alpha;
-            }
-            else
-            {
-                excludedPlanetId = binding.planetId();
-            }
         }
 
         long tick = level.getGameTime();
         ps.pushPose();
 
-        CelestialFrameContext ctx = new CelestialFrameContext(effectiveCamPos, selfPlanetId, selfPlanetAlpha, excludedPlanetId, selfClimbOffset, selfAscensionProgress, tick, !isPlanetLocked, binding.type() == PioneerAPI.BindingType.SURFACE, selfTiltProgress);
+        CelestialFrameContext ctx = new CelestialFrameContext(effectiveCamPos, selfPlanetId, 1.0f, excludedPlanetId, selfClimbOffset, selfAscensionProgress, tick, !isPlanetLocked, binding.type() == PioneerAPI.BindingType.SURFACE, selfTiltProgress);
         renderSystemUnified(ps, system, ctx, partialTick, camera.getPosition(), projMat);
         ps.popPose();
     }
@@ -130,16 +117,16 @@ public final class SolarSystemRenderer
         GalaxyRenderer.render(ps, projMat, tick, partialTick);
         GPUProfiler.end();
 
+        List<RenderJob> jobs = new ArrayList<>();
+
         {
-            double sdx = -effectiveCamPos.x, sdy = -effectiveCamPos.y, sdz = -effectiveCamPos.z;
-            double sdist = Math.sqrt(sdx * sdx + sdy * sdy + sdz * sdz);
+            final double sdx = -effectiveCamPos.x, sdy = -effectiveCamPos.y, sdz = -effectiveCamPos.z;
+            final double sdist = Math.sqrt(sdx * sdx + sdy * sdy + sdz * sdz);
             if (sdist > 1e-6)
             {
-                SunRenderer.renderRealScale(ps, system.sun(), tick, partialTick, sdx, sdy, sdz, sdist, realCamPos);
+                jobs.add(new RenderJob(sdist, () -> SunRenderer.renderRealScale(ps, system.sun(), tick, partialTick, sdx, sdy, sdz, sdist, realCamPos)));
             }
         }
-
-        List<RenderJob> jobs = new ArrayList<>();
 
         for (PlanetDefinition planet : system.planets())
         {
@@ -241,7 +228,7 @@ public final class SolarSystemRenderer
         ps.scale(apparentSize, apparentSize, apparentSize);
         float bodyCamDist = (float) Math.sqrt(proj.dx * proj.dx + proj.dy * proj.dy + proj.dz * proj.dz) / apparentSize;
 
-        GPUProfiler.begin("planet.body");
+        GPUProfiler.begin("celestial.planet.core");
         BodyRenderer.render(ps, planet.resolveTexture(), alpha, -camLX * bodyCamDist, -camLY * bodyCamDist, -camLZ * bodyCamDist, sunLX, sunLY, sunLZ, planet.rings().orElse(null));
         GPUProfiler.end();
 
@@ -252,7 +239,7 @@ public final class SolarSystemRenderer
 
             float camDistObj = (float) Math.sqrt(proj.dx * proj.dx + proj.dy * proj.dy + proj.dz * proj.dz);
 
-            GPUProfiler.begin("planet.rings");
+            GPUProfiler.begin("celestial.planet.rings");
             RingRenderer.render(ps, rings, apparentSize, -camLX * camDistObj, -camLY * camDistObj, -camLZ * camDistObj, sunLX, sunLY, sunLZ);
             GPUProfiler.end();
 
