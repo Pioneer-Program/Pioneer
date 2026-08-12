@@ -26,7 +26,11 @@ public final class MoonRenderer
         ps.translate(proj.dx, proj.dy, proj.dz);
         poseAxialRotation(ps, moon.axialRotationSpeed(), tick, partialTick);
         ps.scale(proj.size, proj.size, proj.size);
-        CubeMeshRenderer.renderTextureCubeShaded(ps, moon.resolveTexture(), true, 0f, 0f, 1f, 1.0f, CubeMeshRenderer.NO_RINGS, CubeMeshRenderer.NO_RINGS);
+
+        float camDistObj = (float) Math.sqrt(proj.dx * proj.dx + proj.dy * proj.dy + proj.dz * proj.dz) / proj.size;
+        float cx = (float) (dx / dist), cy = (float) (dy / dist), cz = (float) (dz / dist);
+
+        BodyRenderer.render(ps, moon.resolveTexture(), 1.0f, -cx * camDistObj, -cy * camDistObj, -cz * camDistObj, 0f, 0f, 1f, null);
         ps.popPose();
     }
 }
