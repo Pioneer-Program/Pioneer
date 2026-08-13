@@ -15,4 +15,13 @@ import java.util.function.Supplier;
 public class ModAttachmentTypes {
 
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES = DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, Pioneer.MODID);
+
+    public static final Supplier<AttachmentType<HashSet<BlockPos>>>  ASSEMBLED_BLOCKS = ATTACHMENT_TYPES.register("assembled_block", () ->
+            AttachmentType.builder(() -> new HashSet<BlockPos>())
+                    .serialize(BlockPos.CODEC.listOf().xmap(
+                            HashSet::new,
+                            ArrayList::new
+                    )).build()
+    );
+
 }

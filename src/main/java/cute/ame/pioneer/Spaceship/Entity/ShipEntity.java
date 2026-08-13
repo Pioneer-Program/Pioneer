@@ -1,5 +1,7 @@
 package cute.ame.pioneer.Spaceship.Entity;
 
+import cute.ame.pioneer.Pioneer;
+import cute.ame.pioneer.Registrie.ModAttachmentTypes;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
@@ -29,6 +31,8 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 public class ShipEntity extends BlockEntity {
@@ -48,6 +52,14 @@ public class ShipEntity extends BlockEntity {
         super(ModBlockEntities.SHIP_CONTROLLER_ENTITY.get(), pos, blockState);
         subLevelUUID = NULL_UUID;
         container = null;
+    }
+
+    public HashSet<BlockPos> getAssembledBlocks() {
+        return this.getData(ModAttachmentTypes.ASSEMBLED_BLOCKS.get());
+    }
+
+    public void setAssembledBlocks(HashSet<BlockPos> blocks) {
+        this.setData(ModAttachmentTypes.ASSEMBLED_BLOCKS.get(), blocks);
     }
 
     public void assemble(BlockPos anchor, Iterable<BlockPos> blocks, BoundingBox3ic bounds) {
@@ -105,6 +117,30 @@ public class ShipEntity extends BlockEntity {
             pipeline.teleport(subLevel, subLevel.logicalPose().position(), subLevel.logicalPose().orientation());
         subLevel.updateLastPose();
         SubLevelAssemblyHelper.moveTrackingPoints(level, bounds, subLevel, transform);
+        BoundingBox3ic newBounds = subLevel.getPlot().getBoundingBox();
+        HashSet<BlockPos> assembledBlocks = new HashSet<>();
+        ShipEntity newEntity = null;
+        for (int x = newBounds.minX(); x <= newBounds.maxX(); x++) {
+            for (int y = newBounds.minY(); y <= newBounds.maxY(); y++) {
+                for (int z = newBounds.minZ(); z <= newBounds.maxZ(); z++) {
+                    BlockPos pos = new BlockPos(x, y, z);
+                    BlockEntity blockEntity = level.getBlockEntity(pos);
+                    if (!level.getBlockState(pos).isAir())
+                        assembledBlocks.add(pos);
+                    if (blockEntity instanceof ShipEntity) {
+                        if (newEntity != null)
+                            Pioneer.LOGGER.warn("Multiple ship controller detected");
+                        else
+                            newEntity = (ShipEntity) blockEntity;
+                    }
+
+                }
+            }
+        }
+        if (newEntity == null)
+            Pioneer.LOGGER.error("Ship controller not found!");
+        else
+            newEntity.setAssembledBlocks(assembledBlocks);
     }
 
     public boolean isAssemble() {
@@ -118,32 +154,30 @@ public class ShipEntity extends BlockEntity {
         if (subLevel == null)
             return;
         ServerLevelPlot plot = subLevel.getPlot();
-        BoundingBox3i bounds = (BoundingBox3i) plot.getBoundingBox();
         Pose3dc pose = subLevel.logicalPose();
-        for (int x = bounds.minX(); x <= bounds.maxX(); x++) {
-            for (int y = bounds.minY(); y <= bounds.maxY(); y++) {
-                for (int z = bounds.minZ(); z <= bounds.maxZ(); z++) {
-                    BlockPos localPose = new BlockPos(x, y, z);
-                    BlockState state = level.getBlockState(localPose);
-                    BlockEntity blockEntity = level.getBlockEntity(localPose);
-                    Vec3 worldPos = pose.transformPosition(new Vec3(x + 0.5, y + 0.5, z + 0.5));
-                    BlockPos targetPos = BlockPos.containing(worldPos);
-                    CompoundTag tag = null;
-                    if (blockEntity != null) {
-                        tag = blockEntity.saveWithFullMetadata(level.registryAccess());
-                        tag.putInt("x", targetPos.getX());
-                        tag.putInt("y", targetPos.getY());
-                        tag.putInt("z", targetPos.getZ());
-                    }
-                    level.destroyBlock(localPose, false);
-                    level.setBlock(targetPos, state, Block.UPDATE_CLIENTS);
-                    BlockEntity newBlockEntity = level.getBlockEntity(targetPos);
-                    if (newBlockEntity != null && tag != null)
-                        newBlockEntity.loadWithComponents(tag, level.registryAccess());
-                }
+        HashSet<BlockPos> assembledBlocks = getAssembledBlocks();
+        System.out.println("size => " + assembledBlocks.size());
+        this.setAssembledBlocks(new HashSet<>());
+        assembledBlocks.forEach(localPos -> {
+            System.out.println("POS => " + localPos);
+            BlockState state = level.getBlockState(localPos);
+            BlockEntity blockEntity = level.getBlockEntity(localPos);
+            Vec3 worldPos = pose.transformPosition(new Vec3(
+                    localPos.getX() + 0.5, localPos.getY() + 0.5, localPos.getZ() + 0.5
+            ));
+            BlockPos targetPos = BlockPos.containing(worldPos);
+            CompoundTag tag = null;
+            if (blockEntity != null) {
+                tag = blockEntity.saveWithFullMetadata(level.registryAccess());
+                tag.putInt("x", targetPos.getX());
+                tag.putInt("y", targetPos.getY());
+                tag.putInt("z", targetPos.getZ());
             }
-        }
-        plot.setBoundingBox(BoundingBox3i.EMPTY);
+            level.setBlock(targetPos, state, Block.UPDATE_CLIENTS);
+            BlockEntity newBlockEntity = level.getBlockEntity(targetPos);
+            if (newBlockEntity != null && tag != null)
+                newBlockEntity.loadWithComponents(tag, level.registryAccess());
+        });
         container.removeSubLevel(subLevel, SubLevelRemovalReason.REMOVED);
     }
 
