@@ -9,14 +9,12 @@ import dev.ryanhcode.sable.api.physics.PhysicsPipeline;
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
-import dev.ryanhcode.sable.companion.math.BoundingBox3i;
 import dev.ryanhcode.sable.companion.math.BoundingBox3ic;
 import dev.ryanhcode.sable.companion.math.Pose3d;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
-import dev.ryanhcode.sable.sublevel.plot.ServerLevelPlot;
 import dev.ryanhcode.sable.sublevel.storage.SubLevelRemovalReason;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import net.minecraft.core.BlockPos;
@@ -28,11 +26,11 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
 import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
 public class ShipEntity extends BlockEntity {
@@ -60,6 +58,16 @@ public class ShipEntity extends BlockEntity {
 
     public void setAssembledBlocks(HashSet<BlockPos> blocks) {
         this.setData(ModAttachmentTypes.ASSEMBLED_BLOCKS.get(), blocks);
+    }
+
+    // Set ship controller pos in sublevel
+    public void setShipControllerPos(BlockPos pos) {
+        this.setData(ModAttachmentTypes.SHIP_CONTROLLER_POS.get(), pos);
+    }
+
+    // Get ship controller in sublevel
+    public BlockPos getShipControllerPos() {
+        return this.getData(ModAttachmentTypes.SHIP_CONTROLLER_POS.get());
     }
 
     public void assemble(BlockPos anchor, Iterable<BlockPos> blocks, BoundingBox3ic bounds) {
@@ -130,8 +138,10 @@ public class ShipEntity extends BlockEntity {
                     if (blockEntity instanceof ShipEntity) {
                         if (newEntity != null)
                             Pioneer.LOGGER.warn("Multiple ship controller detected");
-                        else
+                        else {
                             newEntity = (ShipEntity) blockEntity;
+                            newEntity.setShipControllerPos(pos);
+                        }
                     }
 
                 }
@@ -153,19 +163,21 @@ public class ShipEntity extends BlockEntity {
         this.setChanged();
         if (subLevel == null)
             return;
-        ServerLevelPlot plot = subLevel.getPlot();
         Pose3dc pose = subLevel.logicalPose();
         HashSet<BlockPos> assembledBlocks = getAssembledBlocks();
-        System.out.println("size => " + assembledBlocks.size());
+        BlockPos controllerPos = getShipControllerPos();
+        Vec3 anchorPos = pose.transformPosition(
+                new Vec3(controllerPos.getX() + 0.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5)
+        );
+        Vec3 controllerCoord = new Vec3(controllerPos.getX(), controllerPos.getY(), controllerPos.getZ());
         this.setAssembledBlocks(new HashSet<>());
+        this.setShipControllerPos(BlockPos.ZERO);
         assembledBlocks.forEach(localPos -> {
-            System.out.println("POS => " + localPos);
             BlockState state = level.getBlockState(localPos);
             BlockEntity blockEntity = level.getBlockEntity(localPos);
-            Vec3 worldPos = pose.transformPosition(new Vec3(
-                    localPos.getX() + 0.5, localPos.getY() + 0.5, localPos.getZ() + 0.5
-            ));
-            BlockPos targetPos = BlockPos.containing(worldPos);
+            Vec3 localCoord = new Vec3(localPos.getX(), localPos.getY(), localPos.getZ());
+            Vec3 targetCoord = anchorPos.add(localCoord.subtract(controllerCoord));
+            BlockPos targetPos = BlockPos.containing(targetCoord);
             CompoundTag tag = null;
             if (blockEntity != null) {
                 tag = blockEntity.saveWithFullMetadata(level.registryAccess());
@@ -188,13 +200,13 @@ public class ShipEntity extends BlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+    protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putUUID("subLevelUUID", this.subLevelUUID);
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+    protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.loadAdditional(tag, registries);
         this.subLevelUUID = tag.getUUID("subLevelUUID");
     }
