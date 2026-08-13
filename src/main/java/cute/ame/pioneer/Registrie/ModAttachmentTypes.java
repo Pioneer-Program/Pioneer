@@ -15,14 +15,4 @@ import java.util.function.Supplier;
 public class ModAttachmentTypes {
 
     public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES = DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, Pioneer.MODID);
-
-    public static final Supplier<AttachmentType<ObjectOpenHashSet<BlockPos>>> ATTACHED_BLOCk = ATTACHMENT_TYPES.register(
-            "attached_block", () -> AttachmentType.builder(() -> new ObjectOpenHashSet<BlockPos>())
-                    .serialize(BlockPos.CODEC.listOf().xmap(
-                            ObjectOpenHashSet::new,
-                            ArrayList::new
-                    )).build()
-    );
-
-
 }

@@ -1,6 +1,5 @@
 package cute.ame.pioneer.Spaceship.Entity;
 
-import cute.ame.pioneer.Registrie.ModAttachmentTypes;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
@@ -8,18 +7,21 @@ import dev.ryanhcode.sable.api.physics.PhysicsPipeline;
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
+import dev.ryanhcode.sable.companion.math.BoundingBox3i;
 import dev.ryanhcode.sable.companion.math.BoundingBox3ic;
 import dev.ryanhcode.sable.companion.math.Pose3d;
+import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
+import dev.ryanhcode.sable.sublevel.plot.ServerLevelPlot;
 import dev.ryanhcode.sable.sublevel.storage.SubLevelRemovalReason;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -27,11 +29,9 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 
-public class ShipControllerEntity extends BlockEntity {
+public class ShipEntity extends BlockEntity {
 
     private static final UUID NULL_UUID = new UUID(0, 0);
 
@@ -44,18 +44,10 @@ public class ShipControllerEntity extends BlockEntity {
         container = SubLevelContainer.getContainer(level);
     }
 
-    public ShipControllerEntity(BlockPos pos, BlockState blockState) {
+    public ShipEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.SHIP_CONTROLLER_ENTITY.get(), pos, blockState);
         subLevelUUID = NULL_UUID;
         container = null;
-    }
-
-    public Set<BlockPos> getAssemblyBlocks() {
-        return this.getData(ModAttachmentTypes.ATTACHED_BLOCk.get());
-    }
-
-    public void setAssemblyBlocks(Set<BlockPos> assembledBlocks) {
-        this.setData(ModAttachmentTypes.ATTACHED_BLOCk.get(), (ObjectOpenHashSet) assembledBlocks);
     }
 
     public void assemble(BlockPos anchor, Iterable<BlockPos> blocks, BoundingBox3ic bounds) {
@@ -69,18 +61,16 @@ public class ShipControllerEntity extends BlockEntity {
         final Vector3d containingLinearVelocity = new Vector3d();
         final Pose3d containingPose;
         if (containingSubLevel != null) {
-            if (containingSubLevel.isRemoved()) {
+            if (containingSubLevel.isRemoved())
                 throw new RuntimeException("Sub-level assembly attempted inside plot of already removed sub-level");
-            }
             containingPose = new Pose3d(containingSubLevel.logicalPose());
             containingPose.transformPosition(pose.position());
             pose.orientation().set(containingPose.orientation());
             final RigidBodyHandle containingHandle = physicsSystem.getPhysicsHandle((ServerSubLevel) containingSubLevel);
             containingHandle.getLinearVelocity(containingLinearVelocity);
             containingHandle.getAngularVelocity(containingAngularVelocity);
-        } else {
+        } else
             containingPose = null;
-        }
         final ServerSubLevel subLevel = (ServerSubLevel) container.allocateNewSubLevel(pose);
         this.subLevelUUID = subLevel.getUniqueId();
         this.setChanged();
@@ -106,37 +96,61 @@ public class ShipControllerEntity extends BlockEntity {
             final Pose3d originalPose = new Pose3d(subLevel.logicalPose());
             containingPose.transformPosition(subLevel.logicalPose().position());
             final Vector3d localPos = subLevel.logicalPose().position().sub(containingPose.position(), new Vector3d());
-            if (!subLevel.isRemoved()) {
+            if (!subLevel.isRemoved())
                 pipeline.addLinearAndAngularVelocity(subLevel, containingAngularVelocity.cross(localPos, localPos).add(containingLinearVelocity), containingAngularVelocity);
-            }
-            if (containingSubLevel != null) {
+            if (containingSubLevel != null)
                 subLevel.setSplitFrom((ServerSubLevel) containingSubLevel, originalPose);
-            }
         }
-
-        if (!subLevel.isRemoved()) {
+        if (!subLevel.isRemoved())
             pipeline.teleport(subLevel, subLevel.logicalPose().position(), subLevel.logicalPose().orientation());
-        }
         subLevel.updateLastPose();
         SubLevelAssemblyHelper.moveTrackingPoints(level, bounds, subLevel, transform);
     }
 
     public boolean isAssemble() {
-        return subLevelUUID != NULL_UUID;
+        return !subLevelUUID.equals(NULL_UUID);
     }
 
     public void disassemble() {
         ServerSubLevel subLevel = (ServerSubLevel) getSubLevel();
         this.subLevelUUID = NULL_UUID;
+        this.setChanged();
         if (subLevel == null)
             return;
+        ServerLevelPlot plot = subLevel.getPlot();
+        BoundingBox3i bounds = (BoundingBox3i) plot.getBoundingBox();
+        Pose3dc pose = subLevel.logicalPose();
+        for (int x = bounds.minX(); x <= bounds.maxX(); x++) {
+            for (int y = bounds.minY(); y <= bounds.maxY(); y++) {
+                for (int z = bounds.minZ(); z <= bounds.maxZ(); z++) {
+                    BlockPos localPose = new BlockPos(x, y, z);
+                    BlockState state = level.getBlockState(localPose);
+                    BlockEntity blockEntity = level.getBlockEntity(localPose);
+                    Vec3 worldPos = pose.transformPosition(new Vec3(x + 0.5, y + 0.5, z + 0.5));
+                    BlockPos targetPos = BlockPos.containing(worldPos);
+                    CompoundTag tag = null;
+                    if (blockEntity != null) {
+                        tag = blockEntity.saveWithFullMetadata(level.registryAccess());
+                        tag.putInt("x", targetPos.getX());
+                        tag.putInt("y", targetPos.getY());
+                        tag.putInt("z", targetPos.getZ());
+                    }
+                    level.destroyBlock(localPose, false);
+                    level.setBlock(targetPos, state, Block.UPDATE_CLIENTS);
+                    BlockEntity newBlockEntity = level.getBlockEntity(targetPos);
+                    if (newBlockEntity != null && tag != null)
+                        newBlockEntity.loadWithComponents(tag, level.registryAccess());
+                }
+            }
+        }
+        plot.setBoundingBox(BoundingBox3i.EMPTY);
         container.removeSubLevel(subLevel, SubLevelRemovalReason.REMOVED);
     }
 
     public SubLevel getSubLevel() {
         if (subLevelUUID.equals(NULL_UUID))
             return null;
-        return this.container.getAllSubLevels().stream().filter((subLevel) -> subLevel.getUniqueId().equals(this.subLevelUUID)).findFirst().orElse(null);
+        return container.getSubLevel(subLevelUUID);
     }
 
     @Override
