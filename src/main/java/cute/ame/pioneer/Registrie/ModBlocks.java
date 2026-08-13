@@ -3,6 +3,7 @@ package cute.ame.pioneer.Registrie;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Planet.Arid.Block.*;
 import cute.ame.pioneer.Spaceship.Block.ShipController;
+import cute.ame.pioneer.Spaceship.Block.ThrusterBlock;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -73,5 +74,10 @@ public final class ModBlocks
     public static final DeferredBlock<ShipController> SHIP_CONTROLLER = BLOCKS.register(
             "ship_controller",
             ShipController::new
+    );
+
+    public static final DeferredBlock<ThrusterBlock> THRUSTER = BLOCKS.register(
+            "thruster",
+            ThrusterBlock::new
     );
 }

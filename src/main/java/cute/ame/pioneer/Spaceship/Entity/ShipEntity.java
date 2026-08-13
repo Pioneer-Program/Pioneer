@@ -3,9 +3,13 @@ package cute.ame.pioneer.Spaceship.Entity;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Registrie.ModAttachmentTypes;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
+import cute.ame.pioneer.Spaceship.Block.ThrusterBlock;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
+import dev.ryanhcode.sable.api.block.BlockEntitySubLevelActor;
 import dev.ryanhcode.sable.api.physics.PhysicsPipeline;
+import dev.ryanhcode.sable.api.physics.force.ForceGroups;
+import dev.ryanhcode.sable.api.physics.force.QueuedForceGroup;
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
@@ -20,6 +24,7 @@ import dev.ryanhcode.sable.sublevel.plot.ServerLevelPlot;
 import dev.ryanhcode.sable.sublevel.storage.SubLevelRemovalReason;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
@@ -31,16 +36,37 @@ import net.minecraft.world.phys.Vec3;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-public class ShipEntity extends BlockEntity {
+/**
+ * Ship controller block entity.
+ * <p>
+ * Implements {@link BlockEntitySubLevelActor} so that Sable itself drives the ship's thrust:
+ * once this block entity lives inside a sub-level plot, Sable registers it as an actor
+ * (see {@code LevelPlot#onBlockChange}) and calls {@link #sable$physicsTick} once per physics
+ * sub-step, which is the only point at which queued forces survive — {@code ServerSubLevel#prePhysicsTickBegin}
+ * resets every queued force group at the start of each sub-step, so forces queued from an
+ * ordinary server tick event would be wiped before ever being applied.
+ */
+public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor {
 
     private static final UUID NULL_UUID = new UUID(0, 0);
 
     private UUID subLevelUUID;
     private SubLevelContainer container;
+
+    /**
+     * Positions (plot coordinates) of thruster blocks belonging to this ship.
+     * Rebuilt once per server tick in {@link #sable$tick} so the per-substep physics hook
+     * stays cheap instead of rescanning the whole ship several times per tick.
+     */
+    private final List<BlockPos> thrusterPositions = new ArrayList<>();
+
+    private int debugTickCounter = 0;
 
     @Override
     public void onLoad() {
@@ -139,8 +165,10 @@ public class ShipEntity extends BlockEntity {
         }
         if (newEntity == null)
             Pioneer.LOGGER.error("Ship controller not found!");
-        else
+        else {
             newEntity.setAssembledBlocks(assembledBlocks);
+            newEntity.rebuildThrusterCache();
+        }
     }
 
     public boolean isAssemble() {
@@ -150,16 +178,15 @@ public class ShipEntity extends BlockEntity {
     public void disassemble() {
         ServerSubLevel subLevel = (ServerSubLevel) getSubLevel();
         this.subLevelUUID = NULL_UUID;
+        this.thrusterPositions.clear();
         this.setChanged();
         if (subLevel == null)
             return;
         ServerLevelPlot plot = subLevel.getPlot();
         Pose3dc pose = subLevel.logicalPose();
         HashSet<BlockPos> assembledBlocks = getAssembledBlocks();
-        System.out.println("size => " + assembledBlocks.size());
         this.setAssembledBlocks(new HashSet<>());
         assembledBlocks.forEach(localPos -> {
-            System.out.println("POS => " + localPos);
             BlockState state = level.getBlockState(localPos);
             BlockEntity blockEntity = level.getBlockEntity(localPos);
             Vec3 worldPos = pose.transformPosition(new Vec3(
@@ -185,6 +212,67 @@ public class ShipEntity extends BlockEntity {
         if (subLevelUUID.equals(NULL_UUID))
             return null;
         return container.getSubLevel(subLevelUUID);
+    }
+
+    /** Rescans this ship's assembled blocks and caches the positions holding a thruster. */
+    private void rebuildThrusterCache() {
+        this.thrusterPositions.clear();
+        if (this.level == null)
+            return;
+        for (BlockPos pos : getAssembledBlocks()) {
+            if (this.level.getBlockState(pos).getBlock() instanceof ThrusterBlock)
+                this.thrusterPositions.add(pos.immutable());
+        }
+    }
+
+    /**
+     * Called by Sable once per server tick while this ship is mounted on a sub-level.
+     * Used only to refresh the thruster cache — the actual push happens in {@link #sable$physicsTick}.
+     */
+    @Override
+    public void sable$tick(final ServerSubLevel subLevel) {
+        rebuildThrusterCache();
+    }
+
+    /**
+     * Called by Sable once per physics sub-step. Queues one point force per active thruster into the
+     * {@code PROPULSION} force group, following the same contract as Sable's own
+     * {@code BlockEntitySubLevelPropellerActor}:
+     * <ul>
+     *   <li>the direction is the raw block normal in <b>sub-level local space</b> — Sable's force API
+     *       expects local vectors, so no rotation by the sub-level orientation is applied here;</li>
+     *   <li>the magnitude is scaled by {@code timeStep}, making it an impulse (F·dt);</li>
+     *   <li>it is applied at the thruster's own position, so off-centre thrusters also produce torque.</li>
+     * </ul>
+     */
+    @Override
+    public void sable$physicsTick(final ServerSubLevel subLevel, final RigidBodyHandle handle, final double timeStep) {
+        if (this.thrusterPositions.isEmpty() || this.level == null)
+            return;
+
+        final QueuedForceGroup forceGroup = subLevel.getOrCreateQueuedForceGroup(ForceGroups.PROPULSION.get());
+
+        int activeCount = 0;
+        for (BlockPos pos : this.thrusterPositions) {
+            final BlockState state = this.level.getBlockState(pos);
+            if (!(state.getBlock() instanceof ThrusterBlock))
+                continue;
+            if (!state.getValue(ThrusterBlock.ACTIVE))
+                continue;
+
+            final Direction dir = state.getValue(ThrusterBlock.FACING);
+            final Vector3d thrust = new Vector3d(dir.getStepX(), dir.getStepY(), dir.getStepZ())
+                    .mul(ThrusterBlock.THRUST * timeStep);
+            final Vector3d point = new Vector3d(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+
+            forceGroup.applyAndRecordPointForce(point, thrust);
+            activeCount++;
+        }
+
+        // DEBUG: throttled to roughly once per second. Safe to delete once confirmed working.
+        if (activeCount > 0 && ++debugTickCounter % 80 == 0)
+            Pioneer.LOGGER.info("[Pioneer][thruster] {} active thruster(s), {} N each, timeStep={}",
+                    activeCount, ThrusterBlock.THRUST, timeStep);
     }
 
     @Override

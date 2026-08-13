@@ -42,4 +42,6 @@ public final class ModItems
   public static final DeferredItem<BlockItem> ARID_CRYSTAL_LARGE = ITEMS.register("arid_crystal_large", () -> new BlockItem(ModBlocks.ARID_CRYSTAL_LARGE.get(), new Properties()));
 
   public static final DeferredItem<BlockItem> ARID_GLYPH = ITEMS.register("arid_glyph", () -> new BlockItem(ModBlocks.ARID_GLYPH.get(), new Properties()));
+
+  public static final DeferredItem<BlockItem> THRUSTER = ITEMS.register("thruster", () -> new BlockItem(ModBlocks.THRUSTER.get(), new Properties()));
 }
