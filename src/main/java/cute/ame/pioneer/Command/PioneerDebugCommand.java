@@ -1,8 +1,15 @@
 package cute.ame.pioneer.Command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 import cute.ame.pioneer.Core.API.PioneerAPI;
+import cute.ame.pioneer.Core.Render.Debug.CelestialDiagnostics;
+import cute.ame.pioneer.Core.Render.Debug.ShadingDebugMode;
+import net.minecraft.commands.SharedSuggestionProvider;
 import cute.ame.pioneer.Seamless.Network.PreloadCancelPayload;
 import cute.ame.pioneer.Seamless.Network.PreloadDimensionPayload;
 import cute.ame.pioneer.Seamless.SeamlessChunkStreamer;
@@ -23,17 +30,61 @@ public final class PioneerDebugCommand
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher)
     {
         dispatcher.register(
-            Commands.literal("pioneerdeb")
+            Commands.literal("pdb")
             .requires(src -> src.hasPermission(2))
-            .then(Commands.literal("seamless-test-preload").then(Commands.argument("dimension", DimensionArgument.dimension()).then(Commands.argument("radiusChunks", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 32)).executes(PioneerDebugCommand::executePreload))))
-            .then(Commands.literal("seamless-test-preload-planet").then(Commands.argument("surfaceDimension", DimensionArgument.dimension()).then(Commands.argument("radiusChunks", com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 32)).executes(PioneerDebugCommand::executePreloadPlanet))))
+            .then(Commands.literal("seamless-test-preload").then(Commands.argument("dimension", DimensionArgument.dimension()).then(Commands.argument("radiusChunks", IntegerArgumentType.integer(1, 32)).executes(PioneerDebugCommand::executePreload))))
+            .then(Commands.literal("seamless-test-preload-planet").then(Commands.argument("surfaceDimension", DimensionArgument.dimension()).then(Commands.argument("radiusChunks", IntegerArgumentType.integer(1, 32)).executes(PioneerDebugCommand::executePreloadPlanet))))
             .then(Commands.literal("seamless-test-cancel").then(Commands.argument("dimension", DimensionArgument.dimension()).executes(PioneerDebugCommand::executeCancel)))
             .then(Commands.literal("seamless-test-stream").then(Commands.argument("dimension", DimensionArgument.dimension()).executes(PioneerDebugCommand::executeStream)))
+            .then(Commands.literal("shading-debug").executes(PioneerDebugCommand::executeShadingDebugQuery).then(Commands.literal("list").executes(PioneerDebugCommand::executeShadingDebugList)).then(Commands.literal("cycle").executes(PioneerDebugCommand::executeShadingDebugCycle)).then(Commands.argument("mode", StringArgumentType.word()).suggests(SHADING_MODES).executes(PioneerDebugCommand::executeShadingDebugSet)))
             .then(Commands.literal("seamless-test-render").then(Commands.argument("dimension", DimensionArgument.dimension()).executes(PioneerDebugCommand::executeRender)))
         );
     }
 
-    private static int executeRender(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
+    private static final SuggestionProvider<CommandSourceStack> SHADING_MODES = (ctx, builder) -> SharedSuggestionProvider.suggest(ShadingDebugMode.keys(), builder);
+
+    private static int executeShadingDebugQuery(CommandContext<CommandSourceStack> ctx)
+    {
+        ShadingDebugMode mode = ShadingDebugMode.current();
+        ctx.getSource().sendSuccess(() -> Component.literal("[Pioneer][debug] shading debug = " + mode.key() + " (" + mode.description() + ")"), false);
+        return 1;
+    }
+
+    private static int executeShadingDebugList(CommandContext<CommandSourceStack> ctx)
+    {
+        CommandSourceStack source = ctx.getSource();
+        source.sendSuccess(() -> Component.literal("[Pioneer][debug] shading debug modes:"), false);
+        for (ShadingDebugMode mode : ShadingDebugMode.values())
+        {
+            source.sendSuccess(() -> Component.literal("  " + mode.key() + " - " + mode.description()), false);
+        }
+        return ShadingDebugMode.values().length;
+    }
+
+    private static int executeShadingDebugCycle(CommandContext<CommandSourceStack> ctx)
+    {
+        ShadingDebugMode mode = ShadingDebugMode.cycle();
+        ctx.getSource().sendSuccess(() -> Component.literal("[Pioneer][debug] shading debug = " + mode.key() + " (" + mode.description() + ")"), false);
+        return 1;
+    }
+
+    private static int executeShadingDebugSet(CommandContext<CommandSourceStack> ctx)
+    {
+        String key = StringArgumentType.getString(ctx, "mode");
+        var parsed = ShadingDebugMode.byKey(key);
+        if (parsed.isEmpty())
+        {
+            ctx.getSource().sendFailure(Component.literal("[Pioneer][debug] unknown shading debug mode '" + key + "' — try: shading-debug list"));
+            return 0;
+        }
+
+        ShadingDebugMode mode = parsed.get();
+        ShadingDebugMode.set(mode);
+        ctx.getSource().sendSuccess(() -> Component.literal("[Pioneer][debug] shading debug = " + mode.key() + " (" + mode.description() + ")"), false);
+        return 1;
+    }
+
+    private static int executeRender(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
     {
         CommandSourceStack source = ctx.getSource();
         ServerLevel targetLevel = DimensionArgument.getDimension(ctx, "dimension");
@@ -50,7 +101,7 @@ public final class PioneerDebugCommand
         return 1;
     }
 
-    private static int executeStream(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
+    private static int executeStream(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
     {
         CommandSourceStack source = ctx.getSource();
         ServerPlayer player = source.getPlayerOrException();
@@ -69,12 +120,12 @@ public final class PioneerDebugCommand
         return 1;
     }
 
-    private static int executePreload(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
+    private static int executePreload(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
     {
         CommandSourceStack source = ctx.getSource();
         ServerPlayer player = source.getPlayerOrException();
         ServerLevel targetLevel = DimensionArgument.getDimension(ctx, "dimension");
-        int radiusChunks = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radiusChunks");
+        int radiusChunks = IntegerArgumentType.getInteger(ctx, "radiusChunks");
 
         ResourceKey<Level> fromDim = player.level().dimension();
         ResourceKey<Level> targetDim = targetLevel.dimension();
@@ -86,13 +137,13 @@ public final class PioneerDebugCommand
         return 1;
     }
 
-    private static int executePreloadPlanet(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
+    private static int executePreloadPlanet(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
     {
         CommandSourceStack source = ctx.getSource();
         ServerPlayer player = source.getPlayerOrException();
         ServerLevel targetLevel = DimensionArgument.getDimension(ctx, "surfaceDimension");
         ResourceKey<Level> targetDim = targetLevel.dimension();
-        int radiusChunks = com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(ctx, "radiusChunks");
+        int radiusChunks = IntegerArgumentType.getInteger(ctx, "radiusChunks");
 
         ResourceKey<Level> fromDim = player.level().dimension();
 
@@ -127,7 +178,7 @@ public final class PioneerDebugCommand
         return 1;
     }
 
-    private static int executeCancel(com.mojang.brigadier.context.CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
+    private static int executeCancel(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
     {
         CommandSourceStack source = ctx.getSource();
         ServerPlayer player = source.getPlayerOrException();

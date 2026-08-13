@@ -52,7 +52,13 @@
     ],
     "ring_count": 56,
     "opacity": 0.65,
-    "seed": 23
+    "seed": 23,
+    "single_scatter_albedo": 0.45,
+    "asymmetry": 0.65,
+    "backscatter_fraction": 0.3,
+    "opposition_b0": 0.8,
+    "opposition_h": 0.025,
+    "planet_shine": 0.25
   },
   "gravity": 2.5,
   "moons": [

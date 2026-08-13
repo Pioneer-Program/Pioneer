@@ -9,7 +9,10 @@ import cute.ame.pioneer.SkyPlanet.Data.RingDefinition;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
 
+import cute.ame.pioneer.Core.Render.Debug.ShadingDebugMode;
+
 import static cute.ame.pioneer.Core.Render.Helper.UniformHelper.set;
+import static cute.ame.pioneer.Core.Render.Helper.UniformHelper.setInt;
 
 public final class RingRenderer
 {
@@ -21,10 +24,10 @@ public final class RingRenderer
     }
 
     private static final float BOUND_HEIGHT_FRAC = 0.05f;
-    private static final float SHADOW_SOFT_FRAC = 0.06f;
-    private static final float EXPOSURE = 0.35f;
+    private static final float EXPOSURE = 3.0f;
+    private static final float SHINE_R = 0.95f, SHINE_G = 0.85f, SHINE_B = 0.70f;
 
-    public static void render(PoseStack ps, RingDefinition rings, float apparentSize, float camObjX, float camObjY, float camObjZ, float sunX, float sunY, float sunZ)
+    public static void render(PoseStack ps, RingDefinition rings, float apparentSize, float camObjX, float camObjY, float camObjZ, float sunX, float sunY, float sunZ, float sunAngRad)
     {
         final float planetHalf = apparentSize * 0.5f;
         final float innerR = rings.innerRadius() * planetHalf;
@@ -60,10 +63,16 @@ public final class RingRenderer
             set(shader, "uGapStrength", rings.gapStrength());
             set(shader, "uSeed", (float) (rings.seed() & 0xFFFFL));
 
-            set(shader, "uShadowFloor", rings.shadowFloor());
-            set(shader, "uShadowSoft", planetHalf * SHADOW_SOFT_FRAC);
-            set(shader, "uForwardScatter", rings.forwardScatter());
+            set(shader, "uSunAngRad", Math.max(sunAngRad, 1e-6f));
+            set(shader, "uSSA", rings.singleScatterAlbedo());
+            set(shader, "uAsymmetry", rings.asymmetry());
+            set(shader, "uBackFrac", rings.backscatterFraction());
+            set(shader, "uOppB0", rings.oppositionB0());
+            set(shader, "uOppH", rings.oppositionH());
+            set(shader, "uPlanetShine", rings.planetShine());
+            set(shader, "uPlanetTint", SHINE_R, SHINE_G, SHINE_B);
             set(shader, "uExposure", EXPOSURE);
+            setInt(shader, "uDebug", ShadingDebugMode.currentShaderId());
         },
         renderType ->
         {

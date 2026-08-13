@@ -9,6 +9,8 @@ import java.util.Optional;
 
 public record SunDefinition(
     float size,
+    float radiusSolar,
+    float massSolar,
     float axialRotationSpeed,
     List<Float> glowColor,
     int glowLayers,
@@ -20,14 +22,16 @@ public record SunDefinition(
 {
     public static final ResourceLocation DEFAULT_TYPE = ResourceLocation.fromNamespaceAndPath("pioneer", "main_sequence");
 
-    private static SunDefinition fromCodec(float size, float axialRotationSpeed, List<Float> glowColor, int glowLayers, float glowScale, ResourceLocation type, Optional<JetConeDefinition> jetCone, Optional<BlackHoleDefinition> blackHole)
+    private static SunDefinition fromCodec(float size, float radiusSolar, float massSolar, float axialRotationSpeed, List<Float> glowColor, int glowLayers, float glowScale, ResourceLocation type, Optional<JetConeDefinition> jetCone, Optional<BlackHoleDefinition> blackHole)
     {
-        return new SunDefinition(size, axialRotationSpeed, glowColor, glowLayers, glowScale, type, jetCone.orElse(null), blackHole.orElse(null));
+        return new SunDefinition(size, radiusSolar, massSolar, axialRotationSpeed, glowColor, glowLayers, glowScale, type, jetCone.orElse(null), blackHole.orElse(null));
     }
 
     public static final Codec<SunDefinition> CODEC = RecordCodecBuilder.create(instance ->
         instance.group(
             Codec.FLOAT.fieldOf("size").forGetter(SunDefinition::size),
+            Codec.FLOAT.optionalFieldOf("radius_solar", 1.0f).forGetter(SunDefinition::radiusSolar),
+            Codec.FLOAT.optionalFieldOf("mass_solar", 1.0f).forGetter(SunDefinition::massSolar),
             Codec.FLOAT.optionalFieldOf("axial_rotation_speed", 1.0f).forGetter(SunDefinition::axialRotationSpeed),
             Codec.FLOAT.listOf().optionalFieldOf("glow_color", List.of(1.0f, 0.9f, 0.6f)).forGetter(SunDefinition::glowColor),
             Codec.INT.optionalFieldOf("glow_layers", 8).forGetter(SunDefinition::glowLayers),

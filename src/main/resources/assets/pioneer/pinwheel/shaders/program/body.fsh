@@ -16,6 +16,8 @@ uniform float uAlpha;
 uniform float uNightFloor;
 uniform float uTerminator;
 uniform float uCurvature;
+uniform float uSunAngRad;
+uniform int   uDebug;
 uniform float uScatterWidth;
 uniform float uScatterStrength;
 uniform vec3  uScatterColor;
@@ -78,12 +80,16 @@ float ringTransmittance(vec3 p)
 
     vec3 h = p + uSunDir * t;
     float r = mix(length(h.xz), max(abs(h.x), abs(h.z)), uRingSquareness);
-    if (r < uRingInner || r > uRingOuter) return 1.0;
+
+    float pen = t * uSunAngRad;
+    float cov = smoothstep(uRingInner - pen, uRingInner + pen, r)
+              * (1.0 - smoothstep(uRingOuter - pen, uRingOuter + pen, r));
+    if (cov <= 0.0) return 1.0;
 
     float u = (r - uRingInner) / max(uRingOuter - uRingInner, 1e-5);
     float tau = bandProfile(u) * uRingOpacity * 3.0 / max(abs(sy), 0.02);
 
-    return exp(-tau);
+    return mix(1.0, exp(-tau), cov);
 }
 
 vec2 rayBox(vec3 ro, vec3 rd, float h)
@@ -166,7 +172,30 @@ void main()
     vec3 sn = normalize(mix(nrm, normalize(surf), uCurvature));
     float ndots = dot(sn, uSunDir);
     float lit = smoothstep(-uTerminator, uTerminator, ndots);
-    lit *= ringTransmittance(surf);
+    float mu0 = max(ndots, 0.0);
+    float muV = max(dot(sn, -rd), 0.0);
+    float brdf = 2.0 * mu0 / max(mu0 + muV, 1e-3);
+
+    lit *= brdf;
+
+    vec3 shadowOrigin = mix(surf, normalize(surf) * uHalf, uCurvature);
+    float ringShadow = (ndots > 0.0) ? ringTransmittance(shadowOrigin) : 1.0;
+    lit *= ringShadow;
+
+    if (uDebug != 0)
+    {
+        float sy = uSunDir.y;
+        float tt = (abs(sy) > 1e-5) ? -shadowOrigin.y / sy : -1.0;
+
+        if (uDebug == 1) fragColor = vec4(1.0 - ringShadow, ringShadow, 0.0, 1.0);
+        else if (uDebug == 2) fragColor = vec4(clamp(shadowOrigin.y / uHalf * 0.5 + 0.5, 0.0, 1.0), clamp(tt / 8.0, 0.0, 1.0), tt > 0.0 ? 1.0 : 0.0, 1.0);
+        else if (uDebug == 3) fragColor = vec4(mu0, muV, ndots > 0.0 ? 1.0 : 0.0, 1.0);
+        else if (uDebug == 4) fragColor = vec4(smoothstep(-uTerminator, uTerminator, ndots), clamp(abs(ndots) / max(uTerminator, 1e-4), 0.0, 1.0), 0.0, 1.0);
+        else if (uDebug == 5) fragColor = vec4(brdf * 0.5, clamp(lit, 0.0, 1.0), 0.0, 1.0);
+        else if (uDebug == 6) fragColor = vec4(clamp(tt * uSunAngRad / max(uHalf, 1e-4) * 20.0, 0.0, 1.0), clamp(tt / 8.0, 0.0, 1.0), 0.0, 1.0);
+        else fragColor = vec4(sn * 0.5 + 0.5, 1.0);
+        return;
+    }
 
     float shade = uNightFloor + (1.0 - uNightFloor) * lit;
 

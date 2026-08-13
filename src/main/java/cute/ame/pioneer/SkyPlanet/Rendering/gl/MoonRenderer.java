@@ -2,6 +2,7 @@ package cute.ame.pioneer.SkyPlanet.Rendering.gl;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
+import cute.ame.pioneer.SkyPlanet.Rendering.PhysicalScale;
 import cute.ame.pioneer.SkyPlanet.Rendering.ShellProjector;
 import cute.ame.pioneer.SkyPlanet.Rendering.ShellProjector.Projected;
 import net.minecraft.world.phys.Vec3;
@@ -30,7 +31,7 @@ public final class MoonRenderer
         float camDistObj = (float) Math.sqrt(proj.dx * proj.dx + proj.dy * proj.dy + proj.dz * proj.dz) / proj.size;
         float cx = (float) (dx / dist), cy = (float) (dy / dist), cz = (float) (dz / dist);
 
-        BodyRenderer.render(ps, moon.resolveTexture(), 1.0f, -cx * camDistObj, -cy * camDistObj, -cz * camDistObj, 0f, 0f, 1f, null);
+        BodyRenderer.render(ps, moon.resolveTexture(), 1.0f, -cx * camDistObj, -cy * camDistObj, -cz * camDistObj, 0f, 0f, 1f, null, PhysicalScale.SOLAR_ANG_RAD_1AU, false);
         ps.popPose();
     }
 }

@@ -62,6 +62,8 @@
   },
   "dimension": "minecraft:overworld",
   "gravity": 1.0,
+  "surface_latitude": 45.0,
+  "surface_longitude": 0.0,
   "moons": [
     "pioneer:luna"
   ]

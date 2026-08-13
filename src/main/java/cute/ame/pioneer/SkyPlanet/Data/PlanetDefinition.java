@@ -27,7 +27,9 @@ public record PlanetDefinition(
     Optional<RingDefinition> rings,
     List<PlanetDefinition> moons,
     Optional<ResourceLocation> dimension,
-    float gravity
+    float gravity,
+    float surfaceLatitude,
+    float surfaceLongitude
 )
 {
   public static final ResourceLocation MISSING = ResourceLocation.withDefaultNamespace("missingno");
@@ -50,8 +52,10 @@ public record PlanetDefinition(
       CloudsDefinition.CODEC.optionalFieldOf("clouds").forGetter(PlanetDefinition::clouds),
       RingDefinition.CODEC.optionalFieldOf("rings").forGetter(PlanetDefinition::rings),
       ResourceLocation.CODEC.optionalFieldOf("dimension").forGetter(PlanetDefinition::dimension),
-      Codec.FLOAT.optionalFieldOf("gravity", 1.0f).forGetter(PlanetDefinition::gravity)
-  ).apply(i, (id, size, rot, tilt, orbit, proc, atmo, clouds, rings, dim, grav) -> new PlanetDefinition(id, size, rot, tilt, orbit, proc, atmo, clouds, rings, List.of(), dim, grav)));
+      Codec.FLOAT.optionalFieldOf("gravity", 1.0f).forGetter(PlanetDefinition::gravity),
+      Codec.FLOAT.optionalFieldOf("surface_latitude", 0.0f).forGetter(PlanetDefinition::surfaceLatitude),
+      Codec.FLOAT.optionalFieldOf("surface_longitude", 0.0f).forGetter(PlanetDefinition::surfaceLongitude)
+  ).apply(i, (id, size, rot, tilt, orbit, proc, atmo, clouds, rings, dim, grav, lat, lon) -> new PlanetDefinition(id, size, rot, tilt, orbit, proc, atmo, clouds, rings, List.of(), dim, grav, lat, lon)));
 
   private static final Codec<List<PlanetDefinition>> INLINE_MOONS = Codec.lazyInitialized(() -> PlanetDefinition.CODEC).listOf();
 
@@ -62,12 +66,12 @@ public record PlanetDefinition(
 
   public PlanetDefinition withMoons(List<PlanetDefinition> newMoons)
   {
-    return newMoons == moons ? this : new PlanetDefinition(id, size, axialRotationSpeed, axialTilt, orbit, procedural, atmosphere, clouds, rings, newMoons, dimension, gravity);
+    return newMoons == moons ? this : new PlanetDefinition(id, size, axialRotationSpeed, axialTilt, orbit, procedural, atmosphere, clouds, rings, newMoons, dimension, gravity, surfaceLatitude, surfaceLongitude);
   }
 
   public PlanetDefinition withId(ResourceLocation newId)
   {
-    return newId.equals(id) ? this : new PlanetDefinition(newId, size, axialRotationSpeed, axialTilt, orbit, procedural, atmosphere, clouds, rings, moons, dimension, gravity);
+    return newId.equals(id) ? this : new PlanetDefinition(newId, size, axialRotationSpeed, axialTilt, orbit, procedural, atmosphere, clouds, rings, moons, dimension, gravity, surfaceLatitude, surfaceLongitude);
   }
 
   public CubemapTextures resolveTexture()

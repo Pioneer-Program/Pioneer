@@ -1,6 +1,8 @@
 {
   "sun": {
     "size": 3000,
+    "radius_solar": 1.0,
+    "mass_solar": 1.0,
     "axial_rotation_speed": 10,
     "glow_color": [
       0.561,

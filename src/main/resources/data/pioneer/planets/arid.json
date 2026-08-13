@@ -44,6 +44,14 @@
     ],
     "ring_count": 64,
     "opacity": 0.65,
-    "seed": 23
-  }
+    "seed": 23,
+    "single_scatter_albedo": 0.35,
+    "asymmetry": 0.75,
+    "backscatter_fraction": 0.2,
+    "opposition_b0": 0.6,
+    "opposition_h": 0.035,
+    "planet_shine": 0.2
+  },
+  "surface_latitude": 15.0,
+  "surface_longitude": 0.0
 }

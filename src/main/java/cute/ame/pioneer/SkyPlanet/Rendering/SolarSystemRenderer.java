@@ -8,6 +8,7 @@ import cute.ame.pioneer.Core.Render.Debug.GPUProfiler;
 import cute.ame.pioneer.Seamless.Client.SeamlessGhostSurfacePatchRenderer;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
+import cute.ame.pioneer.SkyPlanet.Data.SunDefinition;
 import cute.ame.pioneer.SkyPlanet.Rendering.ShellProjector.Projected;
 import cute.ame.pioneer.SkyPlanet.Rendering.gl.*;
 import net.minecraft.client.Camera;
@@ -30,7 +31,6 @@ public final class SolarSystemRenderer
 {
     private static final SolarSystemRenderer INSTANCE = new SolarSystemRenderer();
     public static SolarSystemRenderer getInstance() { return INSTANCE; }
-    public static final float ORBIT_PLANET_SIZE = 60.0f;
 
     private record RenderJob(double distance, Runnable draw) {}
 
@@ -88,7 +88,18 @@ public final class SolarSystemRenderer
         long tick = level.getGameTime();
         ps.pushPose();
 
-        CelestialFrameContext ctx = new CelestialFrameContext(effectiveCamPos, selfPlanetId, 1.0f, excludedPlanetId, selfClimbOffset, selfAscensionProgress, tick, !isPlanetLocked, binding.type() == PioneerAPI.BindingType.SURFACE, selfTiltProgress);
+        Quaternionf horizon = null;
+        if (isPlanetLocked && binding.planetId() != null)
+        {
+            Optional<PlanetDefinition> selfOpt = system.findById(binding.planetId());
+            if (selfOpt.isPresent())
+            {
+                PlanetDefinition self = selfOpt.get();
+                horizon = CelestialMath.localHorizonRotation(self.axialTilt(), self.axialRotationSpeed(), self.orbit().periodDays(), self.surfaceLatitude(), self.surfaceLongitude(), tick, partialTick);
+            }
+        }
+
+        CelestialFrameContext ctx = new CelestialFrameContext(effectiveCamPos, selfPlanetId, 1.0f, excludedPlanetId, selfClimbOffset, selfAscensionProgress, tick, !isPlanetLocked, binding.type() == PioneerAPI.BindingType.SURFACE, selfTiltProgress, horizon);
         renderSystemUnified(ps, system, ctx, partialTick, camera.getPosition(), projMat);
         ps.popPose();
     }
@@ -113,8 +124,10 @@ public final class SolarSystemRenderer
         Vec3 effectiveCamPos = ctx.effectiveCamPos();
         long tick = ctx.tick();
 
+        final Quaternionf horizon = ctx.horizonRotation();
+
         GPUProfiler.begin("skybox.galaxy");
-        GalaxyRenderer.render(ps, projMat, tick, partialTick);
+        oriented(ps, horizon, () -> GalaxyRenderer.render(ps, projMat, tick, partialTick)).run();
         GPUProfiler.end();
 
         List<RenderJob> jobs = new ArrayList<>();
@@ -124,7 +137,7 @@ public final class SolarSystemRenderer
             final double sdist = Math.sqrt(sdx * sdx + sdy * sdy + sdz * sdz);
             if (sdist > 1e-6)
             {
-                jobs.add(new RenderJob(sdist, () -> SunRenderer.renderRealScale(ps, system.sun(), tick, partialTick, sdx, sdy, sdz, sdist, realCamPos)));
+                jobs.add(new RenderJob(sdist, oriented(ps, horizon, () -> SunRenderer.renderRealScale(ps, system.sun(), tick, partialTick, sdx, sdy, sdz, sdist, realCamPos))));
             }
         }
 
@@ -161,7 +174,8 @@ public final class SolarSystemRenderer
                     final boolean fSelf = isSelf;
                     final float fAlpha = alpha;
 
-                    jobs.add(new RenderJob(dist, () -> renderPlanetBody(ps, planet, fSelf, fAlpha, fpos, fdx, fdy, fdz, fdist, ctx, tick, partialTick)));
+                    Runnable draw = () -> renderPlanetBody(ps, planet, fSelf, fAlpha, fpos, fdx, fdy, fdz, fdist, ctx, tick, partialTick, system.sun());
+                    jobs.add(new RenderJob(dist, fSelf ? draw : oriented(ps, horizon, draw)));
                 }
             }
 
@@ -185,7 +199,19 @@ public final class SolarSystemRenderer
     }
 
 
-    private void renderPlanetBody(PoseStack ps, PlanetDefinition planet, boolean isSelf, float alpha, float[] pos, double dx, double dy, double dz, double dist, CelestialFrameContext ctx, long tick, float partialTick)
+    private static Runnable oriented(PoseStack ps, Quaternionf horizon, Runnable draw)
+    {
+        if (horizon == null) return draw;
+        return () ->
+        {
+            ps.pushPose();
+            ps.mulPose(horizon);
+            draw.run();
+            ps.popPose();
+        };
+    }
+
+    private void renderPlanetBody(PoseStack ps, PlanetDefinition planet, boolean isSelf, float alpha, float[] pos, double dx, double dy, double dz, double dist, CelestialFrameContext ctx, long tick, float partialTick, SunDefinition sun)
     {
         float cdx = (float) (dx / dist), cdy = (float) (dy / dist), cdz = (float) (dz / dist);
         float realSize = Math.max(planet.size(), MIN_APPARENT);
@@ -203,6 +229,7 @@ public final class SolarSystemRenderer
         float plen = (float) Math.sqrt(psx * psx + psy * psy + psz * psz);
         Vector3f worldSun = (plen > 1e-6f) ? new Vector3f(psx / plen, psy / plen, psz / plen) : new Vector3f(0f, 0f, 1f);
 
+        final float sunAngRad = PhysicalScale.sunAngularRadius(sun, planet.orbit());
         Quaternionf invRot = orientation.conjugate(new Quaternionf());
 
         Vector3f localSun = invRot.transform(new Vector3f(worldSun));
@@ -229,7 +256,7 @@ public final class SolarSystemRenderer
         float bodyCamDist = (float) Math.sqrt(proj.dx * proj.dx + proj.dy * proj.dy + proj.dz * proj.dz) / apparentSize;
 
         GPUProfiler.begin("celestial.planet.core");
-        BodyRenderer.render(ps, planet.resolveTexture(), alpha, -camLX * bodyCamDist, -camLY * bodyCamDist, -camLZ * bodyCamDist, sunLX, sunLY, sunLZ, planet.rings().orElse(null));
+        BodyRenderer.render(ps, planet.resolveTexture(), alpha, -camLX * bodyCamDist, -camLY * bodyCamDist, -camLZ * bodyCamDist, sunLX, sunLY, sunLZ, planet.rings().orElse(null), sunAngRad, planet.atmosphere().isPresent());
         GPUProfiler.end();
 
         planet.rings().ifPresent(rings ->
@@ -240,7 +267,7 @@ public final class SolarSystemRenderer
             float camDistObj = (float) Math.sqrt(proj.dx * proj.dx + proj.dy * proj.dy + proj.dz * proj.dz);
 
             GPUProfiler.begin("celestial.planet.rings");
-            RingRenderer.render(ps, rings, apparentSize, -camLX * camDistObj, -camLY * camDistObj, -camLZ * camDistObj, sunLX, sunLY, sunLZ);
+            RingRenderer.render(ps, rings, apparentSize, -camLX * camDistObj, -camLY * camDistObj, -camLZ * camDistObj, sunLX, sunLY, sunLZ, sunAngRad);
             GPUProfiler.end();
 
             ps.popPose();
