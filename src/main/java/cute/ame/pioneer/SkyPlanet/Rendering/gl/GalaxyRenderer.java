@@ -18,7 +18,7 @@ public final class GalaxyRenderer
 {
     private static final ResourceLocation GALAXY_RENDER_TYPE = ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "galaxy");
 
-    private static final int  UNIT_SKYBOX_LUT = 4;
+    private static final int UNIT_SKYBOX_LUT = 4;
     private static final long GALAXY_SEED = 0x6A1ACC1A0L;
     private static final float SKYBOX_CUBE_SCALE = 2.0f;
 
@@ -27,7 +27,7 @@ public final class GalaxyRenderer
         VeilSkyShaderHelper.registerVfxShader(GALAXY_RENDER_TYPE);
     }
 
-    public static void render(PoseStack poseStack, Matrix4f projMat, long tick, float partialTick)
+    public static void render(PoseStack poseStack, Matrix4f projMat, long tick, float partialTick, float starVisibility)
     {
         float time = (tick + partialTick) / 20.0f;
         Matrix4f viewRot = new Matrix4f(poseStack.last().pose());
@@ -53,6 +53,7 @@ public final class GalaxyRenderer
             set(shader, "uInvViewProj", invViewProj);
             set(shader, "uScreenWidth", screenW);
             set(shader, "uScreenHeight", screenH);
+            set(shader, "uStarVisibility", starVisibility);
         },
         renderType ->
         {

@@ -6,6 +6,7 @@ uniform float uTime;
 uniform mat4 uInvViewProj;
 uniform float uScreenWidth;
 uniform float uScreenHeight;
+uniform float uStarVisibility;
 
 out vec4 fragColor;
 
@@ -30,5 +31,6 @@ void main()
     float phase = dot(dir, vec3(37.1, 61.7, 23.3));
     float twinkle = 0.85 + 0.15 * sin(uTime * 1.1 + phase);
 
-    fragColor = vec4(sky.rgb * (1.0 + sky.a * (twinkle - 1.0)), 1.0);
+    vec3 col = sky.rgb * (1.0 + sky.a * (twinkle - 1.0));
+    fragColor = vec4(col * uStarVisibility, 1.0);
 }

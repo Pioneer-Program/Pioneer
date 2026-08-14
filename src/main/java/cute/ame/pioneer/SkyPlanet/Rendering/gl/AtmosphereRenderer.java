@@ -23,7 +23,7 @@ public final class AtmosphereRenderer
 
     private static final float MAX_CAM_DIST_OBJ = 64.0f;
     private static final float FRESNEL_POWER = 3.0f;
-    private static final float MULTI_SCATTER = 0.3f;
+    private static final float MULTI_SCATTER = 0.6f;
 
     public static void render(PoseStack poseStack, AtmosphereDefinition atmo, PlanetEnvironment env, float radiusKm, float camDirX, float camDirY, float camDirZ, float sunDirX, float sunDirY, float sunDirZ, float camDistObj)
     {

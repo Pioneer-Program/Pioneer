@@ -10,6 +10,7 @@ import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SunDefinition;
 import cute.ame.pioneer.SkyPlanet.Physics.PlanetEnvironment;
+import cute.ame.pioneer.SkyPlanet.Physics.SkyBrightness;
 import cute.ame.pioneer.SkyPlanet.Physics.SurfaceCoordinates;
 import cute.ame.pioneer.SkyPlanet.Rendering.ShellProjector.Projected;
 import cute.ame.pioneer.SkyPlanet.Rendering.gl.*;
@@ -95,6 +96,7 @@ public final class SolarSystemRenderer
         ps.pushPose();
 
         Quaternionf horizon = null;
+        float starVis = 1.0f;
         if (isPlanetLocked && binding.planetId() != null)
         {
             Optional<PlanetDefinition> selfOpt = system.findById(binding.planetId());
@@ -111,10 +113,12 @@ public final class SolarSystemRenderer
                 Vector3f worldSun = (sl > 1e-6f) ? new Vector3f((float) -sp[0] / sl, (float) -sp[1] / sl, (float) -sp[2] / sl) : new Vector3f(0f, 0f, 1f);
 
                 horizon = CelestialMath.localHorizonRotation(self.axialTilt(), self.axialRotationSpeed(), latDeg, lonDeg, worldSun, tick, partialTick);
+                Vector3f sunLocal = horizon.transform(new Vector3f(worldSun));
+                starVis = SkyBrightness.starVisibility(sunLocal.y, self);
             }
         }
 
-        CelestialFrameContext ctx = new CelestialFrameContext(effectiveCamPos, selfPlanetId, 1.0f, excludedPlanetId, selfClimbOffset, selfAscensionProgress, tick, !isPlanetLocked, binding.type() == PioneerAPI.BindingType.SURFACE, selfTiltProgress, horizon);
+        CelestialFrameContext ctx = new CelestialFrameContext(effectiveCamPos, selfPlanetId, 1.0f, excludedPlanetId, selfClimbOffset, selfAscensionProgress, tick, !isPlanetLocked, binding.type() == PioneerAPI.BindingType.SURFACE, selfTiltProgress, horizon, starVis);
         renderSystemUnified(ps, system, ctx, partialTick, camera.getPosition(), projMat);
         ps.popPose();
     }
@@ -142,7 +146,7 @@ public final class SolarSystemRenderer
         final Quaternionf horizon = ctx.horizonRotation();
 
         GPUProfiler.begin("skybox.galaxy");
-        oriented(ps, horizon, () -> GalaxyRenderer.render(ps, projMat, tick, partialTick)).run();
+        oriented(ps, horizon, () -> GalaxyRenderer.render(ps, projMat, tick, partialTick, ctx.starVisibility())).run();
         GPUProfiler.end();
 
         List<RenderJob> jobs = new ArrayList<>();

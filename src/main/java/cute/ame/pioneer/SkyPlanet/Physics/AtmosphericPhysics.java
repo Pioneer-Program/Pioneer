@@ -107,7 +107,7 @@ public final class AtmosphericPhysics
         float[] rayleigh = (max < 1e-30) ? new float[] { 0.4f, 0.6f, 1.0f } : new float[] { (float) (tau[0] / max), (float) (tau[1] / max), (float) (tau[2] / max) };
         if (hazeColor == null || hazeOpticalDepth <= 1e-6) return rayleigh;
 
-        double rayleighDepth = Math.max(tau[1], 1e-9);
+        double rayleighDepth = Math.max(tau[1] * 4.0, 1e-9);
         double w = hazeOpticalDepth / (hazeOpticalDepth + rayleighDepth);
 
         return new float[]

@@ -15,7 +15,8 @@ public record CelestialFrameContext(
     boolean useAngularFloor,
     boolean selfIsSurfaceType,
     float selfTiltProgress,
-    Quaternionf horizonRotation
+    Quaternionf horizonRotation,
+    float starVisibility
 )
 {
     public boolean isSelf(ResourceLocation planetId)
