@@ -3,6 +3,8 @@ package cute.ame.pioneer.Spaceship.Entity;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Registrie.ModAttachmentTypes;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
+import cute.ame.pioneer.Spaceship.Data.StoredBlock;
+import cute.ame.pioneer.Spaceship.Helper.WorldHelper;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
 import dev.ryanhcode.sable.api.physics.PhysicsPipeline;
@@ -19,9 +21,9 @@ import dev.ryanhcode.sable.sublevel.storage.SubLevelRemovalReason;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -30,8 +32,7 @@ import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
-import java.util.HashSet;
-import java.util.UUID;
+import java.util.*;
 
 public class ShipEntity extends BlockEntity {
 
@@ -172,7 +173,8 @@ public class ShipEntity extends BlockEntity {
         Vec3 controllerCoord = new Vec3(controllerPos.getX(), controllerPos.getY(), controllerPos.getZ());
         this.setAssembledBlocks(new HashSet<>());
         this.setShipControllerPos(BlockPos.ZERO);
-        assembledBlocks.forEach(localPos -> {
+        Set<StoredBlock> toPlace = new HashSet<>();
+        for (BlockPos localPos : assembledBlocks) {
             BlockState state = level.getBlockState(localPos);
             BlockEntity blockEntity = level.getBlockEntity(localPos);
             Vec3 localCoord = new Vec3(localPos.getX(), localPos.getY(), localPos.getZ());
@@ -185,11 +187,10 @@ public class ShipEntity extends BlockEntity {
                 tag.putInt("y", targetPos.getY());
                 tag.putInt("z", targetPos.getZ());
             }
-            level.setBlock(targetPos, state, Block.UPDATE_CLIENTS);
-            BlockEntity newBlockEntity = level.getBlockEntity(targetPos);
-            if (newBlockEntity != null && tag != null)
-                newBlockEntity.loadWithComponents(tag, level.registryAccess());
-        });
+            toPlace.add(new StoredBlock(targetPos, state, tag));
+        }
+        Vec3i offset = WorldHelper.nearestFreeSpaceOffset(level, toPlace);
+        toPlace.forEach(block -> block.place(level, offset));
         container.removeSubLevel(subLevel, SubLevelRemovalReason.REMOVED);
     }
 
