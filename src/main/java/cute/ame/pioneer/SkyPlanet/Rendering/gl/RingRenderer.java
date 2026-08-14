@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import cute.ame.pioneer.Core.Compat.VeilSkyShaderHelper;
+import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.SkyPlanet.Data.RingDefinition;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
@@ -16,7 +17,7 @@ import static cute.ame.pioneer.Core.Render.Helper.UniformHelper.setInt;
 
 public final class RingRenderer
 {
-    private static final ResourceLocation RINGS = ResourceLocation.fromNamespaceAndPath("pioneer", "rings");
+    private static final ResourceLocation RINGS = ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "rings");
 
     static
     {
@@ -24,7 +25,7 @@ public final class RingRenderer
     }
 
     private static final float BOUND_HEIGHT_FRAC = 0.05f;
-    private static final float EXPOSURE = 3.0f;
+    private static final float EXPOSURE = 1.75f;
     private static final float SHINE_R = 0.95f, SHINE_G = 0.85f, SHINE_B = 0.70f;
 
     public static void render(PoseStack ps, RingDefinition rings, float apparentSize, float camObjX, float camObjY, float camObjZ, float sunX, float sunY, float sunZ, float sunAngRad)

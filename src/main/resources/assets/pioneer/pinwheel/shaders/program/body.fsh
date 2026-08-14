@@ -9,18 +9,18 @@ uniform sampler2D uFaceRight;
 uniform sampler2D uFaceTop;
 uniform sampler2D uFaceBottom;
 
-uniform vec3  uCamPos;
-uniform vec3  uSunDir;
+uniform vec3 uCamPos;
+uniform vec3 uSunDir;
 uniform float uHalf;
 uniform float uAlpha;
 uniform float uNightFloor;
 uniform float uTerminator;
 uniform float uCurvature;
 uniform float uSunAngRad;
-uniform int   uDebug;
+uniform int uDebug;
 uniform float uScatterWidth;
 uniform float uScatterStrength;
-uniform vec3  uScatterColor;
+uniform vec3 uScatterColor;
 
 uniform float uRingInner;
 uniform float uRingOuter;
@@ -30,10 +30,15 @@ uniform float uRingBandContrast;
 uniform float uRingGapStrength;
 uniform float uRingOpacity;
 uniform float uRingSeed;
+uniform float uRingShine;
+uniform vec3 uRingTint;
 
 out vec4 fragColor;
 
-float hash1(float n) { return fract(sin(n * 127.1 + uRingSeed * 7.13) * 43758.5453123); }
+float hash1(float n)
+{
+    return fract(sin(n * 127.1 + uRingSeed * 7.13) * 43758.5453123);
+}
 
 float vnoise(float x)
 {
@@ -174,7 +179,7 @@ void main()
     float lit = smoothstep(-uTerminator, uTerminator, ndots);
     float mu0 = max(ndots, 0.0);
     float muV = max(dot(sn, -rd), 0.0);
-    float brdf = 2.0 * mu0 / max(mu0 + muV, 1e-3);
+    float brdf = clamp(2.0 * mu0 / max(mu0 + muV, 1e-3), 0.0, 1.35);
 
     lit *= brdf;
 
@@ -197,10 +202,24 @@ void main()
         return;
     }
 
+    vec3 ringshine = vec3(0.0);
+    if (uRingOuter > uRingInner)
+    {
+        vec3  up  = normalize(surf);
+        float lat = up.y;
+        float mu0 = abs(uSunDir.y);
+        float sameSide = step(0.0, lat * uSunDir.y);
+        float viewFactor = abs(lat);
+        float ringRefl = 1.0 - exp(-uRingOpacity * 3.0);
+
+        ringshine = uRingTint * (uRingShine * mu0 * sameSide * viewFactor * ringRefl);
+    }
+
     float shade = uNightFloor + (1.0 - uNightFloor) * lit;
+    shade += dot(ringshine, vec3(0.333));
 
     float band = exp(-pow(ndots / max(uScatterWidth, 1e-3), 2.0));
     vec3 scatter = uScatterColor * (band * uScatterStrength);
 
-    fragColor = vec4(tex.rgb * (shade + scatter), tex.a * uAlpha);
+    fragColor = vec4(tex.rgb * (shade + scatter) + tex.rgb * ringshine * 0.5, tex.a * uAlpha);
 }

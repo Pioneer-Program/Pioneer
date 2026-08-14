@@ -28,14 +28,19 @@
     "eccentricity": 0.011
   },
   "atmosphere": {
-    "scale": 1.07,
-    "color": [
-      0.9,
-      0.7,
+    "composition": {
+      "h2": 0.8,
+      "he": 0.19,
+      "ch4": 0.01
+    },
+    "surface_pressure_bar": 3.0,
+    "haze_color": [
+      0.6,
+      0.8,
       0.95
     ],
-    "opacity": 0.3,
-    "fresnel_power": 5.0
+    "haze_optical_depth": 0.15
   },
-  "gravity": 0.7
+  "mass_earth": 17.15,
+  "bond_albedo": 0.29
 }

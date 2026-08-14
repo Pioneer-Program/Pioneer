@@ -20,7 +20,7 @@ public final class SunRenderer
         ps.translate(proj.dx, proj.dy, proj.dz);
         boolean rendersAsPostProcess = sun.type().equals(BuiltinStarTypes.BLACK_HOLE);
 
-        if (sun.glowLayers() > 0 && !rendersAsPostProcess)
+        if (!rendersAsPostProcess)
         {
             float camDist = (float) Math.sqrt(proj.dx * proj.dx + proj.dy * proj.dy + proj.dz * proj.dz);
             float cx = (float) (-dx / dist), cy = (float) (-dy / dist), cz = (float) (-dz / dist);

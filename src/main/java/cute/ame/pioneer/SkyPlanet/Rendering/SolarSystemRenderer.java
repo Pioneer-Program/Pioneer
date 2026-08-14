@@ -9,6 +9,8 @@ import cute.ame.pioneer.Seamless.Client.SeamlessGhostSurfacePatchRenderer;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SunDefinition;
+import cute.ame.pioneer.SkyPlanet.Physics.PlanetEnvironment;
+import cute.ame.pioneer.SkyPlanet.Physics.SurfaceCoordinates;
 import cute.ame.pioneer.SkyPlanet.Rendering.ShellProjector.Projected;
 import cute.ame.pioneer.SkyPlanet.Rendering.gl.*;
 import net.minecraft.client.Camera;
@@ -30,7 +32,11 @@ import static cute.ame.pioneer.SkyPlanet.Rendering.ShellProjector.projectToSafeS
 public final class SolarSystemRenderer
 {
     private static final SolarSystemRenderer INSTANCE = new SolarSystemRenderer();
-    public static SolarSystemRenderer getInstance() { return INSTANCE; }
+
+    public static SolarSystemRenderer getInstance()
+    {
+        return INSTANCE;
+    }
 
     private record RenderJob(double distance, Runnable draw) {}
 
@@ -95,7 +101,16 @@ public final class SolarSystemRenderer
             if (selfOpt.isPresent())
             {
                 PlanetDefinition self = selfOpt.get();
-                horizon = CelestialMath.localHorizonRotation(self.axialTilt(), self.axialRotationSpeed(), self.orbit().periodDays(), self.surfaceLatitude(), self.surfaceLongitude(), tick, partialTick);
+
+                Vec3 here = camera.getPosition();
+                double latDeg = SurfaceCoordinates.latitudeDeg(self, here.x, here.z);
+                double lonDeg = SurfaceCoordinates.longitudeDeg(self, here.x, here.z);
+
+                double[] sp = self.currentWorldPosition(tick, partialTick);
+                float sl = (float) Math.sqrt(sp[0] * sp[0] + sp[1] * sp[1] + sp[2] * sp[2]);
+                Vector3f worldSun = (sl > 1e-6f) ? new Vector3f((float) -sp[0] / sl, (float) -sp[1] / sl, (float) -sp[2] / sl) : new Vector3f(0f, 0f, 1f);
+
+                horizon = CelestialMath.localHorizonRotation(self.axialTilt(), self.axialRotationSpeed(), latDeg, lonDeg, worldSun, tick, partialTick);
             }
         }
 
@@ -190,7 +205,7 @@ public final class SolarSystemRenderer
                 double mdz = mWorld[2] - effectiveCamPos.z;
 
                 double mdist = Math.sqrt(mdx * mdx + mdy * mdy + mdz * mdz);
-                jobs.add(new RenderJob(mdist, () -> MoonRenderer.renderRealScale(ps, moon, mWorld, effectiveCamPos, tick, partialTick)));
+                jobs.add(new RenderJob(mdist, () -> MoonRenderer.renderRealScale(ps, moon, planet, system.sun(), mWorld, effectiveCamPos, tick, partialTick)));
             }
         }
 
@@ -232,7 +247,10 @@ public final class SolarSystemRenderer
         final float sunAngRad = PhysicalScale.sunAngularRadius(sun, planet.orbit());
         Quaternionf invRot = orientation.conjugate(new Quaternionf());
 
-        Vector3f localSun = invRot.transform(new Vector3f(worldSun));
+        Vector3f litFrom = new Vector3f(worldSun);
+        if (isSelf && ctx.horizonRotation() != null) ctx.horizonRotation().transform(litFrom);
+
+        Vector3f localSun = invRot.transform(new Vector3f(litFrom));
         Vector3f localCam = invRot.transform(new Vector3f(cdx, cdy, cdz));
         float sunLX = localSun.x, sunLY = localSun.y, sunLZ = localSun.z;
         float camLX = localCam.x, camLY = localCam.y, camLZ = localCam.z;
@@ -245,7 +263,7 @@ public final class SolarSystemRenderer
             float camDistObj = (float) Math.sqrt(proj.dx * proj.dx + proj.dy * proj.dy + proj.dz * proj.dz) / apparentSize;
 
             GPUProfiler.begin("planet.volumetric.atmosphere");
-            AtmosphereRenderer.render(ps, atmo, -camLX, -camLY, -camLZ, sunLX, sunLY, sunLZ, camDistObj);
+            AtmosphereRenderer.render(ps, atmo, PlanetEnvironment.of(sun, planet), planet.size(), -camLX, -camLY, -camLZ, sunLX, sunLY, sunLZ, camDistObj);
             GPUProfiler.end();
 
             ps.popPose();

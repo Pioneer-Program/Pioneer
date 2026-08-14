@@ -16,8 +16,6 @@ public record RingDefinition(
     float bandScaleRaw,
     float bandContrast,
     float gapStrength,
-    float shadowFloor,
-    float forwardScatter,
     float squareness,
     RingPhotometry photometry
 )
@@ -34,21 +32,45 @@ public record RingDefinition(
             Codec.FLOAT.optionalFieldOf("band_scale", -1.0f).forGetter(RingDefinition::bandScaleRaw),
             Codec.FLOAT.optionalFieldOf("band_contrast", 0.75f).forGetter(RingDefinition::bandContrast),
             Codec.FLOAT.optionalFieldOf("gap_strength", 0.85f).forGetter(RingDefinition::gapStrength),
-            Codec.FLOAT.optionalFieldOf("shadow_floor", 0.08f).forGetter(RingDefinition::shadowFloor),
-            Codec.FLOAT.optionalFieldOf("forward_scatter", 1.2f).forGetter(RingDefinition::forwardScatter),
             Codec.FLOAT.optionalFieldOf("squareness", 0.95f).forGetter(RingDefinition::squareness),
             RingPhotometry.MAP_CODEC.forGetter(RingDefinition::photometry)
         ).apply(i, RingDefinition::new)
     );
 
-    public float singleScatterAlbedo() { return photometry.singleScatterAlbedo(); }
-    public float asymmetry() { return photometry.asymmetry(); }
-    public float backscatterFraction() { return photometry.backscatterFraction(); }
-    public float oppositionB0() { return photometry.oppositionB0(); }
-    public float oppositionH() { return photometry.oppositionH(); }
-    public float planetShine() { return photometry.planetShine(); }
+    public float singleScatterAlbedo()
+    {
+        return photometry.singleScatterAlbedo();
+    }
 
-    public float bandScale() { return bandScaleRaw > 0.0f ? bandScaleRaw : Math.max(1, ringCount); }
+    public float asymmetry()
+    {
+        return photometry.asymmetry();
+    }
+
+    public float backscatterFraction()
+    {
+        return photometry.backscatterFraction();
+    }
+
+    public float oppositionB0()
+    {
+        return photometry.oppositionB0();
+    }
+
+    public float oppositionH()
+    {
+        return photometry.oppositionH();
+    }
+
+    public float planetShine()
+    {
+        return photometry.planetShine();
+    }
+
+    public float bandScale()
+    {
+        return bandScaleRaw > 0.0f ? bandScaleRaw : Math.max(1, ringCount);
+    }
 
     public float minR() { return colorMin.size() >= 3 ? colorMin.get(0) : 0.3f; }
     public float minG() { return colorMin.size() >= 3 ? colorMin.get(1) : 0.3f; }

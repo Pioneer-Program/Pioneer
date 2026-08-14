@@ -17,9 +17,7 @@ public final class CelestialMath
     public static Quaternionf planetOrientation(float axialTiltDegrees, float axialRotationSpeedDays, long tick, float partialTick)
     {
         float spinAngle = axialPhaseRadians(axialRotationSpeedDays, tick, partialTick);
-        return new Quaternionf()
-                .rotationZ((float) Math.toRadians(axialTiltDegrees))
-                .rotateY(spinAngle);
+        return new Quaternionf().rotationZ((float) Math.toRadians(axialTiltDegrees)).rotateY(spinAngle);
     }
 
     public static float axialPhaseRadians(float axialRotationSpeedDays, long tick, float partialTick)
@@ -43,15 +41,22 @@ public final class CelestialMath
         return Math.TAU * (t * (invSolar + invOrbit));
     }
 
-    public static Quaternionf localHorizonRotation(float axialTiltDegrees, float solarDaySpeed, double orbitPeriodDays, double latitudeDeg, double longitudeDeg, long tick, double partialTick)
+    public static Quaternionf localHorizonRotation(float axialTiltDegrees, float solarDaySpeed, double latitudeDeg, double longitudeDeg, Vector3f worldSunDir, long tick, double partialTick)
     {
-        double spin = -siderealPhaseRadians(solarDaySpeed, orbitPeriodDays, tick, partialTick) + Math.toRadians(longitudeDeg);
-        double phi = Math.toRadians(latitudeDeg);
-        double cp = Math.cos(phi), sp = Math.sin(phi);
-        double cs = Math.cos(spin), ss = Math.sin(spin);
+        Quaternionf tiltInv = new Quaternionf().rotationZ((float) Math.toRadians(-axialTiltDegrees));
+        Vector3f sunEq = tiltInv.transform(new Vector3f(worldSunDir));
 
-        Vector3f up = new Vector3f((float) (cp * ss), (float) sp, (float) (cp * cs));
-        Vector3f north = new Vector3f((float) (-sp * ss), (float) cp, (float) (-sp * cs));
+        double lambdaSun = Math.atan2(sunEq.x, sunEq.z);
+        double dayTicks = Math.max(solarDaySpeed, 1e-6) * TICKS_PER_DAY;
+        double frac = ((tick + partialTick) % dayTicks) / dayTicks;
+        double phi = lambdaSun + Math.TAU * (frac - 0.25) + Math.toRadians(longitudeDeg);
+
+        double lat = Math.toRadians(latitudeDeg);
+        double cl = Math.cos(lat), sl = Math.sin(lat);
+        double sp = Math.sin(phi), cp = Math.cos(phi);
+
+        Vector3f up = new Vector3f((float) (cl * sp), (float) sl, (float) (cl * cp));
+        Vector3f north = new Vector3f((float) (-sl * sp), (float) cl, (float) (-sl * cp));
 
         Quaternionf tilt = new Quaternionf().rotationZ((float) Math.toRadians(axialTiltDegrees));
         tilt.transform(up).normalize();

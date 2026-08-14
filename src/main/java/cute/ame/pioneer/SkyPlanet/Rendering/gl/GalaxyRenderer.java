@@ -8,6 +8,7 @@ import cute.ame.pioneer.Core.Render.Baking.LUT.LUTParams;
 import cute.ame.pioneer.Core.Render.Baking.LUT.LUTRegistry;
 import cute.ame.pioneer.Core.Render.Helper.CubeGeometry;
 import cute.ame.pioneer.Core.Render.Helper.SamplerBinder;
+import cute.ame.pioneer.Pioneer;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
 
@@ -15,7 +16,7 @@ import static cute.ame.pioneer.Core.Render.Helper.UniformHelper.set;
 
 public final class GalaxyRenderer
 {
-    private static final ResourceLocation GALAXY_RENDER_TYPE = ResourceLocation.fromNamespaceAndPath("pioneer", "galaxy");
+    private static final ResourceLocation GALAXY_RENDER_TYPE = ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "galaxy");
 
     private static final int  UNIT_SKYBOX_LUT = 4;
     private static final long GALAXY_SEED = 0x6A1ACC1A0L;

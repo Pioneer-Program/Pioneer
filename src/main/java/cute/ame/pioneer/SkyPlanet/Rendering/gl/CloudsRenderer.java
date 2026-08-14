@@ -10,6 +10,7 @@ import cute.ame.pioneer.Core.Render.Baking.LUT.Bakers.CloudVolumeBaker;
 import cute.ame.pioneer.Core.Render.Baking.LUT.BuiltinLUTs;
 import cute.ame.pioneer.Core.Render.Baking.LUT.LUTParams;
 import cute.ame.pioneer.Core.Render.Baking.LUT.LUTRegistry;
+import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.SkyPlanet.Data.CloudsDefinition;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
@@ -19,7 +20,7 @@ import static cute.ame.pioneer.Core.Render.Helper.UniformHelper.setInt;
 
 public final class CloudsRenderer
 {
-    private static final ResourceLocation CLOUDS_RENDER_TYPE = ResourceLocation.fromNamespaceAndPath("pioneer", "clouds");
+    private static final ResourceLocation CLOUDS_RENDER_TYPE = ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "clouds");
 
     static { VeilSkyShaderHelper.registerVfxShader(CLOUDS_RENDER_TYPE); }
 

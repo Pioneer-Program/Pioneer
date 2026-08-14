@@ -7,6 +7,7 @@ import cute.ame.pioneer.Core.Compat.VeilSkyShaderHelper;
 import cute.ame.pioneer.Core.Render.Helper.CubeGeometry;
 import cute.ame.pioneer.Core.Render.Helper.CubemapTextures;
 import cute.ame.pioneer.Core.Render.Helper.SamplerBinder;
+import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.SkyPlanet.Data.RingDefinition;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
@@ -17,7 +18,8 @@ import static cute.ame.pioneer.Core.Render.Helper.UniformHelper.set;
 import static cute.ame.pioneer.Core.Render.Helper.UniformHelper.setInt;
 public final class BodyRenderer
 {
-    private static final ResourceLocation BODY = ResourceLocation.fromNamespaceAndPath("pioneer", "body");
+    private static final ResourceLocation BODY = ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "body");
+
     static
     {
         VeilSkyShaderHelper.registerVfxShader(BODY);
@@ -25,6 +27,7 @@ public final class BodyRenderer
     
     private static final float NIGHT_FLOOR = 0.03f;
     private static final float ATMO_TERMINATOR = 0.35f;
+    private static final float RINGSHINE_GAIN = 0.55f;
     private static final float HALF = 0.5f;
     private static final float CURVATURE = 0.45f;
     private static final float SCATTER_WIDTH = 0.35f;
@@ -36,6 +39,7 @@ public final class BodyRenderer
         final Matrix4f model = new Matrix4f(ps.last().pose());
         RenderSystem.enableBlend();
         RenderSystem.depthMask(false);
+
         VeilSkyShaderHelper.draw(
         BODY,
         shader ->
@@ -63,6 +67,8 @@ public final class BodyRenderer
                 set(shader, "uRingGapStrength", rings.gapStrength());
                 set(shader, "uRingOpacity", rings.opacity());
                 set(shader, "uRingSeed", (float) (rings.seed() & 0xFFFFL));
+                set(shader, "uRingShine", rings.singleScatterAlbedo() * RINGSHINE_GAIN);
+                set(shader, "uRingTint", rings.maxR(), rings.maxG(), rings.maxB());
             }
             else
             {

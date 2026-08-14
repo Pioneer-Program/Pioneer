@@ -6,6 +6,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import cute.ame.pioneer.Core.Render.Cache.PlanetTextureManager;
 import cute.ame.pioneer.Core.Render.Helper.CubemapTextures;
 import cute.ame.pioneer.SkyPlanet.Orbit.OrbitalElements;
+import cute.ame.pioneer.SkyPlanet.Physics.PlanetaryPhysics;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Quaternionf;
 import org.joml.Vector3d;
@@ -15,7 +16,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-public record PlanetDefinition(
+public record PlanetDefinition
+(
     ResourceLocation id,
     float size,
     float axialRotationSpeed,
@@ -27,9 +29,9 @@ public record PlanetDefinition(
     Optional<RingDefinition> rings,
     List<PlanetDefinition> moons,
     Optional<ResourceLocation> dimension,
-    float gravity,
-    float surfaceLatitude,
-    float surfaceLongitude
+    float massEarth,
+    float bondAlbedo,
+    SurfaceMapping surface
 )
 {
   public static final ResourceLocation MISSING = ResourceLocation.withDefaultNamespace("missingno");
@@ -52,10 +54,10 @@ public record PlanetDefinition(
       CloudsDefinition.CODEC.optionalFieldOf("clouds").forGetter(PlanetDefinition::clouds),
       RingDefinition.CODEC.optionalFieldOf("rings").forGetter(PlanetDefinition::rings),
       ResourceLocation.CODEC.optionalFieldOf("dimension").forGetter(PlanetDefinition::dimension),
-      Codec.FLOAT.optionalFieldOf("gravity", 1.0f).forGetter(PlanetDefinition::gravity),
-      Codec.FLOAT.optionalFieldOf("surface_latitude", 0.0f).forGetter(PlanetDefinition::surfaceLatitude),
-      Codec.FLOAT.optionalFieldOf("surface_longitude", 0.0f).forGetter(PlanetDefinition::surfaceLongitude)
-  ).apply(i, (id, size, rot, tilt, orbit, proc, atmo, clouds, rings, dim, grav, lat, lon) -> new PlanetDefinition(id, size, rot, tilt, orbit, proc, atmo, clouds, rings, List.of(), dim, grav, lat, lon)));
+      Codec.FLOAT.optionalFieldOf("mass_earth", 1.0f).forGetter(PlanetDefinition::massEarth),
+      Codec.FLOAT.optionalFieldOf("bond_albedo", 0.3f).forGetter(PlanetDefinition::bondAlbedo),
+      SurfaceMapping.MAP_CODEC.forGetter(PlanetDefinition::surface)
+  ).apply(i, (id, size, rot, tilt, orbit, proc, atmo, clouds, rings, dim, mass, albedo, surf) -> new PlanetDefinition(id, size, rot, tilt, orbit, proc, atmo, clouds, rings, List.of(), dim, mass, albedo, surf)));
 
   private static final Codec<List<PlanetDefinition>> INLINE_MOONS = Codec.lazyInitialized(() -> PlanetDefinition.CODEC).listOf();
 
@@ -66,12 +68,12 @@ public record PlanetDefinition(
 
   public PlanetDefinition withMoons(List<PlanetDefinition> newMoons)
   {
-    return newMoons == moons ? this : new PlanetDefinition(id, size, axialRotationSpeed, axialTilt, orbit, procedural, atmosphere, clouds, rings, newMoons, dimension, gravity, surfaceLatitude, surfaceLongitude);
+    return newMoons == moons ? this : new PlanetDefinition(id, size, axialRotationSpeed, axialTilt, orbit, procedural, atmosphere, clouds, rings, newMoons, dimension, massEarth, bondAlbedo, surface);
   }
 
   public PlanetDefinition withId(ResourceLocation newId)
   {
-    return newId.equals(id) ? this : new PlanetDefinition(newId, size, axialRotationSpeed, axialTilt, orbit, procedural, atmosphere, clouds, rings, moons, dimension, gravity, surfaceLatitude, surfaceLongitude);
+    return newId.equals(id) ? this : new PlanetDefinition(newId, size, axialRotationSpeed, axialTilt, orbit, procedural, atmosphere, clouds, rings, moons, dimension, massEarth, bondAlbedo, surface);
   }
 
   public CubemapTextures resolveTexture()
@@ -84,10 +86,41 @@ public record PlanetDefinition(
     return ELEMENTS.computeIfAbsent(orbit, OrbitalElements::fromOrbitDefinition);
   }
 
+  public float originLatitude()
+  {
+    return surface.originLatitude();
+  }
+
+  public float originLongitude()
+  {
+    return surface.originLongitude();
+  }
+
+  public float surfaceScale()
+  {
+    return surface.surfaceScale();
+  }
+
+  public boolean swapSurfaceAxes()
+  {
+    return surface.swapAxes();
+  }
+
+
+  public float gravity()
+  {
+    return (float) PlanetaryPhysics.surfaceGravityRelative(massEarth, size);
+  }
+
+  public double escapeVelocityKmS()
+  {
+    return PlanetaryPhysics.escapeVelocityKmS(massEarth, size);
+  }
+
   public double mu()
   {
     double r = size * SPACE_WORLD_SCALE;
-    return gravity * G0 * r * r;
+    return gravity() * G0 * r * r;
   }
 
   public double soiRadius()
@@ -103,14 +136,12 @@ public record PlanetDefinition(
   public double[] currentWorldPosition(long absoluteTick, double partialTick)
   {
     Vector3d p = elements().positionAt(absoluteTick, partialTick, new Vector3d());
-    if (SPACE_WORLD_SCALE != 1.0f) p.mul(SPACE_WORLD_SCALE);
     return new double[]{ p.x, p.y, p.z };
   }
 
   public double[] currentWorldVelocity(long absoluteTick, double partialTick)
   {
     Vector3d v = elements().velocityAt(absoluteTick, partialTick, new Vector3d());
-    if (SPACE_WORLD_SCALE != 1.0f) v.mul(SPACE_WORLD_SCALE);
     return new double[]{ v.x, v.y, v.z };
   }
 

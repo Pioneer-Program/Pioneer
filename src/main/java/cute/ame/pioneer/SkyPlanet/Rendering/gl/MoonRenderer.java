@@ -2,6 +2,7 @@ package cute.ame.pioneer.SkyPlanet.Rendering.gl;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
+import cute.ame.pioneer.SkyPlanet.Data.SunDefinition;
 import cute.ame.pioneer.SkyPlanet.Rendering.PhysicalScale;
 import cute.ame.pioneer.SkyPlanet.Rendering.ShellProjector;
 import cute.ame.pioneer.SkyPlanet.Rendering.ShellProjector.Projected;
@@ -11,7 +12,7 @@ import static cute.ame.pioneer.SkyPlanet.Rendering.CelestialMath.poseAxialRotati
 
 public final class MoonRenderer
 {
-    public static void renderRealScale(PoseStack ps, PlanetDefinition moon, double[] worldPos, Vec3 camPos, long tick, float partialTick)
+    public static void renderRealScale(PoseStack ps, PlanetDefinition moon, PlanetDefinition parent, SunDefinition sun, double[] worldPos, Vec3 camPos, long tick, float partialTick)
     {
         double dx = worldPos[0] - camPos.x;
         double dy = worldPos[1] - camPos.y;
@@ -30,8 +31,9 @@ public final class MoonRenderer
 
         float camDistObj = (float) Math.sqrt(proj.dx * proj.dx + proj.dy * proj.dy + proj.dz * proj.dz) / proj.size;
         float cx = (float) (dx / dist), cy = (float) (dy / dist), cz = (float) (dz / dist);
+        float sunAngRad = PhysicalScale.sunAngularRadius(sun, parent.orbit());
 
-        BodyRenderer.render(ps, moon.resolveTexture(), 1.0f, -cx * camDistObj, -cy * camDistObj, -cz * camDistObj, 0f, 0f, 1f, null, PhysicalScale.SOLAR_ANG_RAD_1AU, false);
+        BodyRenderer.render(ps, moon.resolveTexture(), 1.0f, -cx * camDistObj, -cy * camDistObj, -cz * camDistObj, 0f, 0f, 1f, null, sunAngRad, moon.atmosphere().isPresent());
         ps.popPose();
     }
 }

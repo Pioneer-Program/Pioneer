@@ -6,6 +6,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
 import cute.ame.pioneer.Core.Compat.VeilSkyShaderHelper;
 import cute.ame.pioneer.Core.Render.Helper.CubeGeometry;
+import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.SkyPlanet.Data.SunDefinition;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
@@ -14,7 +15,7 @@ import static cute.ame.pioneer.Core.Render.Helper.UniformHelper.set;
 
 public final class StarRenderer
 {
-    private static final ResourceLocation STAR = ResourceLocation.fromNamespaceAndPath("pioneer", "star");
+    private static final ResourceLocation STAR = ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "star");
 
     static
     {
@@ -23,7 +24,6 @@ public final class StarRenderer
 
     private static final float FALLOFF = 3.6f;
     private static final float GRANULATION = 0.45f;
-    private static final float WHITE_HOT = 0.55f;
     private static final float CHROMOSPHERE = 0.9f;
     private static final float PROMINENCE = 0.7f;
     private static final float RAY_STRENGTH = 0.8f;
@@ -51,18 +51,15 @@ public final class StarRenderer
         {
             set(shader, "uStarModel", model);
             set(shader, "uCamPos", camObjX * invScale, camObjY * invScale, camObjZ * invScale);
-
             set(shader, "uCoreRadius", coreRadius);
             set(shader, "uGlowRadius", glowRadius);
-
             set(shader, "uCoreColor", sun.glowR(), sun.glowG(), sun.glowB());
             set(shader, "uGlowColor", sun.glowR(), sun.glowG(), sun.glowB());
-
             set(shader, "uIntensity", INTENSITY);
             set(shader, "uFalloff", FALLOFF);
             set(shader, "uGranulation", GRANULATION);
             set(shader, "uSquareness", SQUARENESS);
-            set(shader, "uWhiteHot", WHITE_HOT);
+            set(shader, "uWhiteHot", sun.whiteHot());
             set(shader, "uChromosphere", CHROMOSPHERE);
             set(shader, "uProminence", PROMINENCE);
             set(shader, "uRayStrength", RAY_STRENGTH);

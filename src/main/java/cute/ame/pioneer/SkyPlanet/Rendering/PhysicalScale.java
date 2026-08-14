@@ -5,8 +5,6 @@ import cute.ame.pioneer.SkyPlanet.Data.SunDefinition;
 
 public final class PhysicalScale
 {
-    private PhysicalScale() {}
-
     public static final float SOLAR_ANG_RAD_1AU = 4.6524e-3f;
     private static final double DAYS_PER_YEAR = 365.25;
     private static final float MAX_ANG_RAD = 0.30f;

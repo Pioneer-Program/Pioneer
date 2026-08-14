@@ -1,17 +1,9 @@
 {
   "sun": {
     "size": 3000,
-    "radius_solar": 1.0,
-    "mass_solar": 1.0,
-    "axial_rotation_speed": 10,
-    "glow_color": [
-      0.561,
-      0.529,
-      0.859
-    ],
-    "glow_layers": 24,
-    "glow_scale": 3.5,
-    "type": "pioneer:main_sequence"
+    "mass_solar": 1.2,
+    "stage": "main_sequence",
+    "axial_rotation_speed": 10
   },
   "planets": [
     "pioneer:velkar",

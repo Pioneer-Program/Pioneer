@@ -31,8 +31,6 @@ public final class GPUProfiler
     private static Section activeSection = null;
     private static int activeSlot = -1;
 
-    private GPUProfiler() {}
-
     static
     {
         if (DEBUG) Pioneer.LOGGER.info("[Pioneer] GPUProfiler active (DEBUG=true)");

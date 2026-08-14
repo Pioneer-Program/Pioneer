@@ -27,5 +27,6 @@
     "ascending_node": 2.2,
     "eccentricity": 0.02
   },
-  "gravity": 0.12
+  "mass_earth": 3.6e-07,
+  "bond_albedo": 0.1
 }

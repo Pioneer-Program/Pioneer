@@ -7,7 +7,6 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import cute.ame.pioneer.Core.API.PioneerAPI;
-import cute.ame.pioneer.Core.Render.Debug.CelestialDiagnostics;
 import cute.ame.pioneer.Core.Render.Debug.ShadingDebugMode;
 import net.minecraft.commands.SharedSuggestionProvider;
 import cute.ame.pioneer.Seamless.Network.PreloadCancelPayload;
@@ -23,6 +22,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 public final class PioneerDebugCommand
@@ -54,10 +54,7 @@ public final class PioneerDebugCommand
     {
         CommandSourceStack source = ctx.getSource();
         source.sendSuccess(() -> Component.literal("[Pioneer][debug] shading debug modes:"), false);
-        for (ShadingDebugMode mode : ShadingDebugMode.values())
-        {
-            source.sendSuccess(() -> Component.literal("  " + mode.key() + " - " + mode.description()), false);
-        }
+        for (ShadingDebugMode mode : ShadingDebugMode.values()) source.sendSuccess(() -> Component.literal("  " + mode.key() + " - " + mode.description()), false);
         return ShadingDebugMode.values().length;
     }
 
@@ -90,13 +87,13 @@ public final class PioneerDebugCommand
         ServerLevel targetLevel = DimensionArgument.getDimension(ctx, "dimension");
         ResourceKey<Level> targetDim = targetLevel.dimension();
 
-        if (!net.neoforged.fml.loading.FMLEnvironment.dist.isClient())
+        if (!FMLEnvironment.dist.isClient())
         {
-            source.sendFailure(Component.literal("[Pioneer][debug] seamless-test-render requires a physical client (singleplayer/LAN host) — not available on a dedicated server"));
+            source.sendFailure(Component.literal("[Pioneer][debug] seamless-test-render requires a physical client (singleplayer/LAN host), not available on a dedicated server"));
             return 0;
         }
 
-        source.sendSuccess(() -> Component.literal("[Pioneer][debug] Ghost debug frame capture for " + targetDim.location() + " queued on the render thread — single frame, check the client log for the result"), false);
+        source.sendSuccess(() -> Component.literal("[Pioneer][debug] Ghost debug frame capture for " + targetDim.location() + " queued on the render thread, single frame, check the client log for the result"), false);
 
         return 1;
     }
@@ -111,7 +108,7 @@ public final class PioneerDebugCommand
         var forced = SeamlessPreloadManager.getForcedSnapshot(player.getUUID(), targetDim);
         if (forced.isEmpty())
         {
-            source.sendFailure(Component.literal("[Pioneer][debug] Nothing forced for " + targetDim.location() + " — run seamless-test-preload first"));
+            source.sendFailure(Component.literal("[Pioneer][debug] Nothing forced for " + targetDim.location() + ", run 'seamless-test-preload' first"));
             return 0;
         }
 
@@ -150,7 +147,7 @@ public final class PioneerDebugCommand
         var bindingOpt = PioneerAPI.getBindingForDimension(targetDim);
         if (bindingOpt.isEmpty())
         {
-            source.sendFailure(Component.literal("[Pioneer][debug] " + targetDim.location() + " has no known dimension binding (not registered to a solar system) — can't resolve a planet"));
+            source.sendFailure(Component.literal("[Pioneer][debug] " + targetDim.location() + " has no known dimension binding (not registered to a solar system), can't resolve a planet"));
             return 0;
         }
 
