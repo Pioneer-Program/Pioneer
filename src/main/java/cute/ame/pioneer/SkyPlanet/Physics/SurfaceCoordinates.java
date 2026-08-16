@@ -4,6 +4,8 @@ import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 
 public final class SurfaceCoordinates
 {
+    private static final double MIN_SHRINK = 0.15;
+
     public static double blocksPerDegree(PlanetDefinition planet)
     {
         double circumferenceM = 2.0 * Math.PI * Math.max(planet.size(), 1e-3) * 1000.0;
@@ -26,7 +28,7 @@ public final class SurfaceCoordinates
     public static double longitudeDeg(PlanetDefinition planet, double blockX, double blockZ)
     {
         double lat = latitudeDeg(planet, blockX, blockZ);
-        double shrink = Math.max(Math.cos(Math.toRadians(lat)), 1e-3);
+        double shrink = Math.max(Math.cos(Math.toRadians(lat)), MIN_SHRINK);
         double along = planet.swapSurfaceAxes() ? blockZ : blockX;
 
         double deg = planet.originLongitude() + along / (effectiveBlocksPerDegree(planet) * shrink);
