@@ -81,7 +81,7 @@ public final class SolarSystemRenderer
         SolarSystemDefinition system = sOpt.get();
 
         long tick = level.getDayTime();
-        float animSeconds = (float) ((level.getGameTime() + partialTick) * PhysicalScale.SECONDS_PER_TICK);
+        double animSeconds = (level.getGameTime() + (double) partialTick) * PhysicalScale.SECONDS_PER_TICK;
 
         Vec3 effectiveCamPos = computeEffectiveCamPos(binding, system, camera, tick, partialTick);
         boolean isPlanetLocked = binding.type() == PioneerAPI.BindingType.SURFACE;
@@ -94,7 +94,7 @@ public final class SolarSystemRenderer
         if (isPlanetLocked && binding.planetId() != null)
         {
             int startY = Config.SHOW_OWN_PLANET_START_Y.get();
-            int endY   = Config.ORBIT_ENTRY_Y.get();
+            int endY = Config.ORBIT_ENTRY_Y.get();
             float altitude = (float) camera.getPosition().y;
             selfClimbOffset = altitude - startY;
             selfAscensionProgress = Mth.clamp(selfClimbOffset / (endY - startY), 0.0f, 1.0f);
@@ -149,7 +149,7 @@ public final class SolarSystemRenderer
         return camera.getPosition();
     }
 
-    private void renderSystemUnified(PoseStack ps, SolarSystemDefinition system, CelestialFrameContext ctx, float partialTick, Vec3 realCamPos, Matrix4f projMat, float animSeconds)
+    private void renderSystemUnified(PoseStack ps, SolarSystemDefinition system, CelestialFrameContext ctx, float partialTick, Vec3 realCamPos, Matrix4f projMat, double animSeconds)
     {
         Vec3 effectiveCamPos = ctx.effectiveCamPos();
         long tick = ctx.tick();
@@ -261,7 +261,7 @@ public final class SolarSystemRenderer
         };
     }
 
-    private void renderPlanetBody(PoseStack ps, PlanetDefinition planet, boolean isSelf, float alpha, float[] pos, double dx, double dy, double dz, double dist, CelestialFrameContext ctx, long tick, float partialTick, SunDefinition sun, @Nullable PlanetDefinition parent, float animSeconds)
+    private void renderPlanetBody(PoseStack ps, PlanetDefinition planet, boolean isSelf, float alpha, float[] pos, double dx, double dy, double dz, double dist, CelestialFrameContext ctx, long tick, float partialTick, SunDefinition sun, @Nullable PlanetDefinition parent, double animSeconds)
     {
         float cdx = (float) (dx / dist), cdy = (float) (dy / dist), cdz = (float) (dz / dist);
         float realSize = Math.max(planet.size(), MIN_APPARENT);

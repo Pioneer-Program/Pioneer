@@ -20,8 +20,8 @@ uniform float uCoverageBias;
 uniform float uDensity;
 uniform float uErosion;
 
-uniform vec3  uWindOffset;
-uniform vec2  uWeatherDriftSC;
+uniform vec3 uWindOffset;
+uniform vec2 uWeatherDriftSC;
 uniform float uVolumeFreq;
 uniform float uInvShellThickness;
 uniform float uExtinction;
@@ -39,8 +39,8 @@ uniform int uSunSteps;
 
 out vec4 fragColor;
 
-const int   MAX_VIEW_STEPS = 16;
-const int   MAX_SUN_STEPS  = 3;
+const int MAX_VIEW_STEPS = 16;
+const int MAX_SUN_STEPS  = 3;
 const float PI = 3.14159265359;
 
 const float NIGHT_CUTOFF = -0.55;
@@ -97,8 +97,7 @@ vec4 sampleVolume(vec3 p)
     float z0 = floor(z);
     float fz = z - z0;
 
-    return mix(texture(uNoiseVolumeLUT, uv + tileOffset(mod(z0, NV_RES))),
-               texture(uNoiseVolumeLUT, uv + tileOffset(mod(z0 + 1.0, NV_RES))), fz);
+    return mix(texture(uNoiseVolumeLUT, uv + tileOffset(mod(z0, NV_RES))), texture(uNoiseVolumeLUT, uv + tileOffset(mod(z0 + 1.0, NV_RES))), fz);
 }
 
 vec4 sampleVolumeCoarse(vec3 p)
@@ -127,7 +126,7 @@ vec2 sampleWeather(vec3 dirN)
 float shapeDensity(vec4 n, float coverage, float cloudType, float alt01)
 {
     float bottomFade = smoothstep(0.0, mix(0.35, 0.08, cloudType), alt01);
-    float topFade    = smoothstep(1.0, mix(0.55, 0.85, cloudType), alt01);
+    float topFade = smoothstep(1.0, mix(0.55, 0.85, cloudType), alt01);
 
     float shaped = clamp01((n.r - (1.0 - coverage)) / max(coverage, 0.05)) * bottomFade * topFade;
     if (shaped <= 0.001) return 0.0;
