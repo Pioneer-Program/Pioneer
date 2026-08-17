@@ -1,0 +1,9 @@
+{
+  "molar_mass": 31.998,
+  "refractivity": 27200.0,
+  "produces_ozone": true,
+  "breathable": true,
+  "required_fraction": 0.16,
+  "hazard_fraction": 0.6,
+  "specific_heat": 918.0
+}

@@ -18,7 +18,7 @@
   },
   "size": 6052,
   "axial_rotation_speed": 0.9,
-  "axial_tilt": 3.0,
+  "axial_tilt": 22.0,
   "orbit": {
     "radius": 211248.56,
     "period_days": 224.406,
@@ -27,7 +27,23 @@
     "ascending_node": 1.8,
     "eccentricity": 0.007
   },
-  "gravity": 0.85,
+  "mass_earth": 0.815,
+  "bond_albedo": 0.77,
+  "atmosphere": {
+    "breathable": false,
+    "composition": {
+      "co2": 0.95,
+      "n2": 0.05
+    },
+    "surface_pressure_bar": 0.15,
+    "haze_color": [
+      0.9,
+      0.72,
+      0.45
+    ],
+    "haze_optical_depth": 0.9,
+    "greenhouse_fraction": 0.55
+  },
   "dimension": "pioneer:arid",
   "rings": {
     "inner_radius": 1.6,
@@ -44,6 +60,15 @@
     ],
     "ring_count": 64,
     "opacity": 0.65,
-    "seed": 23
-  }
+    "seed": 23,
+    "single_scatter_albedo": 0.35,
+    "asymmetry": 0.75,
+    "backscatter_fraction": 0.2,
+    "opposition_b0": 0.6,
+    "opposition_h": 0.035,
+    "planet_shine": 0.2
+  },
+  "origin_latitude": 0.0,
+  "origin_longitude": 0.0,
+  "surface_scale": 1000.0
 }

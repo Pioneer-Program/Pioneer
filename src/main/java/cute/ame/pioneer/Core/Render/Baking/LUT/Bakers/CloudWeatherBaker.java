@@ -10,9 +10,14 @@ import java.util.stream.IntStream;
 
 public final class CloudWeatherBaker implements LUTBaker
 {
-    private static final float SCALE = 1.44f;
+    private static final float FRONT_SCALE = 1.5f;
+    private static final float CELL_SCALE = 7.0f;
+    private static final float TYPE_SCALE = 3.4f;
     private static final float TYPE_OFF = 19.2f;
-    private static final float CONTRAST = 2.4f;
+
+    private static final float CELL_CONTRAST = 1.85f;
+    private static final float FRONT_WEIGHT = 0.55f;
+    private static final float BAND_DEPTH = 0.14f;
 
     @Override
     public NativeImage bake(LUTParams params)
@@ -25,16 +30,22 @@ public final class CloudWeatherBaker implements LUTBaker
 
         IntStream.range(0, res).parallel().forEach(y ->
         {
-            float[] dir = new float[3];
-            float v = y * inv;
-            int row = y * res;
+            final float[] dir = new float[3];
+            final float v = y * inv;
+            final int row = y * res;
 
             for (int x = 0; x < res; x++)
             {
                 BakingMath.octaDecode(x * inv, v, dir);
-                float dx = dir[0] * SCALE, dy = dir[1] * SCALE, dz = dir[2] * SCALE;
-                float macro = BakingMath.contrast(NoiseUtil.fbm3(dx, dy, dz, seed, 3, 0.5f), CONTRAST);
-                float type = BakingMath.contrast(NoiseUtil.fbm3(dx * 1.7f + TYPE_OFF, dy * 1.7f + TYPE_OFF, dz * 1.7f + TYPE_OFF, seed + 977L, 2, 0.5f), CONTRAST);
+                final float dx = dir[0], dy = dir[1], dz = dir[2];
+
+                float fronts = NoiseUtil.fbmP(dx * FRONT_SCALE, dy * FRONT_SCALE, dz * FRONT_SCALE, seed + 0x4F20L, 3, 0.5f);
+                final float w = fronts * 0.25f;
+                float cells = NoiseUtil.fbmP((dx + w) * CELL_SCALE, (dy + w) * CELL_SCALE, (dz + w) * CELL_SCALE, seed, 5, 0.52f);
+
+                float band = BAND_DEPTH * (float) Math.cos(dy * 9.0f);
+                float macro = NoiseUtil.clamp01(cells * CELL_CONTRAST * 0.5f + 0.5f + fronts * FRONT_WEIGHT * 0.5f + band);
+                float type = BakingMath.contrast(NoiseUtil.fbmP01(dx * TYPE_SCALE + TYPE_OFF, dy * TYPE_SCALE + TYPE_OFF, dz * TYPE_SCALE + TYPE_OFF, seed + 977L, 3, 0.5f), 1.7f);
 
                 px[row + x] = NoiseUtil.toRGBA(macro, type, 0f, 1f);
             }

@@ -4,8 +4,6 @@ import net.minecraft.resources.ResourceLocation;
 
 public final class CloudShadowParams
 {
-    private CloudShadowParams() {}
-
     private static boolean valid;
     private static ResourceLocation weatherLut;
     private static float coverageBias;

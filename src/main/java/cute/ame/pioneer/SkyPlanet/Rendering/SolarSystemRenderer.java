@@ -8,6 +8,10 @@ import cute.ame.pioneer.Core.Render.Debug.GPUProfiler;
 import cute.ame.pioneer.Seamless.Client.SeamlessGhostSurfacePatchRenderer;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
+import cute.ame.pioneer.SkyPlanet.Data.SunDefinition;
+import cute.ame.pioneer.SkyPlanet.Physics.PlanetEnvironment;
+import cute.ame.pioneer.SkyPlanet.Physics.SkyBrightness;
+import cute.ame.pioneer.SkyPlanet.Physics.SurfaceCoordinates;
 import cute.ame.pioneer.SkyPlanet.Rendering.ShellProjector.Projected;
 import cute.ame.pioneer.SkyPlanet.Rendering.gl.*;
 import net.minecraft.client.Camera;
@@ -15,9 +19,12 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
+import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 import org.joml.Vector3f;
+
+import javax.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,10 +36,19 @@ import static cute.ame.pioneer.SkyPlanet.Rendering.ShellProjector.projectToSafeS
 public final class SolarSystemRenderer
 {
     private static final SolarSystemRenderer INSTANCE = new SolarSystemRenderer();
-    public static SolarSystemRenderer getInstance() { return INSTANCE; }
-    public static final float ORBIT_PLANET_SIZE = 60.0f;
+
+    public static SolarSystemRenderer getInstance()
+    {
+        return INSTANCE;
+    }
 
     private record RenderJob(double distance, Runnable draw) {}
+
+    private static final float CUBE_CORNER = 0.8660254f;
+
+    private final Matrix4f cullMatrix = new Matrix4f();
+    private final Matrix4f cullMatrixOriented = new Matrix4f();
+    private final FrustumIntersection frustum = new FrustumIntersection();
 
     public void renderSky(Matrix4f frustumMatrix, Matrix4f projectionMatrix, float partialTick, Camera camera, boolean isFoggy, Runnable skyFogSetup, ClientLevel level)
     {
@@ -64,12 +80,13 @@ public final class SolarSystemRenderer
         if (sOpt.isEmpty()) return;
         SolarSystemDefinition system = sOpt.get();
 
-        Vec3 effectiveCamPos = computeEffectiveCamPos(binding, system, camera, level, partialTick);
+        long tick = level.getDayTime();
+        double animSeconds = (level.getGameTime() + (double) partialTick) * PhysicalScale.SECONDS_PER_TICK;
+
+        Vec3 effectiveCamPos = computeEffectiveCamPos(binding, system, camera, tick, partialTick);
         boolean isPlanetLocked = binding.type() == PioneerAPI.BindingType.SURFACE;
 
-        ResourceLocation selfPlanetId = null;
-        float selfPlanetAlpha = 1.0f;
-
+        ResourceLocation selfPlanetId = binding.planetId();
         ResourceLocation excludedPlanetId = null;
         float selfClimbOffset = 0.0f;
         float selfAscensionProgress = 0.0f;
@@ -77,7 +94,7 @@ public final class SolarSystemRenderer
         if (isPlanetLocked && binding.planetId() != null)
         {
             int startY = Config.SHOW_OWN_PLANET_START_Y.get();
-            int endY   = Config.ORBIT_ENTRY_Y.get();
+            int endY = Config.ORBIT_ENTRY_Y.get();
             float altitude = (float) camera.getPosition().y;
             selfClimbOffset = altitude - startY;
             selfAscensionProgress = Mth.clamp(selfClimbOffset / (endY - startY), 0.0f, 1.0f);
@@ -85,35 +102,46 @@ public final class SolarSystemRenderer
             int tiltStartY = Config.SELF_TILT_START_Y.get();
             int tiltEndY = endY - Config.SELF_TILT_END_OFFSET.get();
             selfTiltProgress = (tiltEndY > tiltStartY) ? Mth.clamp((altitude - tiltStartY) / (tiltEndY - tiltStartY), 0.0f, 1.0f) : 1.0f;
+        }
 
-            float alpha = Mth.clamp(selfAscensionProgress * 2.0f, 0.0f, 1.0f);
-            if (alpha > 0.0f)
+        ps.pushPose();
+
+        Quaternionf horizon = null;
+        float starVis = 1.0f;
+        if (isPlanetLocked && binding.planetId() != null)
+        {
+            Optional<PlanetDefinition> selfOpt = system.findById(binding.planetId());
+            if (selfOpt.isPresent())
             {
-                selfPlanetId   = binding.planetId();
-                selfPlanetAlpha = alpha;
-            }
-            else
-            {
-                excludedPlanetId = binding.planetId();
+                PlanetDefinition self = selfOpt.get();
+
+                Vec3 here = camera.getPosition();
+                double latDeg = SurfaceCoordinates.latitudeDeg(self, here.x, here.z);
+                double lonDeg = SurfaceCoordinates.longitudeDeg(self, here.x, here.z);
+
+                double[] sp = self.currentWorldPosition(tick, partialTick);
+                float sl = (float) Math.sqrt(sp[0] * sp[0] + sp[1] * sp[1] + sp[2] * sp[2]);
+                Vector3f worldSun = (sl > 1e-6f) ? new Vector3f((float) -sp[0] / sl, (float) -sp[1] / sl, (float) -sp[2] / sl) : new Vector3f(0f, 0f, 1f);
+
+                horizon = CelestialMath.localHorizonRotation(self.axialTilt(), self.axialRotationSpeed(), latDeg, lonDeg, worldSun, tick, partialTick);
+                Vector3f sunLocal = horizon.transform(new Vector3f(worldSun));
+                starVis = SkyBrightness.starVisibility(sunLocal.y, self);
             }
         }
 
-        long tick = level.getGameTime();
-        ps.pushPose();
-
-        CelestialFrameContext ctx = new CelestialFrameContext(effectiveCamPos, selfPlanetId, selfPlanetAlpha, excludedPlanetId, selfClimbOffset, selfAscensionProgress, tick, !isPlanetLocked, binding.type() == PioneerAPI.BindingType.SURFACE, selfTiltProgress);
-        renderSystemUnified(ps, system, ctx, partialTick, camera.getPosition(), projMat);
+        CelestialFrameContext ctx = new CelestialFrameContext(effectiveCamPos, selfPlanetId, 1.0f, excludedPlanetId, selfClimbOffset, selfAscensionProgress, tick, !isPlanetLocked, binding.type() == PioneerAPI.BindingType.SURFACE, selfTiltProgress, horizon, starVis);
+        renderSystemUnified(ps, system, ctx, partialTick, camera.getPosition(), projMat, animSeconds);
         ps.popPose();
     }
 
-    private Vec3 computeEffectiveCamPos(PioneerAPI.DimensionBinding binding, SolarSystemDefinition system, Camera camera, ClientLevel level, float partialTick)
+    private Vec3 computeEffectiveCamPos(PioneerAPI.DimensionBinding binding, SolarSystemDefinition system, Camera camera, long tick, float partialTick)
     {
         if ((binding.type() == PioneerAPI.BindingType.SURFACE) && binding.planetId() != null)
         {
             Optional<PlanetDefinition> planetOpt = system.findById(binding.planetId());
             if (planetOpt.isPresent())
             {
-                double[] planetPos = planetOpt.get().currentWorldPosition(level.getGameTime(), partialTick);
+                double[] planetPos = planetOpt.get().currentWorldPosition(tick, partialTick);
                 return new Vec3(planetPos[0], planetPos[1], planetPos[2]);
             }
         }
@@ -121,25 +149,31 @@ public final class SolarSystemRenderer
         return camera.getPosition();
     }
 
-    private void renderSystemUnified(PoseStack ps, SolarSystemDefinition system, CelestialFrameContext ctx, float partialTick, Vec3 realCamPos, Matrix4f projMat)
+    private void renderSystemUnified(PoseStack ps, SolarSystemDefinition system, CelestialFrameContext ctx, float partialTick, Vec3 realCamPos, Matrix4f projMat, double animSeconds)
     {
         Vec3 effectiveCamPos = ctx.effectiveCamPos();
         long tick = ctx.tick();
 
+        final Quaternionf horizon = ctx.horizonRotation();
+
+        cullMatrix.set(projMat).mul(ps.last().pose());
+        if (horizon != null) frustum.set(cullMatrixOriented.set(cullMatrix).rotate(horizon));
+        else frustum.set(cullMatrix);
+
         GPUProfiler.begin("skybox.galaxy");
-        GalaxyRenderer.render(ps, projMat, tick, partialTick);
+        oriented(ps, horizon, () -> GalaxyRenderer.render(ps, projMat, tick, partialTick, ctx.starVisibility())).run();
         GPUProfiler.end();
 
+        List<RenderJob> jobs = new ArrayList<>();
+
         {
-            double sdx = -effectiveCamPos.x, sdy = -effectiveCamPos.y, sdz = -effectiveCamPos.z;
-            double sdist = Math.sqrt(sdx * sdx + sdy * sdy + sdz * sdz);
+            final double sdx = -effectiveCamPos.x, sdy = -effectiveCamPos.y, sdz = -effectiveCamPos.z;
+            final double sdist = Math.sqrt(sdx * sdx + sdy * sdy + sdz * sdz);
             if (sdist > 1e-6)
             {
-                SunRenderer.renderRealScale(ps, system.sun(), tick, partialTick, sdx, sdy, sdz, sdist, realCamPos);
+                jobs.add(new RenderJob(sdist, oriented(ps, horizon, () -> SunRenderer.renderRealScale(ps, system.sun(), tick, partialTick, sdx, sdy, sdz, sdist, realCamPos))));
             }
         }
-
-        List<RenderJob> jobs = new ArrayList<>();
 
         for (PlanetDefinition planet : system.planets())
         {
@@ -167,14 +201,15 @@ public final class SolarSystemRenderer
                     dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
                 }
 
-                if (dist >= 1e-6)
+                if (dist >= 1e-6 && (isSelf || visible(planet, projectToSafeShell(dx, dy, dz, dist, Math.max(planet.size(), MIN_APPARENT)))))
                 {
                     final double fdx = dx, fdy = dy, fdz = dz, fdist = dist;
                     final float[] fpos = { (float) p[0], (float) p[1], (float) p[2] };
                     final boolean fSelf = isSelf;
                     final float fAlpha = alpha;
 
-                    jobs.add(new RenderJob(dist, () -> renderPlanetBody(ps, planet, fSelf, fAlpha, fpos, fdx, fdy, fdz, fdist, ctx, tick, partialTick)));
+                    Runnable draw = () -> renderPlanetBody(ps, planet, fSelf, fAlpha, fpos, fdx, fdy, fdz, fdist, ctx, tick, partialTick, system.sun(), null, animSeconds);
+                    jobs.add(new RenderJob(dist, fSelf ? draw : oriented(ps, horizon, draw)));
                 }
             }
 
@@ -182,14 +217,17 @@ public final class SolarSystemRenderer
             {
                 double[] mLocal = moon.currentWorldPosition(tick, partialTick);
 
-                final double[] mWorld = { p[0] + mLocal[0], p[1] + mLocal[1], p[2] + mLocal[2] };
+                final double mdx = p[0] + mLocal[0] - effectiveCamPos.x;
+                final double mdy = p[1] + mLocal[1] - effectiveCamPos.y;
+                final double mdz = p[2] + mLocal[2] - effectiveCamPos.z;
 
-                double mdx = mWorld[0] - effectiveCamPos.x;
-                double mdy = mWorld[1] - effectiveCamPos.y;
-                double mdz = mWorld[2] - effectiveCamPos.z;
+                final double mdist = Math.sqrt(mdx * mdx + mdy * mdy + mdz * mdz);
+                if (mdist < 1e-6) continue;
+                if (!visible(moon, projectToSafeShell(mdx, mdy, mdz, mdist, Math.max(moon.size(), MIN_APPARENT)))) continue;
 
-                double mdist = Math.sqrt(mdx * mdx + mdy * mdy + mdz * mdz);
-                jobs.add(new RenderJob(mdist, () -> MoonRenderer.renderRealScale(ps, moon, mWorld, effectiveCamPos, tick, partialTick)));
+                final float[] mpos = { (float) (p[0] + mLocal[0]), (float) (p[1] + mLocal[1]), (float) (p[2] + mLocal[2]) };
+                Runnable draw = () -> renderPlanetBody(ps, moon, false, 1.0f, mpos, mdx, mdy, mdz, mdist, ctx, tick, partialTick, system.sun(), planet, animSeconds);
+                jobs.add(new RenderJob(mdist, oriented(ps, horizon, draw)));
             }
         }
 
@@ -197,8 +235,33 @@ public final class SolarSystemRenderer
         for (RenderJob job : jobs) job.draw().run();
     }
 
+    private boolean visible(PlanetDefinition body, Projected proj)
+    {
+        return frustum.testSphere(proj.dx, proj.dy, proj.dz, cullRadius(body, proj.size));
+    }
 
-    private void renderPlanetBody(PoseStack ps, PlanetDefinition planet, boolean isSelf, float alpha, float[] pos, double dx, double dy, double dz, double dist, CelestialFrameContext ctx, long tick, float partialTick)
+    private static float cullRadius(PlanetDefinition body, float apparentSize)
+    {
+        float f = CUBE_CORNER;
+        if (body.atmosphere().isPresent()) f = 1.25f;
+        if (body.clouds().isPresent()) f = Math.max(f, 1.30f);
+        if (body.rings().isPresent()) f = Math.max(f, body.rings().get().outerRadius() * 0.55f);
+        return apparentSize * f;
+    }
+
+    private static Runnable oriented(PoseStack ps, Quaternionf horizon, Runnable draw)
+    {
+        if (horizon == null) return draw;
+        return () ->
+        {
+            ps.pushPose();
+            ps.mulPose(horizon);
+            draw.run();
+            ps.popPose();
+        };
+    }
+
+    private void renderPlanetBody(PoseStack ps, PlanetDefinition planet, boolean isSelf, float alpha, float[] pos, double dx, double dy, double dz, double dist, CelestialFrameContext ctx, long tick, float partialTick, SunDefinition sun, @Nullable PlanetDefinition parent, double animSeconds)
     {
         float cdx = (float) (dx / dist), cdy = (float) (dy / dist), cdz = (float) (dz / dist);
         float realSize = Math.max(planet.size(), MIN_APPARENT);
@@ -216,45 +279,57 @@ public final class SolarSystemRenderer
         float plen = (float) Math.sqrt(psx * psx + psy * psy + psz * psz);
         Vector3f worldSun = (plen > 1e-6f) ? new Vector3f(psx / plen, psy / plen, psz / plen) : new Vector3f(0f, 0f, 1f);
 
+        final PlanetEnvironment env = (parent == null) ? PlanetEnvironment.of(sun, planet) : PlanetEnvironment.ofMoon(sun, parent, planet);
+        final float sunAngRad = PhysicalScale.sunAngularRadius(sun, env.distanceAu());
         Quaternionf invRot = orientation.conjugate(new Quaternionf());
 
-        Vector3f localSun = invRot.transform(new Vector3f(worldSun));
+        Vector3f litFrom = new Vector3f(worldSun);
+        if (isSelf && ctx.horizonRotation() != null) ctx.horizonRotation().transform(litFrom);
+
+        Vector3f localSun = invRot.transform(new Vector3f(litFrom));
         Vector3f localCam = invRot.transform(new Vector3f(cdx, cdy, cdz));
         float sunLX = localSun.x, sunLY = localSun.y, sunLZ = localSun.z;
         float camLX = localCam.x, camLY = localCam.y, camLZ = localCam.z;
+        final float shellDist = (float) Math.sqrt(proj.dx * proj.dx + proj.dy * proj.dy + proj.dz * proj.dz);
+        final float camDistObj = shellDist / apparentSize;
 
         planet.atmosphere().ifPresent(atmo ->
         {
             ps.pushPose();
             ps.scale(apparentSize, apparentSize, apparentSize);
 
-            float camDistObj = (float) Math.sqrt(proj.dx * proj.dx + proj.dy * proj.dy + proj.dz * proj.dz) / apparentSize;
-
             GPUProfiler.begin("planet.volumetric.atmosphere");
-            AtmosphereRenderer.render(ps, atmo, -camLX, -camLY, -camLZ, sunLX, sunLY, sunLZ, camDistObj);
+            AtmosphereRenderer.render(ps, atmo, env, planet.size(), -camLX, -camLY, -camLZ, sunLX, sunLY, sunLZ, camDistObj);
             GPUProfiler.end();
 
             ps.popPose();
         });
 
-        planet.rings().ifPresent(rings -> RingMeshRenderer.render(ps, rings, apparentSize, sunLX, sunLY, sunLZ));
-        float ringInnerR = planet.rings().map(r -> r.innerRadius() * 0.5f).orElse(CubeMeshRenderer.NO_RINGS);
-        float ringOuterR = planet.rings().map(r -> r.outerRadius() * 0.5f).orElse(CubeMeshRenderer.NO_RINGS);
-
         ps.pushPose();
         ps.scale(apparentSize, apparentSize, apparentSize);
 
-        CubeMeshRenderer.renderTextureCubeShaded(ps, planet.resolveTexture(), true, sunLX, sunLY, sunLZ, alpha, ringInnerR, ringOuterR);
+        GPUProfiler.begin("celestial.planet.core");
+        BodyRenderer.render(ps, planet.resolveTexture(), alpha, -camLX * camDistObj, -camLY * camDistObj, -camLZ * camDistObj, sunLX, sunLY, sunLZ, planet.rings().orElse(null), sunAngRad, planet.atmosphere().isPresent());
+        GPUProfiler.end();
+
+        planet.rings().ifPresent(rings ->
+        {
+            ps.pushPose();
+            ps.scale(1.0f / apparentSize, 1.0f / apparentSize, 1.0f / apparentSize);
+
+            GPUProfiler.begin("celestial.planet.rings");
+            RingRenderer.render(ps, rings, apparentSize, -camLX * shellDist, -camLY * shellDist, -camLZ * shellDist, sunLX, sunLY, sunLZ, sunAngRad);
+            GPUProfiler.end();
+
+            ps.popPose();
+        });
 
         planet.clouds().ifPresent(clouds ->
         {
             ps.pushPose();
 
-            float camDistObj = (float) Math.sqrt(proj.dx * proj.dx + proj.dy * proj.dy + proj.dz * proj.dz) / apparentSize;
-            float timeSeconds = (tick + partialTick) / 20.0f;
-
             GPUProfiler.begin("planet.volumetric.clouds");
-            CloudsRenderer.render(ps, clouds, -camLX, -camLY, -camLZ, sunLX, sunLY, sunLZ, camDistObj, timeSeconds);
+            CloudsRenderer.render(ps, clouds, -camLX, -camLY, -camLZ, sunLX, sunLY, sunLZ, camDistObj, animSeconds);
             GPUProfiler.end();
 
             ps.popPose();

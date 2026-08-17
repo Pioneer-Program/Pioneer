@@ -4,8 +4,6 @@ import com.mojang.blaze3d.vertex.BufferBuilder;
 
 public final class CubeGeometry
 {
-    private CubeGeometry() {}
-
     private static final float[] FACE_VERTS = new float[72];
 
     static
@@ -40,9 +38,7 @@ public final class CubeGeometry
         for (int i = 0; i < 72; i += 3)
         {
             final float x = v[i], y = v[i + 1], z = v[i + 2];
-            buf.addVertex(x * scale, y * scale, z * scale)
-               .setColor(1f, 1f, 1f, 1f)
-               .setNormal(x, y, z);
+            buf.addVertex(x * scale, y * scale, z * scale).setColor(1f, 1f, 1f, 1f).setNormal(x, y, z);
         }
     }
 }

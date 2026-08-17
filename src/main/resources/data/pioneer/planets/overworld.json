@@ -17,7 +17,7 @@
     ]
   },
   "size": 6371,
-  "axial_rotation_speed": 1.2,
+  "axial_rotation_speed": 1.0,
   "axial_tilt": 23.5,
   "orbit": {
     "radius": 292183.36,
@@ -29,14 +29,19 @@
   },
   "atmosphere": {
     "breathable": true,
-    "scale": 1.35,
-    "color": [
-      0.3,
-      0.6,
-      1.0
+    "composition": {
+      "n2": 0.78,
+      "o2": 0.21,
+      "ar": 0.01
+    },
+    "surface_pressure_bar": 1.0,
+    "haze_color": [
+      0.85,
+      0.85,
+      0.85
     ],
-    "opacity": 0.75,
-    "fresnel_power": 1.2
+    "haze_optical_depth": 0.05,
+    "greenhouse_fraction": 0.1
   },
   "clouds": {
     "color": [
@@ -61,7 +66,11 @@
     "powder_strength": 1.0
   },
   "dimension": "minecraft:overworld",
-  "gravity": 1.0,
+  "mass_earth": 1.0,
+  "bond_albedo": 0.306,
+  "origin_latitude": 0.0,
+  "origin_longitude": 0.0,
+  "surface_scale": 1000.0,
   "moons": [
     "pioneer:luna"
   ]

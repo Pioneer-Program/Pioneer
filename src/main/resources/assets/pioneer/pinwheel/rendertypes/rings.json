@@ -1,13 +1,13 @@
 {
-  "format": "POSITION_TEX_COLOR_NORMAL",
+  "format": "POSITION_COLOR_NORMAL",
   "mode": "QUADS",
   "bufferSize": "TRANSIENT",
   "sort": false,
   "layers": [
     { "type": "veil:shader", "name": "pioneer:rings" },
-    { "type": "minecraft:transparency", "mode": "additive" },
-    { "type": "minecraft:depth_test", "mode": "lequal" },
-    { "type": "minecraft:cull", "face": "none" },
+    { "type": "minecraft:transparency", "mode": "translucent" },
+    { "type": "minecraft:depth_test", "mode": "always" },
+    { "type": "minecraft:cull", "face": "front" },
     { "type": "minecraft:write_mask", "color": true, "depth": false }
   ]
 }

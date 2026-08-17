@@ -20,7 +20,7 @@ public final class BuiltinStarTypes
 
     private static ResourceLocation id(String path)
     {
-        return ResourceLocation.fromNamespaceAndPath("pioneer", path);
+        return ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, path);
     }
 
     public static void registerAll()
@@ -34,8 +34,9 @@ public final class BuiltinStarTypes
 
     private static void renderJetsAndDiskIfPresent(PoseStack ps, SunDefinition sun, long tick, float partialTick, float apparentSize, MultiBufferSource.BufferSource bufferSource, double dx, double dy, double dz, Vec3 realCamPos)
     {
-        GPUProfiler.begin("celestial.jetcone");
-        if (sun.jetCone() != null) JetConeRenderer.render(ps, sun.jetCone(), tick, partialTick, apparentSize, bufferSource);
+        GPUProfiler.begin("celestial.star.jetcone");
+        if (sun.effectiveJetCone() != null) JetConeRenderer.render(ps, sun.effectiveJetCone(), tick, partialTick, apparentSize, bufferSource);
+
         GPUProfiler.end();
     }
 

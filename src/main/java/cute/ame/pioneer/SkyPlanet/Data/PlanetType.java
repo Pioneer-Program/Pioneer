@@ -1,6 +1,7 @@
 package cute.ame.pioneer.SkyPlanet.Data;
 
 import com.mojang.serialization.Codec;
+import cute.ame.pioneer.Pioneer;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.Locale;
@@ -21,6 +22,6 @@ public enum PlanetType
 
   public ResourceLocation defaultGeneratorId()
   {
-    return ResourceLocation.fromNamespaceAndPath("pioneer", name().toLowerCase(Locale.ROOT));
+    return ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, name().toLowerCase(Locale.ROOT));
   }
 }

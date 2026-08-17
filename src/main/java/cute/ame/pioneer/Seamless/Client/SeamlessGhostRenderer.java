@@ -93,7 +93,7 @@ public final class SeamlessGhostRenderer
         }
     }
 
-    private static final ResourceLocation BRIDGE_TEXTURE_LOCATION = ResourceLocation.fromNamespaceAndPath("pioneer", "seamless_bridge_target");
+    private static final ResourceLocation BRIDGE_TEXTURE_LOCATION = ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "seamless_bridge_target");
     private static boolean bridgeTextureRegistered = false;
 
     public static void blitBridgeOverlay(GuiGraphics guiGraphics)

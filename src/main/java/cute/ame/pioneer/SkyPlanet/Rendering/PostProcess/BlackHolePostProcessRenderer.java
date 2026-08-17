@@ -1,6 +1,6 @@
 package cute.ame.pioneer.SkyPlanet.Rendering.PostProcess;
 
-import com.mojang.logging.LogUtils;
+import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.SkyPlanet.Data.BlackHoleDefinition;
 import foundry.veil.api.client.render.VeilRenderSystem;
 import foundry.veil.api.client.render.framebuffer.VeilFramebuffers;
@@ -12,14 +12,12 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
-import org.slf4j.Logger;
 
 import java.util.Collections;
 
 public final class BlackHolePostProcessRenderer
 {
-    private static final Logger LOGGER = LogUtils.getLogger();
-    private static final ResourceLocation SHADER_ID = ResourceLocation.fromNamespaceAndPath("pioneer", "black_hole");
+    private static final ResourceLocation SHADER_ID = ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "black_hole");
 
     private static final BlitPostStage STAGE = new BlitPostStage(SHADER_ID, Collections.emptyMap(), VeilFramebuffers.MAIN, VeilFramebuffers.POST, true);
 
@@ -36,7 +34,7 @@ public final class BlackHolePostProcessRenderer
             if (!warnedMissingShader)
             {
                 warnedMissingShader = true;
-                LOGGER.warn("[Pioneer] black_hole post-process shader not resolved yet (still compiling / failed to load)... skipping this frame.. :c");
+                Pioneer.LOGGER.warn("[Pioneer] black_hole post-process shader not resolved yet (still compiling / failed to load)... skipping this frame.. :c");
             }
             return;
         }

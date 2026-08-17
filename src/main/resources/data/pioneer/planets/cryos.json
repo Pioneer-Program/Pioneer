@@ -28,14 +28,11 @@
     "eccentricity": 0.009
   },
   "atmosphere": {
-    "scale": 1.04,
-    "color": [
-      0.7,
-      0.88,
-      1.0
-    ],
-    "opacity": 0.05,
-    "fresnel_power": 5.0
+    "composition": {
+      "o2": 1.0
+    },
+    "surface_pressure_bar": 1e-11
   },
-  "gravity": 0.13
+  "mass_earth": 0.008,
+  "bond_albedo": 0.67
 }

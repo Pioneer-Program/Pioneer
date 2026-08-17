@@ -2,6 +2,7 @@ package cute.ame.pioneer.SkyPlanet.Rendering.gl;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
+import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.SkyPlanet.Data.JetConeDefinition;
 import foundry.veil.api.client.render.shader.program.ShaderProgram;
 import foundry.veil.api.client.render.shader.uniform.ShaderUniformAccess;
@@ -14,7 +15,7 @@ import org.lwjgl.opengl.GL11;
 
 public final class JetConeRenderer
 {
-    private static final ResourceLocation JET_FLARE_RENDER_TYPE = ResourceLocation.fromNamespaceAndPath("pioneer", "jet_flare");
+    private static final ResourceLocation JET_FLARE_RENDER_TYPE = ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "jet_flare");
 
     private static final float FLARE_TAPER_EXPONENT = 1.6f;
     private static final float RADIUS_SCALE = .9f;

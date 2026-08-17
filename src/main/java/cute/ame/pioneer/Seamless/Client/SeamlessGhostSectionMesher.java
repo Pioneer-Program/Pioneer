@@ -124,16 +124,18 @@ public final class SeamlessGhostSectionMesher
     private static Quad buildQuad(ClientLevel ghost, BlockPos pos, Direction dir, TextureAtlasSprite sprite, int tint)
     {
         int x = pos.getX(), y = pos.getY(), z = pos.getZ();
-        float x0 = x, y0 = y, z0 = z, x1 = x + 1f, y1 = y + 1f, z1 = z + 1f;
+        float x1 = x + 1f;
+        float y1 = y + 1f;
+        float z1 = z + 1f;
 
         float[][] corners = switch (dir)
         {
-            case DOWN -> new float[][] {{x0, y0, z1}, {x0, y0, z0}, {x1, y0, z0}, {x1, y0, z1}};
-            case UP -> new float[][] {{x0, y1, z0}, {x0, y1, z1}, {x1, y1, z1}, {x1, y1, z0}};
-            case NORTH -> new float[][] {{x1, y1, z0}, {x1, y0, z0}, {x0, y0, z0}, {x0, y1, z0}};
-            case SOUTH -> new float[][] {{x0, y1, z1}, {x0, y0, z1}, {x1, y0, z1}, {x1, y1, z1}};
-            case WEST -> new float[][] {{x0, y1, z0}, {x0, y0, z0}, {x0, y0, z1}, {x0, y1, z1}};
-            case EAST -> new float[][] {{x1, y1, z1}, {x1, y0, z1}, {x1, y0, z0}, {x1, y1, z0}};
+            case DOWN -> new float[][] {{(float) x, (float) y, z1}, {(float) x, (float) y, (float) z}, {x1, (float) y, (float) z}, {x1, (float) y, z1}};
+            case UP -> new float[][] {{(float) x, y1, (float) z}, {(float) x, y1, z1}, {x1, y1, z1}, {x1, y1, (float) z}};
+            case NORTH -> new float[][] {{x1, y1, (float) z}, {x1, (float) y, (float) z}, {(float) x, (float) y, (float) z}, {(float) x, y1, (float) z}};
+            case SOUTH -> new float[][] {{(float) x, y1, z1}, {(float) x, (float) y, z1}, {x1, (float) y, z1}, {x1, y1, z1}};
+            case WEST -> new float[][] {{(float) x, y1, (float) z}, {(float) x, (float) y, (float) z}, {(float) x, (float) y, z1}, {(float) x, y1, z1}};
+            case EAST -> new float[][] {{x1, y1, z1}, {x1, (float) y, z1}, {x1, (float) y, (float) z}, {x1, y1, (float) z}};
         };
 
         float shade = switch (dir)

@@ -10,6 +10,7 @@ import cute.ame.pioneer.Core.Render.Baking.LUT.Bakers.CloudVolumeBaker;
 import cute.ame.pioneer.Core.Render.Baking.LUT.BuiltinLUTs;
 import cute.ame.pioneer.Core.Render.Baking.LUT.LUTParams;
 import cute.ame.pioneer.Core.Render.Baking.LUT.LUTRegistry;
+import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.SkyPlanet.Data.CloudsDefinition;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
@@ -19,9 +20,12 @@ import static cute.ame.pioneer.Core.Render.Helper.UniformHelper.setInt;
 
 public final class CloudsRenderer
 {
-    private static final ResourceLocation CLOUDS_RENDER_TYPE = ResourceLocation.fromNamespaceAndPath("pioneer", "clouds");
+    private static final ResourceLocation CLOUDS_RENDER_TYPE = ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "clouds");
 
-    static { VeilSkyShaderHelper.registerVfxShader(CLOUDS_RENDER_TYPE); }
+    static
+    {
+        VeilSkyShaderHelper.registerVfxShader(CLOUDS_RENDER_TYPE);
+    }
 
     private static final float MAX_CAM_DIST_OBJ = 64.0f;
 
@@ -29,9 +33,10 @@ public final class CloudsRenderer
     private static final int MAX_SUN_STEPS  = 3;
     private static final int MIN_VIEW_STEPS = 6;
 
-    private static final float TIME_SCALE = 0.035f;
+    private static final double TIME_SCALE = 0.0035;
+    private static final double WEATHER_DRIFT = 0.018;
+
     private static final float BASE_FREQ_MULT = 3.2f;
-    private static final float WEATHER_DRIFT = 0.006f;
     private static final float COVERAGE_GAIN = 1.4f;
     private static final float SUN_MARCH_SCALE = 2.0f;
 
@@ -41,7 +46,7 @@ public final class CloudsRenderer
     private static final int UNIT_NOISE_VOLUME = 4;
     private static final int UNIT_WEATHER_LUT  = 5;
 
-    public static void render(PoseStack poseStack, CloudsDefinition clouds, float camDirX, float camDirY, float camDirZ, float sunDirX, float sunDirY, float sunDirZ, float camDistObj, float timeSeconds)
+    public static void render(PoseStack poseStack, CloudsDefinition clouds, float camDirX, float camDirY, float camDirZ, float sunDirX, float sunDirY, float sunDirZ, float camDistObj, double timeSeconds)
     {
         final float clampedCamDist = Math.min(camDistObj, MAX_CAM_DIST_OBJ);
         final float planetHalf = 0.5f;
@@ -54,16 +59,17 @@ public final class CloudsRenderer
         final float extinction = 6.0f / shellThickness;
         final float maxSegmentLen = shellThickness * 12.0f;
 
-        final float windT = timeSeconds * TIME_SCALE * clouds.windSpeed();
-        final float windOX = clouds.windX() * windT;
-        final float windOZ = clouds.windZ() * windT;
-
-        final float driftAngle = windT * WEATHER_DRIFT;
-        final float driftSin = (float) Math.sin(driftAngle);
-        final float driftCos = (float) Math.cos(driftAngle);
-
         final float volumeFreq = Math.max(clouds.noiseScale() * BASE_FREQ_MULT, 0.01f) * VOLUME_FREQ_SCALE;
         final float coverageBias = (clouds.coverage() - 0.5f) * COVERAGE_GAIN;
+
+        final double windSpeed = clouds.windSpeed() * 0.025d;
+        final double windT = timeSeconds * TIME_SCALE * windSpeed;
+        final float windOX = wrapUnit(windT * clouds.windX() * volumeFreq);
+        final float windOZ = wrapUnit(windT * clouds.windZ() * volumeFreq);
+
+        final double driftAngle = wrapAngle(timeSeconds * WEATHER_DRIFT * windSpeed);
+        final float driftSin = (float) Math.sin(driftAngle);
+        final float driftCos = (float) Math.cos(driftAngle);
 
         final float apparent = cloudBoundRadius / Math.max(clampedCamDist, 1e-3f);
         final int viewSteps = Math.clamp(Math.round(MIN_VIEW_STEPS + apparent * 48.0f), MIN_VIEW_STEPS, MAX_VIEW_STEPS);
@@ -133,5 +139,15 @@ public final class CloudsRenderer
         RenderSystem.defaultBlendFunc();
         RenderSystem.depthMask(true);
         CloudShadowParams.publish(weatherLut, coverageBias, driftSin, driftCos, cloudInner, 1.0f);
+    }
+
+    private static float wrapUnit(double v)
+    {
+        return (float) (v - Math.floor(v));
+    }
+
+    private static double wrapAngle(double a)
+    {
+        return a - Math.floor(a / Math.TAU) * Math.TAU;
     }
 }

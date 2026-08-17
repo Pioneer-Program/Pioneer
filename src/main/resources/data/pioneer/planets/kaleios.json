@@ -18,7 +18,7 @@
   },
   "size": 69911,
   "axial_rotation_speed": 2.5,
-  "axial_tilt": 8.0,
+  "axial_tilt": 18.0,
   "orbit": {
     "radius": 1520229.92,
     "period_days": 4332.19,
@@ -28,14 +28,17 @@
     "eccentricity": 0.049
   },
   "atmosphere": {
-    "scale": 1.15,
-    "color": [
-      0.9,
-      0.72,
-      0.45
+    "composition": {
+      "h2": 0.9,
+      "he": 0.1
+    },
+    "surface_pressure_bar": 5.0,
+    "haze_color": [
+      0.92,
+      0.85,
+      0.7
     ],
-    "opacity": 0.55,
-    "fresnel_power": 2.2
+    "haze_optical_depth": 0.6
   },
   "rings": {
     "inner_radius": 1.4,
@@ -52,9 +55,16 @@
     ],
     "ring_count": 56,
     "opacity": 0.65,
-    "seed": 23
+    "seed": 23,
+    "single_scatter_albedo": 0.45,
+    "asymmetry": 0.65,
+    "backscatter_fraction": 0.3,
+    "opposition_b0": 0.8,
+    "opposition_h": 0.025,
+    "planet_shine": 0.25
   },
-  "gravity": 2.5,
+  "mass_earth": 317.8,
+  "bond_albedo": 0.503,
   "moons": [
     "pioneer:io_prime",
     "pioneer:cryos"

@@ -1,6 +1,7 @@
 package cute.ame.pioneer.Core.Render.Baking.Planet;
 
 import com.mojang.blaze3d.platform.NativeImage;
+import cute.ame.pioneer.Pioneer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.ResourceLocation;
@@ -17,7 +18,7 @@ public final class RingTextureHelper
         img.setPixelRGBA(0, 0, 0xFFFFFFFF);
 
         DynamicTexture tex = new DynamicTexture(img);
-        WHITE = ResourceLocation.fromNamespaceAndPath("pioneer", "generated/ring_white");
+        WHITE = ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "generated/ring_white");
         Minecraft.getInstance().getTextureManager().register(WHITE, tex);
         return WHITE;
     }

@@ -15,8 +15,6 @@ public final class ZeroGDragEvent
   private static final double DRAG = 0.85;
   private static final double MIN_SPEED_SQR = 1.0e-6;
 
-  private ZeroGDragEvent() {}
-
   @SubscribeEvent
   public static void onPlayerTick(PlayerTickEvent.Pre event)
   {
