@@ -5,7 +5,11 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "MinecraftLevelRendererAccessor",
+    "Chunk.ChunkMapMixin",
+    "Chunk.ServerChunkCacheMixin",
+    "Entity.EntityMixin",
     "Player.DebugSpectatorFlightSpeedMixin",
+    "Player.ServerPlayNetworkHandlerMixin",
     "Player.SpaceFallDamageMixin",
     "Player.SwimPoseMixin"
   ],
