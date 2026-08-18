@@ -4,12 +4,16 @@
   "package": "cute.ame.pioneer.Mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "ChunkMapAccessor",
     "MinecraftLevelRendererAccessor",
+    "Chunk.ChunkGenerationTaskMixin",
     "Chunk.ChunkMapMixin",
+    "Chunk.DistanceManagerMixin",
+    "Chunk.LevelMixin",
     "Chunk.ServerChunkCacheMixin",
+    "Chunk.StructureManagerMixin",
     "Entity.EntityMixin",
     "Player.DebugSpectatorFlightSpeedMixin",
-    "Player.ServerPlayNetworkHandlerMixin",
     "Player.SpaceFallDamageMixin",
     "Player.SwimPoseMixin"
   ],

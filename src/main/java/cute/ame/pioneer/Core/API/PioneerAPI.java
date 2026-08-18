@@ -110,44 +110,4 @@ public final class PioneerAPI
     SYSTEMS.clear();
     DIM_BINDINGS.clear();
   }
-
-  public static class ChunkLoadState {
-
-    private static final Map<ServerPlayer, double[]> LAST_POS = new IdentityHashMap<>();
-    private static final Map<ServerPlayer, Double> SPEED = new IdentityHashMap<>();
-    private static final Map<ServerPlayer, Long> LAST_FAST_TICKS = new IdentityHashMap<>();
-    private static final double MAX_SPEED_PER_TICK = 20.0; // à calibrer sur la vitesse normale du vaisseau
-    private static final long COOLDOWN_TICKS = 40;
-
-    public static double getLastX(ServerPlayer player) {
-      return LAST_POS.getOrDefault(player, new double[]{player.getX(), player.getZ()})[0];
-    }
-
-    public static double getLastZ(ServerPlayer player) {
-      return LAST_POS.getOrDefault(player, new double[]{player.getX(), player.getZ()})[1];
-    }
-    public static void setLastPos(ServerPlayer player, double x, double z) {
-      LAST_POS.put(player, new double[]{x, z});
-    }
-    public static void setSpeed(ServerPlayer player, double speed) {
-      SPEED.put(player, speed);
-      if (speed > MAX_SPEED_PER_TICK) {
-        LAST_FAST_TICKS.put(player, player.level().getGameTime());
-      }
-    }
-
-    public static double getSpeed(ServerPlayer player) {
-      return SPEED.getOrDefault(player, 0.0);
-    }
-
-    public static boolean isAnyPlayerFast(ServerLevel level) {
-      long now = level.getGameTime();
-      for (ServerPlayer p : level.players()) {
-        Long last = LAST_FAST_TICKS.get(p);
-        if (last != null && now - last < COOLDOWN_TICKS) return true;
-      }
-      return false;
-    }
-
-  }
 }
