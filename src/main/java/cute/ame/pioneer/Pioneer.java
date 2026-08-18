@@ -3,7 +3,6 @@ package cute.ame.pioneer;
 import com.mojang.logging.LogUtils;
 import cute.ame.pioneer.Command.PioneerDebugCommand;
 import cute.ame.pioneer.Registrie.*;
-import cute.ame.pioneer.Seamless.Network.SeamlessNetworking;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -31,7 +30,6 @@ public class Pioneer
     modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
 
     NeoForge.EVENT_BUS.addListener(Pioneer::onRegisterCommands);
-    modEventBus.addListener(SeamlessNetworking::register);
   }
 
   private static void onRegisterCommands(RegisterCommandsEvent event)

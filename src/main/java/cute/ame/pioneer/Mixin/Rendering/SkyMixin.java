@@ -1,7 +1,6 @@
 package cute.ame.pioneer.Mixin.Rendering;
 
 import cute.ame.pioneer.Core.API.PioneerAPI;
-import cute.ame.pioneer.Seamless.Client.SeamlessGhostRenderer;
 import cute.ame.pioneer.SkyPlanet.Dimension.SpaceDimensionEffect;
 import cute.ame.pioneer.SkyPlanet.Rendering.SolarSystemRenderer;
 import net.minecraft.client.Camera;
@@ -23,13 +22,6 @@ public abstract class SkyMixin
         Minecraft mc = Minecraft.getInstance();
         ClientLevel level = mc.level;
         if (level == null) return;
-
-        if (SeamlessGhostRenderer.IN_GHOST_DEBUG_FRAME)
-        {
-            ci.cancel();
-            return;
-        }
-
         if (level.effects() instanceof SpaceDimensionEffect) return;
         if (!PioneerAPI.hasSkyFor(level.dimension())) return;
 

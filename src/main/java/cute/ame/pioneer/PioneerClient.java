@@ -29,9 +29,7 @@ public final class PioneerClient
   @SubscribeEvent
   public static void onRegisterReloadListeners(RegisterClientReloadListenersEvent event)
   {
-    event.registerReloadListener(SolarSystemLoader.INSTANCE);
-    event.registerReloadListener((prepBarrier, resourceManager, prepProfiler, applyProfiler, prepExec, applyExec) ->
-        prepBarrier.wait(null).thenRunAsync(PlanetTextureManager::invalidateAll, applyExec));
+    event.registerReloadListener((prepBarrier, resourceManager, prepProfiler, applyProfiler, prepExec, applyExec) -> prepBarrier.wait(null).thenRunAsync(PlanetTextureManager::invalidateAll, applyExec));
   }
 
   @SubscribeEvent

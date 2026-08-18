@@ -1,67 +1,94 @@
 package cute.ame.pioneer.Command;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
-import cute.ame.pioneer.Core.API.PioneerAPI;
+import cute.ame.pioneer.Core.Observer.ObserverState;
+import cute.ame.pioneer.Core.Observer.ObserverStates;
+import cute.ame.pioneer.Core.Observer.PlanetCube;
 import cute.ame.pioneer.Core.Render.Debug.ShadingDebugMode;
-import net.minecraft.commands.SharedSuggestionProvider;
-import cute.ame.pioneer.Seamless.Network.PreloadCancelPayload;
-import cute.ame.pioneer.Seamless.Network.PreloadDimensionPayload;
-import cute.ame.pioneer.Seamless.SeamlessChunkStreamer;
-import cute.ame.pioneer.Seamless.SeamlessPreloadManager;
+import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
+import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.DimensionArgument;
-import net.minecraft.core.BlockPos;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.level.Level;
-import net.neoforged.fml.loading.FMLEnvironment;
-import net.neoforged.neoforge.network.PacketDistributor;
 
 public final class PioneerDebugCommand
 {
+    private static final String PREFIX = ChatFormatting.DARK_GRAY + "[" + ChatFormatting.AQUA + "Pioneer" + ChatFormatting.DARK_GRAY + "][" + ChatFormatting.YELLOW + "debug" + ChatFormatting.DARK_GRAY + "] " + ChatFormatting.RESET;
+    private static final String ERROR_PREFIX = ChatFormatting.DARK_GRAY + "[" + ChatFormatting.AQUA + "Pioneer" + ChatFormatting.DARK_GRAY + "][" + ChatFormatting.RED + "error" + ChatFormatting.DARK_GRAY + "] " + ChatFormatting.RESET;
+
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher)
     {
         dispatcher.register(
             Commands.literal("pdb")
             .requires(src -> src.hasPermission(2))
-            .then(Commands.literal("seamless-test-preload").then(Commands.argument("dimension", DimensionArgument.dimension()).then(Commands.argument("radiusChunks", IntegerArgumentType.integer(1, 32)).executes(PioneerDebugCommand::executePreload))))
-            .then(Commands.literal("seamless-test-preload-planet").then(Commands.argument("surfaceDimension", DimensionArgument.dimension()).then(Commands.argument("radiusChunks", IntegerArgumentType.integer(1, 32)).executes(PioneerDebugCommand::executePreloadPlanet))))
-            .then(Commands.literal("seamless-test-cancel").then(Commands.argument("dimension", DimensionArgument.dimension()).executes(PioneerDebugCommand::executeCancel)))
-            .then(Commands.literal("seamless-test-stream").then(Commands.argument("dimension", DimensionArgument.dimension()).executes(PioneerDebugCommand::executeStream)))
-            .then(Commands.literal("shading-debug").executes(PioneerDebugCommand::executeShadingDebugQuery).then(Commands.literal("list").executes(PioneerDebugCommand::executeShadingDebugList)).then(Commands.literal("cycle").executes(PioneerDebugCommand::executeShadingDebugCycle)).then(Commands.argument("mode", StringArgumentType.word()).suggests(SHADING_MODES).executes(PioneerDebugCommand::executeShadingDebugSet)))
-            .then(Commands.literal("seamless-test-render").then(Commands.argument("dimension", DimensionArgument.dimension()).executes(PioneerDebugCommand::executeRender)))
+            .then(Commands.literal("shading-debug")
+                .executes(PioneerDebugCommand::executeShadingDebugQuery).then(Commands.literal("list")
+                .executes(PioneerDebugCommand::executeShadingDebugList)).then(Commands.literal("cycle")
+                .executes(PioneerDebugCommand::executeShadingDebugCycle)).then(Commands.argument("mode", StringArgumentType.word())
+                .suggests(SHADING_MODES)
+                .executes(PioneerDebugCommand::executeShadingDebugSet)))
+
+            .then(Commands.literal("observer")
+                .executes(PioneerDebugCommand::executeObserver))
         );
     }
 
     private static final SuggestionProvider<CommandSourceStack> SHADING_MODES = (ctx, builder) -> SharedSuggestionProvider.suggest(ShadingDebugMode.keys(), builder);
 
+    private static int executeObserver(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
+    {
+        ServerPlayer p = ctx.getSource().getPlayerOrException();
+        PlanetDefinition b = ObserverStates.surfaceBodyOf(p.level());
+        ObserverState o = ObserverStates.resolve(p.level(), p.position(), 0f);
+        if (!o.hasBody())
+        {
+            ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.GRAY + "origin=" + ChatFormatting.RED + "SPACE " + ChatFormatting.GRAY + "(%s)", p.level().dimension().location())), false);
+            return 1;
+        }
+
+        ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + String.format(
+            ChatFormatting.GRAY + "face=" + ChatFormatting.GREEN + "%d " +
+            ChatFormatting.GRAY + "u=" + ChatFormatting.AQUA + "%.4f " +
+            ChatFormatting.GRAY + "v=" + ChatFormatting.AQUA + "%.4f " +
+            ChatFormatting.GRAY + "alt=" + ChatFormatting.YELLOW + "%.3fkm " +
+            ChatFormatting.DARK_GRAY + "| " +
+            ChatFormatting.GRAY + "lat=" + ChatFormatting.LIGHT_PURPLE + "%.2f " +
+            ChatFormatting.GRAY + "lon=" + ChatFormatting.LIGHT_PURPLE + "%.2f " +
+            ChatFormatting.DARK_GRAY + "| " +
+            ChatFormatting.GRAY + "body=" + ChatFormatting.DARK_GRAY + "(" + ChatFormatting.RED + "%.1f" + ChatFormatting.DARK_GRAY + ", " + ChatFormatting.GREEN + "%.1f" + ChatFormatting.DARK_GRAY + ", " + ChatFormatting.AQUA + "%.1f" + ChatFormatting.DARK_GRAY + ") " +
+            ChatFormatting.DARK_GRAY + "| " +
+            ChatFormatting.GRAY + "halfSide=" + ChatFormatting.GOLD + "%.0f blocs",
+            o.face(), o.u(), o.v(), o.altitudeKm(), o.latDeg(), o.lonDeg(), o.bodyKmX(), o.bodyKmY(), o.bodyKmZ(), PlanetCube.halfSide(b)
+        )), false);
+        return 1;
+    }
+
     private static int executeShadingDebugQuery(CommandContext<CommandSourceStack> ctx)
     {
         ShadingDebugMode mode = ShadingDebugMode.current();
-        ctx.getSource().sendSuccess(() -> Component.literal("[Pioneer][debug] shading debug = " + mode.key() + " (" + mode.description() + ")"), false);
+        ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "shading debug = " + ChatFormatting.GREEN + "%s " + ChatFormatting.GRAY + "(%s)", mode.key(), mode.description())), false);
         return 1;
     }
 
     private static int executeShadingDebugList(CommandContext<CommandSourceStack> ctx)
     {
         CommandSourceStack source = ctx.getSource();
-        source.sendSuccess(() -> Component.literal("[Pioneer][debug] shading debug modes:"), false);
-        for (ShadingDebugMode mode : ShadingDebugMode.values()) source.sendSuccess(() -> Component.literal("  " + mode.key() + " - " + mode.description()), false);
+        source.sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.WHITE + "shading debug modes:"), false);
+        for (ShadingDebugMode mode : ShadingDebugMode.values()) source.sendSuccess(() -> Component.literal(String.format("  " + ChatFormatting.YELLOW + "%s " + ChatFormatting.DARK_GRAY + "- " + ChatFormatting.GRAY + "%s", mode.key(), mode.description())), false);
+
         return ShadingDebugMode.values().length;
     }
 
     private static int executeShadingDebugCycle(CommandContext<CommandSourceStack> ctx)
     {
         ShadingDebugMode mode = ShadingDebugMode.cycle();
-        ctx.getSource().sendSuccess(() -> Component.literal("[Pioneer][debug] shading debug = " + mode.key() + " (" + mode.description() + ")"), false);
+        ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "shading debug = " + ChatFormatting.GREEN + "%s " + ChatFormatting.GRAY + "(%s)", mode.key(), mode.description())), false);
         return 1;
     }
 
@@ -71,121 +98,13 @@ public final class PioneerDebugCommand
         var parsed = ShadingDebugMode.byKey(key);
         if (parsed.isEmpty())
         {
-            ctx.getSource().sendFailure(Component.literal("[Pioneer][debug] unknown shading debug mode '" + key + "' — try: shading-debug list"));
+            ctx.getSource().sendFailure(Component.literal(ERROR_PREFIX + String.format(ChatFormatting.RED + "unknown shading debug mode '" + ChatFormatting.DARK_RED + "%s" + ChatFormatting.RED + "' — try: " + ChatFormatting.YELLOW + "shading-debug list", key)));
             return 0;
         }
 
         ShadingDebugMode mode = parsed.get();
         ShadingDebugMode.set(mode);
-        ctx.getSource().sendSuccess(() -> Component.literal("[Pioneer][debug] shading debug = " + mode.key() + " (" + mode.description() + ")"), false);
-        return 1;
-    }
-
-    private static int executeRender(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
-    {
-        CommandSourceStack source = ctx.getSource();
-        ServerLevel targetLevel = DimensionArgument.getDimension(ctx, "dimension");
-        ResourceKey<Level> targetDim = targetLevel.dimension();
-
-        if (!FMLEnvironment.dist.isClient())
-        {
-            source.sendFailure(Component.literal("[Pioneer][debug] seamless-test-render requires a physical client (singleplayer/LAN host), not available on a dedicated server"));
-            return 0;
-        }
-
-        source.sendSuccess(() -> Component.literal("[Pioneer][debug] Ghost debug frame capture for " + targetDim.location() + " queued on the render thread, single frame, check the client log for the result"), false);
-
-        return 1;
-    }
-
-    private static int executeStream(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
-    {
-        CommandSourceStack source = ctx.getSource();
-        ServerPlayer player = source.getPlayerOrException();
-        ServerLevel targetLevel = DimensionArgument.getDimension(ctx, "dimension");
-        ResourceKey<Level> targetDim = targetLevel.dimension();
-
-        var forced = SeamlessPreloadManager.getForcedSnapshot(player.getUUID(), targetDim);
-        if (forced.isEmpty())
-        {
-            source.sendFailure(Component.literal("[Pioneer][debug] Nothing forced for " + targetDim.location() + ", run 'seamless-test-preload' first"));
-            return 0;
-        }
-
-        int sentThisCall = SeamlessChunkStreamer.streamReadyChunks(player, targetLevel, forced);
-        source.sendSuccess(() -> Component.literal("[Pioneer][debug] Streamed " + sentThisCall + " new chunk(s) this call (" + forced.size() + " total forced) for " + targetDim.location()), false);
-        return 1;
-    }
-
-    private static int executePreload(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
-    {
-        CommandSourceStack source = ctx.getSource();
-        ServerPlayer player = source.getPlayerOrException();
-        ServerLevel targetLevel = DimensionArgument.getDimension(ctx, "dimension");
-        int radiusChunks = IntegerArgumentType.getInteger(ctx, "radiusChunks");
-
-        ResourceKey<Level> fromDim = player.level().dimension();
-        ResourceKey<Level> targetDim = targetLevel.dimension();
-
-        BlockPos anchor = player.blockPosition();
-        SeamlessPreloadManager.preload(player.getUUID(), targetLevel, anchor, radiusChunks);
-        PacketDistributor.sendToPlayer(player, new PreloadDimensionPayload(fromDim, targetDim, anchor, targetLevel.dimensionTypeRegistration().unwrapKey().orElseThrow()));
-        source.sendSuccess(() -> Component.literal("[Pioneer][debug] Preloading " + radiusChunks + " chunk radius around " + anchor.toShortString() + " in " + targetDim.location() + " (server ticket + client hint sent)"), false);
-        return 1;
-    }
-
-    private static int executePreloadPlanet(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
-    {
-        CommandSourceStack source = ctx.getSource();
-        ServerPlayer player = source.getPlayerOrException();
-        ServerLevel targetLevel = DimensionArgument.getDimension(ctx, "surfaceDimension");
-        ResourceKey<Level> targetDim = targetLevel.dimension();
-        int radiusChunks = IntegerArgumentType.getInteger(ctx, "radiusChunks");
-
-        ResourceKey<Level> fromDim = player.level().dimension();
-
-        var bindingOpt = PioneerAPI.getBindingForDimension(targetDim);
-        if (bindingOpt.isEmpty())
-        {
-            source.sendFailure(Component.literal("[Pioneer][debug] " + targetDim.location() + " has no known dimension binding (not registered to a solar system), can't resolve a planet"));
-            return 0;
-        }
-
-        var binding = bindingOpt.get();
-        var systemOpt = PioneerAPI.getSolarSystem(binding.systemId());
-        if (systemOpt.isEmpty())
-        {
-            source.sendFailure(Component.literal("[Pioneer][debug] Solar system " + binding.systemId() + " not found for " + targetDim.location()));
-            return 0;
-        }
-
-        var planetOpt = systemOpt.get().findById(binding.planetId());
-        if (planetOpt.isEmpty())
-        {
-            source.sendFailure(Component.literal("[Pioneer][debug] Planet " + binding.planetId() + " not found in system " + binding.systemId()));
-            return 0;
-        }
-
-        BlockPos anchor = cute.ame.pioneer.Seamless.TransitionManager.surfaceLandingColumn(player, planetOpt.get());
-
-        SeamlessPreloadManager.preload(player.getUUID(), targetLevel, anchor, radiusChunks);
-        PacketDistributor.sendToPlayer(player, new PreloadDimensionPayload(fromDim, targetDim, anchor, targetLevel.dimensionTypeRegistration().unwrapKey().orElseThrow()));
-
-        source.sendSuccess(() -> Component.literal("[Pioneer][debug] Preloading " + radiusChunks + " chunk radius around planet-projected anchor " + anchor.toShortString() + " in " + targetDim.location() + " (server ticket + client hint sent)"), false);
-        return 1;
-    }
-
-    private static int executeCancel(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
-    {
-        CommandSourceStack source = ctx.getSource();
-        ServerPlayer player = source.getPlayerOrException();
-        ServerLevel targetLevel = DimensionArgument.getDimension(ctx, "dimension");
-        ResourceKey<Level> targetDim = targetLevel.dimension();
-
-        SeamlessPreloadManager.release(player.getUUID(), targetDim, targetLevel);
-        PacketDistributor.sendToPlayer(player, new PreloadCancelPayload(targetDim));
-
-        source.sendSuccess(() -> Component.literal("[Pioneer][debug] Released preload for " + targetDim.location() + " (server ticket + client hint sent)"), false);
+        ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "shading debug = " + ChatFormatting.GREEN + "%s " + ChatFormatting.GRAY + "(%s)", mode.key(), mode.description())), false);
         return 1;
     }
 }

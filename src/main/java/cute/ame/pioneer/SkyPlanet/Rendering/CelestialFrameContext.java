@@ -3,18 +3,19 @@ package cute.ame.pioneer.SkyPlanet.Rendering;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Quaternionf;
+import org.joml.Vector3d;
 
-public record CelestialFrameContext(
+public record CelestialFrameContext
+(
     Vec3 effectiveCamPos,
     ResourceLocation selfPlanetId,
     float selfPlanetAlpha,
     ResourceLocation excludedPlanetId,
-    float selfClimbOffset,
+    Vector3d selfOffsetKm,
     float selfAscensionProgress,
     long tick,
     boolean useAngularFloor,
     boolean selfIsSurfaceType,
-    float selfTiltProgress,
     Quaternionf horizonRotation,
     float starVisibility
 )

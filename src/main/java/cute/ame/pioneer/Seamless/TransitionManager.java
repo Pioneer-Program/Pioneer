@@ -1,27 +1,31 @@
 package cute.ame.pioneer.Seamless;
 
-import cute.ame.pioneer.Core.API.PioneerAPI;
-import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Config;
-import cute.ame.pioneer.Seamless.Network.PreloadCancelPayload;
-import cute.ame.pioneer.Seamless.Network.PreloadDimensionPayload;
+import cute.ame.pioneer.Core.API.PioneerAPI;
+import cute.ame.pioneer.Core.Observer.ObserverState;
+import cute.ame.pioneer.Core.Observer.ObserverStates;
+import cute.ame.pioneer.Core.Observer.PlanetCube;
+import cute.ame.pioneer.Pioneer;
+import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraft.world.phys.Vec3;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 public final class TransitionManager
 {
-    public enum State { IDLE, APPROACHING, PRELOADING, READY, SWAPPING, SETTLING }
+    public enum State { IDLE, SWAPPING, SETTLING }
 
     private static final class PlayerTransition
     {
@@ -31,27 +35,22 @@ public final class TransitionManager
         ResourceKey<Level> targetDim;
         BlockPos anchor;
         int settleTicksRemaining;
-        int ticksInPreloading;
     }
 
     private static final int SETTLE_TICKS = 10;
-    private static final int PRELOAD_RESEND_INTERVAL_TICKS = 10;
+    private static final int LANDING_PROBE_Y = 320;
 
     private static final Map<UUID, PlayerTransition> PLAYER_STATES = new HashMap<>();
 
     public static void tick(ServerPlayer player)
     {
-        UUID uuid = player.getUUID();
-        PlayerTransition pt = PLAYER_STATES.computeIfAbsent(uuid, k -> new PlayerTransition());
+        PlayerTransition pt = PLAYER_STATES.computeIfAbsent(player.getUUID(), k -> new PlayerTransition());
 
         switch (pt.state)
         {
             case IDLE -> tickIdle(player, pt);
-            case APPROACHING -> tickApproaching(player, pt);
-            case PRELOADING -> tickPreloading(player, pt);
-            case READY -> tickReady(player, pt);
-            case SWAPPING -> {  }
-            case SETTLING -> tickSettling(player, pt);
+            case SWAPPING -> { }
+            case SETTLING -> tickSettling(pt);
         }
     }
 
@@ -61,122 +60,17 @@ public final class TransitionManager
 
         SeamlessThresholdDetector.ThresholdResult result = SeamlessThresholdDetector.evaluate(player);
         if (result.kind() == SeamlessThresholdDetector.ThresholdKind.NONE) return;
+        if (!crossedHardThreshold(player, result)) return;
 
         Optional<ResolvedTarget> targetOpt = resolveTarget(player, result);
         if (targetOpt.isEmpty()) return;
 
-        ResolvedTarget target = targetOpt.get();
         pt.kind = result.kind();
         pt.fromDim = player.level().dimension();
-        pt.targetDim = target.dimension();
-        pt.anchor = target.anchor();
-        pt.state = State.APPROACHING;
-
-        Pioneer.LOGGER.debug("[Pioneer] {} APPROACHING {}", player.getScoreboardName(), pt.targetDim.location());
-    }
-
-    private static void tickApproaching(ServerPlayer player, PlayerTransition pt)
-    {
-        if (playerBackedOff(player, pt))
-        {
-            cancel(player, pt);
-            return;
-        }
-
-        SeamlessThresholdDetector.ThresholdResult result = SeamlessThresholdDetector.evaluate(player);
-        if (result.kind() == SeamlessThresholdDetector.ThresholdKind.NONE)
-        {
-            cancel(player, pt);
-            return;
-        }
-
-        Optional<ResolvedTarget> targetOpt = resolveTarget(player, result);
-        if (targetOpt.isEmpty()) { cancel(player, pt); return; }
+        pt.targetDim = targetOpt.get().dimension();
         pt.anchor = targetOpt.get().anchor();
 
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        ServerLevel targetLevel = server.getLevel(pt.targetDim);
-        if (targetLevel == null) { cancel(player, pt); return; }
-
-        if (!SeamlessLevelRegistry.hasRoomFor(pt.targetDim))
-        {
-            return;
-        }
-
-        beginPreloading(player, pt, targetLevel);
-    }
-
-    private static void beginPreloading(ServerPlayer player, PlayerTransition pt, ServerLevel targetLevel)
-    {
-        pt.state = State.PRELOADING;
-        pt.ticksInPreloading = 0;
-
-        int radiusChunks = computeRadiusChunks(player, targetLevel);
-        SeamlessPreloadManager.preload(player.getUUID(), targetLevel, pt.anchor, radiusChunks);
-
-        PacketDistributor.sendToPlayer(player, new PreloadDimensionPayload(pt.fromDim, pt.targetDim, pt.anchor, targetLevel.dimensionTypeRegistration().unwrapKey().orElseThrow()));
-
-        Pioneer.LOGGER.debug("[Pioneer] {} PRELOADING {} (radius={} chunks, anchor={})",
-                player.getScoreboardName(), pt.targetDim.location(), radiusChunks, pt.anchor.toShortString());
-    }
-
-    private static void tickPreloading(ServerPlayer player, PlayerTransition pt)
-    {
-        if (playerBackedOff(player, pt))
-        {
-            cancel(player, pt);
-            return;
-        }
-
-        MinecraftServer server = player.getServer();
-        if (server == null) return;
-        ServerLevel targetLevel = server.getLevel(pt.targetDim);
-        if (targetLevel == null) { cancel(player, pt); return; }
-
-        if (player.tickCount % PRELOAD_RESEND_INTERVAL_TICKS == 0)
-        {
-            SeamlessThresholdDetector.ThresholdResult result = SeamlessThresholdDetector.evaluate(player);
-            Optional<ResolvedTarget> targetOpt = resolveTarget(player, result);
-            if (targetOpt.isPresent())
-            {
-                pt.anchor = targetOpt.get().anchor();
-                int radiusChunks = computeRadiusChunks(player, targetLevel);
-                SeamlessPreloadManager.preload(player.getUUID(), targetLevel, pt.anchor, radiusChunks);
-            }
-        }
-
-        java.util.Set<net.minecraft.world.level.ChunkPos> forced =
-                SeamlessPreloadManager.getForcedSnapshot(player.getUUID(), pt.targetDim);
-        if (!forced.isEmpty())
-        {
-            SeamlessChunkStreamer.streamReadyChunks(player, targetLevel, forced);
-        }
-
-        if (isPreloadReady(player, targetLevel, pt.targetDim, pt.anchor))
-        {
-            pt.state = State.READY;
-            Pioneer.LOGGER.debug("[Pioneer] {} READY for {}", player.getScoreboardName(), pt.targetDim.location());
-        }
-
-        if (crossedRealThreshold(player, pt))
-        {
-            doSwap(player, pt);
-        }
-    }
-
-    private static void tickReady(ServerPlayer player, PlayerTransition pt)
-    {
-        if (playerBackedOff(player, pt))
-        {
-            cancel(player, pt);
-            return;
-        }
-
-        if (crossedRealThreshold(player, pt))
-        {
-            doSwap(player, pt);
-        }
+        doSwap(player, pt);
     }
 
     private static void doSwap(ServerPlayer player, PlayerTransition pt)
@@ -184,62 +78,28 @@ public final class TransitionManager
         pt.state = State.SWAPPING;
 
         MinecraftServer server = player.getServer();
-        if (server == null) { pt.state = State.IDLE; return; }
-        ServerLevel targetLevel = server.getLevel(pt.targetDim);
-        if (targetLevel == null) { pt.state = State.IDLE; return; }
+        ServerLevel targetLevel = server != null ? server.getLevel(pt.targetDim) : null;
+        if (targetLevel == null) { resetToIdle(pt); return; }
 
         BlockPos landing = pt.anchor;
 
         if (pt.kind == SeamlessThresholdDetector.ThresholdKind.SPACE_APPROACHING_PLANET)
         {
-
             targetLevel.getChunk(landing.getX() >> 4, landing.getZ() >> 4);
             int surfaceY = targetLevel.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, landing.getX(), landing.getZ());
             landing = new BlockPos(landing.getX(), surfaceY + 1, landing.getZ());
         }
 
-        player.teleportTo(targetLevel, landing.getX() + 0.5, landing.getY(), landing.getZ() + 0.5, java.util.Set.of(), player.getYRot(), player.getXRot());
-        Pioneer.LOGGER.debug("[Pioneer] {} SWAPPING {} -> {}", player.getScoreboardName(), pt.fromDim.location(), pt.targetDim.location());
+        player.teleportTo(targetLevel, landing.getX() + 0.5, landing.getY(), landing.getZ() + 0.5, Set.of(), player.getYRot(), player.getXRot());
+        Pioneer.LOGGER.debug("[Pioneer] {} SWAP {} -> {} @ {}", player.getScoreboardName(), pt.fromDim.location(), pt.targetDim.location(), landing.toShortString());
 
         pt.state = State.SETTLING;
         pt.settleTicksRemaining = SETTLE_TICKS;
     }
 
-    private static void tickSettling(ServerPlayer player, PlayerTransition pt)
+    private static void tickSettling(PlayerTransition pt)
     {
-        pt.settleTicksRemaining--;
-        if (pt.settleTicksRemaining > 0) return;
-
-        MinecraftServer server = player.getServer();
-        ServerLevel fromLevel = server != null ? server.getLevel(pt.fromDim) : null;
-        if (fromLevel != null)
-        {
-            SeamlessPreloadManager.release(player.getUUID(), pt.fromDim, fromLevel);
-        }
-
-        SeamlessChunkStreamer.release(player.getUUID(), pt.fromDim);
-
-        Pioneer.LOGGER.debug("[Pioneer] {} SETTLED in {}", player.getScoreboardName(), pt.targetDim.location());
-
-        PacketDistributor.sendToPlayer(player, new cute.ame.pioneer.Seamless.Network.TransitionCompletePayload(pt.fromDim, pt.targetDim));
-        resetToIdle(pt);
-    }
-
-    private static void cancel(ServerPlayer player, PlayerTransition pt)
-    {
-        if (pt.state == State.PRELOADING || pt.state == State.READY)
-        {
-            MinecraftServer server = player.getServer();
-            ServerLevel targetLevel = server != null ? server.getLevel(pt.targetDim) : null;
-            if (targetLevel != null)
-            {
-                SeamlessPreloadManager.release(player.getUUID(), pt.targetDim, targetLevel);
-            }
-            SeamlessChunkStreamer.release(player.getUUID(), pt.targetDim);
-            PacketDistributor.sendToPlayer(player, new PreloadCancelPayload(pt.targetDim));
-            Pioneer.LOGGER.debug("[Pioneer] {} CANCELLED transition to {}", player.getScoreboardName(), pt.targetDim.location());
-        }
-        resetToIdle(pt);
+        if (--pt.settleTicksRemaining <= 0) resetToIdle(pt);
     }
 
     private static void resetToIdle(PlayerTransition pt)
@@ -250,17 +110,11 @@ public final class TransitionManager
         pt.targetDim = null;
         pt.anchor = null;
         pt.settleTicksRemaining = 0;
-        pt.ticksInPreloading = 0;
     }
 
-    public static void onPlayerDisconnect(ServerPlayer player, java.util.function.Function<ResourceKey<Level>, ServerLevel> levelLookup)
+    public static void onPlayerDisconnect(ServerPlayer player)
     {
-        PlayerTransition pt = PLAYER_STATES.remove(player.getUUID());
-        if (pt != null && pt.targetDim != null)
-        {
-            SeamlessPreloadManager.releaseAllForPlayer(player.getUUID(), levelLookup);
-        }
-        SeamlessChunkStreamer.releaseAllForPlayer(player.getUUID());
+        PLAYER_STATES.remove(player.getUUID());
     }
 
     public static boolean isManaging(ServerPlayer player)
@@ -275,132 +129,63 @@ public final class TransitionManager
     {
         return switch (result.kind())
         {
-            case SURFACE_APPROACHING_ORBIT ->
-            {
-                var bindingOpt = PioneerAPI.getBindingForDimension(player.level().dimension());
-                if (bindingOpt.isEmpty()) { yield Optional.empty(); }
-                var binding = bindingOpt.get();
-                var systemOpt = PioneerAPI.getSolarSystem(binding.systemId());
-                if (systemOpt.isEmpty()) { yield Optional.empty(); }
-
-                var planetOpt = systemOpt.get().findById(binding.planetId());
-                if (planetOpt.isEmpty()) { yield Optional.empty(); }
-                var planet = planetOpt.get();
-
-                var spaceDimOpt = systemOpt.get().spaceDimension();
-                if (spaceDimOpt.isEmpty()) { yield Optional.empty(); }
-
-                ResourceKey<Level> spaceDim = net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, spaceDimOpt.get());
-
-                double[] pos = planet.currentWorldPosition(player.level().getGameTime());
-
-                double clearance = (planet.size() * 0.5) + approachLandingMargin();
-                BlockPos anchor = new BlockPos((int) pos[0], (int) (pos[1] + clearance), (int) pos[2]);
-                yield Optional.of(new ResolvedTarget(spaceDim, anchor));
-            }
-
-            case SPACE_APPROACHING_PLANET -> result.targetPlanet().flatMap(planet ->
-                    planet.dimension()
-                            .map(surfaceLoc -> net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION, surfaceLoc))
-
-                            .map(surfaceDim -> new ResolvedTarget(surfaceDim, surfaceLandingColumn(player, planet))));
+            case SURFACE_APPROACHING_ORBIT -> orbitTarget(player);
+            case SPACE_APPROACHING_PLANET -> result.targetPlanet().flatMap(planet -> planet.dimension().map(loc -> ResourceKey.create(Registries.DIMENSION, loc)).map(dim -> new ResolvedTarget(dim, surfaceLandingColumn(player, planet))));
 
             default -> Optional.empty();
         };
     }
 
-    private static final double SURFACE_LANDING_RADIUS = 200.0;
-
-    private static double approachLandingMargin()
+    private static Optional<ResolvedTarget> orbitTarget(ServerPlayer player)
     {
-        return Config.ORBIT_ENTRY_Y.get() - Config.SHOW_OWN_PLANET_START_Y.get();
+        var bindingOpt = PioneerAPI.getBindingForDimension(player.level().dimension());
+        if (bindingOpt.isEmpty()) return Optional.empty();
+
+        var systemOpt = PioneerAPI.getSolarSystem(bindingOpt.get().systemId());
+        if (systemOpt.isEmpty()) return Optional.empty();
+
+        var planetOpt = systemOpt.get().findById(bindingOpt.get().planetId());
+        var spaceDimOpt = systemOpt.get().spaceDimension();
+        if (planetOpt.isEmpty() || spaceDimOpt.isEmpty()) return Optional.empty();
+
+        PlanetDefinition planet = planetOpt.get();
+        double[] pos = planet.currentWorldPosition(player.level().getGameTime());
+        double clearance = planet.approachRadius() + Config.ORBIT_ENTRY_ALTITUDE_KM.get();
+
+        BlockPos anchor = new BlockPos((int) pos[0], (int) (pos[1] + clearance), (int) pos[2]);
+        return Optional.of(new ResolvedTarget(ResourceKey.create(Registries.DIMENSION, spaceDimOpt.get()), anchor));
     }
 
-    public static BlockPos surfaceLandingColumn(ServerPlayer player, cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition planet)
+    public static BlockPos surfaceLandingColumn(ServerPlayer player, PlanetDefinition planet)
     {
         double[] center = planet.currentWorldPosition(player.level().getGameTime());
-        double dx = player.getX() - center[0];
-        double dz = player.getZ() - center[2];
+        Vec3 rel = player.position().subtract(center[0], center[1], center[2]);
 
-        double horizontalLen = Math.sqrt(dx * dx + dz * dz);
-        double dirX, dirZ;
-        if (horizontalLen < 1e-6)
-        {
+        ObserverState obs = ObserverState.fromBodyKm(planet, rel.x, rel.y, rel.z, ObserverState.Origin.ORBITAL_STATE);
 
-            dirX = 1.0;
-            dirZ = 0.0;
-        }
-        else
-        {
-            dirX = dx / horizontalLen;
-            dirZ = dz / horizontalLen;
-        }
-
-        int landingX = (int) Math.round(dirX * SURFACE_LANDING_RADIUS);
-        int landingZ = (int) Math.round(dirZ * SURFACE_LANDING_RADIUS);
-
-        return new BlockPos(landingX, 100, landingZ);
+        int x = (int) Math.round(obs.blockX());
+        int z = (int) Math.round(obs.blockZ());
+        return new BlockPos(x, LANDING_PROBE_Y, z);
     }
 
-    private static boolean playerBackedOff(ServerPlayer player, PlayerTransition pt)
+    public static BlockPos homeColumn(PlanetDefinition planet)
     {
-        SeamlessThresholdDetector.ThresholdResult result = SeamlessThresholdDetector.evaluate(player);
-        return result.kind() == SeamlessThresholdDetector.ThresholdKind.NONE;
+        return new BlockPos((int) Math.round(PlanetCube.homeBlockX(planet)), LANDING_PROBE_Y, (int) Math.round(PlanetCube.homeBlockZ(planet)));
     }
 
-    private static boolean crossedRealThreshold(ServerPlayer player, PlayerTransition pt)
+    private static boolean crossedHardThreshold(ServerPlayer player, SeamlessThresholdDetector.ThresholdResult result)
     {
-        return switch (lastResultKind(player))
+        return switch (result.kind())
         {
-            case SURFACE_APPROACHING_ORBIT -> player.getY() >= Config.ORBIT_ENTRY_Y.get();
-            case SPACE_APPROACHING_PLANET -> crossedPlanetHardThreshold(player, pt);
+            case SURFACE_APPROACHING_ORBIT -> altitudeKm(player) >= Config.ORBIT_ENTRY_ALTITUDE_KM.get();
+            case SPACE_APPROACHING_PLANET -> result.targetPlanet().map(p -> result.distanceOrHeight() <= p.approachRadius()).orElse(false);
             default -> false;
         };
     }
 
-    private static boolean crossedPlanetHardThreshold(ServerPlayer player, PlayerTransition pt)
+    private static double altitudeKm(ServerPlayer player)
     {
-        SeamlessThresholdDetector.ThresholdResult result = SeamlessThresholdDetector.evaluate(player);
-        if (result.kind() != SeamlessThresholdDetector.ThresholdKind.SPACE_APPROACHING_PLANET) return false;
-        if (result.targetPlanet().isEmpty()) return false;
-
-        var planet = result.targetPlanet().get();
-        return result.distanceOrHeight() <= planet.approachRadius();
-    }
-
-    private static SeamlessThresholdDetector.ThresholdKind lastResultKind(ServerPlayer player)
-    {
-        return SeamlessThresholdDetector.evaluate(player).kind();
-    }
-
-    private static int computeRadiusChunks(ServerPlayer player, ServerLevel targetLevel)
-    {
-        int serverViewDistance = player.getServer() != null ? player.getServer().getPlayerList().getViewDistance() : 10;
-        int clientViewDistance = player.requestedViewDistance();
-        int effectiveChunks = Math.max(4, Math.min(serverViewDistance, clientViewDistance));
-        return effectiveChunks;
-    }
-
-    private static final int PRELOAD_STALL_TICKS_BEFORE_FALLBACK = 100;
-
-    private static boolean isPreloadReady(ServerPlayer player, ServerLevel targetLevel, ResourceKey<Level> targetDim, BlockPos anchor)
-    {
-        if (SeamlessPreloadManager.isFullyLoaded(player.getUUID(), targetDim, targetLevel))
-        {
-            return true;
-        }
-
-        PlayerTransition pt = PLAYER_STATES.get(player.getUUID());
-        if (pt != null)
-        {
-            pt.ticksInPreloading++;
-            if (pt.ticksInPreloading >= PRELOAD_STALL_TICKS_BEFORE_FALLBACK)
-            {
-                Pioneer.LOGGER.warn("[Pioneer] {} preload to {} stalled after {} ticks, falling back to anchor-only readiness",
-                        player.getScoreboardName(), targetDim.location(), pt.ticksInPreloading);
-                return targetLevel.hasChunk(anchor.getX() >> 4, anchor.getZ() >> 4);
-            }
-        }
-        return false;
+        ObserverState obs = ObserverStates.resolve(player.level(), player.position(), 0f);
+        return obs.hasBody() ? obs.altitudeKm() : Double.MAX_VALUE;
     }
 }
