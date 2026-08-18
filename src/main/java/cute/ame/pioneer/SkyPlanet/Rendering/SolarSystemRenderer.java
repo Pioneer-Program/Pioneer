@@ -12,6 +12,7 @@ import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SunDefinition;
 import cute.ame.pioneer.SkyPlanet.Physics.PlanetEnvironment;
+import cute.ame.pioneer.SkyPlanet.Physics.PhysicalScale;
 import cute.ame.pioneer.SkyPlanet.Physics.SkyBrightness;
 import cute.ame.pioneer.SkyPlanet.Rendering.ShellProjector.Projected;
 import cute.ame.pioneer.SkyPlanet.Rendering.gl.*;
@@ -254,11 +255,11 @@ public final class SolarSystemRenderer
     private void renderPlanetBody(PoseStack ps, PlanetDefinition planet, boolean isSelf, float alpha, float[] pos, double dx, double dy, double dz, double dist, CelestialFrameContext ctx, long tick, float partialTick, SunDefinition sun, @Nullable PlanetDefinition parent, double animSeconds)
     {
         float cdx = (float) (dx / dist), cdy = (float) (dy / dist), cdz = (float) (dz / dist);
-        float realSize = Math.max(planet.size(), MIN_APPARENT);
+        float realSize = Math.max(planet.size() * 2.0f, MIN_APPARENT);
 
         Projected proj = projectToSafeShell(dx, dy, dz, dist, realSize);
         float apparentSize = proj.size;
-        Quaternionf orientation = new Quaternionf().rotationZ((float) Math.toRadians(planet.axialTilt())).rotateY(CelestialMath.axialPhaseRadians(planet.axialRotationSpeed(), tick, partialTick));
+        Quaternionf orientation = CelestialMath.planetOrientation(planet.axialTilt(), planet.axialRotationSpeed(), tick, partialTick);
 
         ps.pushPose();
         ps.translate(proj.dx, proj.dy, proj.dz);

@@ -1,4 +1,4 @@
-package cute.ame.pioneer.SkyPlanet.Rendering;
+package cute.ame.pioneer.SkyPlanet.Physics;
 
 import cute.ame.pioneer.SkyPlanet.Data.OrbitDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SunDefinition;

@@ -1,7 +1,6 @@
 package cute.ame.pioneer.Core.Observer;
 
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
-import cute.ame.pioneer.SkyPlanet.Physics.SurfaceCoordinates;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Vector3d;
 
@@ -46,7 +45,7 @@ public record ObserverState
 
     public double lonDeg()
     {
-        return SurfaceCoordinates.wrapDegrees(Math.toDegrees(Math.atan2(bodyKmX, bodyKmZ)));
+        return CubeSurface.wrapDegrees(Math.toDegrees(Math.atan2(bodyKmX, bodyKmZ)));
     }
 
     public Vector3d up(Vector3d dest)

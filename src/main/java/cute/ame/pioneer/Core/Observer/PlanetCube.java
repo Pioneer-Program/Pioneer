@@ -7,19 +7,14 @@ public final class PlanetCube
 {
     public static final double REFERENCE_LEVEL = 63.0;
 
-    public static double radiusKm(PlanetDefinition body)
-    {
-        return Math.max(body.size(), 1.0e-3) * 0.5;
-    }
-
     public static double halfSide(PlanetDefinition body)
     {
-        return CubeSurface.halfSide(radiusKm(body), body.surfaceScale());
+        return CubeSurface.halfSide(body.radiusKm(), body.surfaceScale());
     }
 
     public static double halfExtentKm(PlanetDefinition body)
     {
-        return radiusKm(body);
+        return body.radiusKm();
     }
 
     public static double altitudeKm(PlanetDefinition body, double blockY)

@@ -83,7 +83,7 @@ public record PlanetDefinition
     if (!(p.verticalScale() > 0f))
       return DataResult.error(() -> p.id() + " : vertical_scale must be > 0");
 
-    double half = CubeSurface.halfSide(p.size() * 0.5, p.surfaceScale());
+    double half = CubeSurface.halfSide(p.radiusKm(), p.surfaceScale());
     if (half > MAX_HALF_SIDE_BLOCKS)
       return DataResult.error(() -> p.id() + " : surface dimension " + p.dimension().get() + ", half-side = " + (long) half + " blocks, beyond the world border. Increase surface_scale.");
     if (half < MIN_HALF_SIDE_BLOCKS)
@@ -137,25 +137,30 @@ public record PlanetDefinition
     return surface.verticalScale();
   }
 
+  public double radiusKm()
+  {
+    return Math.max(size, 1.0e-3f);
+  }
+
   public float gravity()
   {
-    return (float) PlanetaryPhysics.surfaceGravityRelative(massEarth, size);
+    return (float) PlanetaryPhysics.surfaceGravityRelative(massEarth, radiusKm());
   }
 
   public double escapeVelocityKmS()
   {
-    return PlanetaryPhysics.escapeVelocityKmS(massEarth, size);
+    return PlanetaryPhysics.escapeVelocityKmS(massEarth, radiusKm());
   }
 
   public double mu()
   {
-    double r = size * SPACE_WORLD_SCALE;
+    double r = radiusKm() * SPACE_WORLD_SCALE;
     return gravity() * G0 * r * r;
   }
 
   public double soiRadius()
   {
-    return size * SPACE_WORLD_SCALE * 60.0;
+    return radiusKm() * SPACE_WORLD_SCALE * 60.0;
   }
 
   public double[] currentWorldPosition(long absoluteTick)
@@ -182,14 +187,6 @@ public record PlanetDefinition
 
   public Quaternionf computeTrueRotation(long tick, float partialTick)
   {
-    double dayTicks = axialRotationSpeed * (double) CelestialMath.TICKS_PER_DAY;
-    float spinAngle = 0.0f;
-    if (Math.abs(dayTicks) > 1.0e-6)
-    {
-      double phase = ((tick + partialTick) / dayTicks) % 1.0;
-      spinAngle = (float) (phase * 2.0 * Math.PI);
-    }
-    float tiltRad = (float) Math.toRadians(axialTilt);
-    return new Quaternionf().rotationZ(tiltRad).mul(new Quaternionf().rotationY(spinAngle));
+    return CelestialMath.planetOrientation(axialTilt, axialRotationSpeed, tick, partialTick);
   }
 }
