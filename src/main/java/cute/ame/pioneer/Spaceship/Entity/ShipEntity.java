@@ -42,31 +42,12 @@ import org.joml.Vector3dc;
 
 import java.util.*;
 
-/**
- * Ship controller block entity.
- * <p>
- * Implements {@link BlockEntitySubLevelActor} so that Sable itself drives the ship's thrust:
- * once this block entity lives inside a sub-level plot, Sable registers it as an actor
- * (see {@code LevelPlot#onBlockChange}) and calls {@link #sable$physicsTick} once per physics
- * sub-step, which is the only point at which queued forces survive — {@code ServerSubLevel#prePhysicsTickBegin}
- * resets every queued force group at the start of each sub-step, so forces queued from an
- * ordinary server tick event would be wiped before ever being applied.
- */
 public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor {
 
     private static final UUID NULL_UUID = new UUID(0, 0);
 
     private UUID subLevelUUID;
     private SubLevelContainer container;
-
-    /**
-     * Positions (plot coordinates) of thruster blocks belonging to this ship.
-     * Rebuilt once per server tick in {@link #sable$tick} so the per-substep physics hook
-     * stays cheap instead of rescanning the whole ship several times per tick.
-     */
-    private final List<BlockPos> thrusterPositions = new ArrayList<>();
-
-    private int debugTickCounter = 0;
 
     @Override
     public void onLoad() {
@@ -190,7 +171,7 @@ public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor 
     public void disassemble() {
         ServerSubLevel subLevel = (ServerSubLevel) getSubLevel();
         this.subLevelUUID = NULL_UUID;
-        this.thrusterPositions.clear();
+        getThrusterPositions().clear();
         this.setChanged();
         if (subLevel == null)
             return;
@@ -230,46 +211,59 @@ public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor 
         return container.getSubLevel(subLevelUUID);
     }
 
-    /** Rescans this ship's assembled blocks and caches the positions holding a thruster. */
-    private void rebuildThrusterCache() {
-        this.thrusterPositions.clear();
-        if (this.level == null)
-            return;
-        for (BlockPos pos : getAssembledBlocks()) {
-            if (this.level.getBlockState(pos).getBlock() instanceof ThrusterBlock)
-                this.thrusterPositions.add(pos.immutable());
-        }
+    public List<BlockPos> getThrusterPositions() {
+        return this.getData(ModAttachmentTypes.THRUSTER_POSITIONS.get());
     }
 
-    /**
-     * Called by Sable once per server tick while this ship is mounted on a sub-level.
-     * Used only to refresh the thruster cache — the actual push happens in {@link #sable$physicsTick}.
-     */
+    private void rebuildThrusterCache() {
+        if (this.level == null)
+            return;
+
+        final List<BlockPos> cache = getThrusterPositions();
+        final int oldSize = cache.size();
+        boolean changed = false;
+        int i = 0;
+
+        for (BlockPos pos : getAssembledBlocks()) {
+            if (!(this.level.getBlockState(pos).getBlock() instanceof ThrusterBlock))
+                continue;
+
+            final BlockPos immutable = pos.immutable();
+            if (i < oldSize) {
+                if (!cache.get(i).equals(immutable)) {
+                    cache.set(i, immutable);
+                    changed = true;
+                }
+            } else {
+                cache.add(immutable);
+                changed = true;
+            }
+            i++;
+        }
+
+        if (i < oldSize) {
+            cache.subList(i, oldSize).clear();
+            changed = true;
+        }
+        if (changed)
+            setChanged();
+    }
+
     @Override
     public void sable$tick(final ServerSubLevel subLevel) {
         rebuildThrusterCache();
     }
 
-    /**
-     * Called by Sable once per physics sub-step. Queues one point force per active thruster into the
-     * {@code PROPULSION} force group, following the same contract as Sable's own
-     * {@code BlockEntitySubLevelPropellerActor}:
-     * <ul>
-     *   <li>the direction is the raw block normal in <b>sub-level local space</b> — Sable's force API
-     *       expects local vectors, so no rotation by the sub-level orientation is applied here;</li>
-     *   <li>the magnitude is scaled by {@code timeStep}, making it an impulse (F·dt);</li>
-     *   <li>it is applied at the thruster's own position, so off-centre thrusters also produce torque.</li>
-     * </ul>
-     */
     @Override
     public void sable$physicsTick(final ServerSubLevel subLevel, final RigidBodyHandle handle, final double timeStep) {
-        if (this.thrusterPositions.isEmpty() || this.level == null)
+        final List<BlockPos> thrusters = getThrusterPositions();
+        if (thrusters.isEmpty() || this.level == null)
             return;
 
         final QueuedForceGroup forceGroup = subLevel.getOrCreateQueuedForceGroup(ForceGroups.PROPULSION.get());
 
         int activeCount = 0;
-        for (BlockPos pos : this.thrusterPositions) {
+        for (BlockPos pos : thrusters) {
             final BlockState state = this.level.getBlockState(pos);
             if (!(state.getBlock() instanceof ThrusterBlock))
                 continue;
@@ -284,11 +278,6 @@ public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor 
             forceGroup.applyAndRecordPointForce(point, thrust);
             activeCount++;
         }
-
-        // DEBUG: throttled to roughly once per second. Safe to delete once confirmed working.
-        if (activeCount > 0 && ++debugTickCounter % 80 == 0)
-            Pioneer.LOGGER.info("[Pioneer][thruster] {} active thruster(s), {} N each, timeStep={}",
-                    activeCount, ThrusterBlock.THRUST, timeStep);
     }
 
     @Override
