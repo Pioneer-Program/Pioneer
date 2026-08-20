@@ -21,11 +21,20 @@ public record ObserverState
 
     public static final ObserverState DEEP_SPACE = new ObserverState(null, Origin.DEEP_SPACE, -1, 0, 0, 0, 0, 0, 0);
 
-    public boolean hasBody() { return body != null; }
+    public boolean hasBody()
+    {
+        return body != null;
+    }
 
-    public boolean onFace() { return body != null && face >= 0; }
+    public boolean onFace()
+    {
+        return body != null && face >= 0;
+    }
 
-    public Vector3d bodyKm(Vector3d dest) { return dest.set(bodyKmX, bodyKmY, bodyKmZ); }
+    public Vector3d bodyKm(Vector3d dest)
+    {
+        return dest.set(bodyKmX, bodyKmY, bodyKmZ);
+    }
 
     public double radiusKm()
     {
@@ -48,13 +57,6 @@ public record ObserverState
         return CubeSurface.wrapDegrees(Math.toDegrees(Math.atan2(bodyKmX, bodyKmZ)));
     }
 
-    public Vector3d up(Vector3d dest)
-    {
-        if (!onFace()) return dest.set(0.0, 1.0, 0.0);
-        double[] w = CubeSurface.normal(face);
-        return dest.set(w[0], w[1], w[2]);
-    }
-
     public double blockX()
     {
         requireFace("blockX");
@@ -65,12 +67,6 @@ public record ObserverState
     {
         requireFace("blockZ");
         return v * PlanetCube.halfSide(body);
-    }
-
-    public double blockY()
-    {
-        requireFace("blockY");
-        return PlanetCube.blockY(body, altitudeKm);
     }
 
     public boolean outOfFaceBounds()
@@ -92,11 +88,6 @@ public record ObserverState
         return new ObserverState(body, origin, face, u, v, altKm, p.x, p.y, p.z);
     }
 
-    public static ObserverState home(PlanetDefinition body)
-    {
-        return ofFace(body, body.homeFace(), body.homeU(), body.homeV(), 0.0, Origin.SURFACE_BLOCKS);
-    }
-
     public static ObserverState fromBodyKm(PlanetDefinition body, double x, double y, double z, Origin origin)
     {
         double[] uv = new double[2];
@@ -109,6 +100,7 @@ public record ObserverState
 
     private void requireFace(String what)
     {
-        if (!onFace()) throw new IllegalStateException(what + "() called out of face (origin=" + origin + ", face=" + face + ")");
+        if (!onFace())
+            throw new IllegalStateException(what + "() called out of face (origin=" + origin + ", face=" + face + ")");
     }
 }

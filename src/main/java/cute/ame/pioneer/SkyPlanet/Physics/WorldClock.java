@@ -1,9 +1,8 @@
 package cute.ame.pioneer.SkyPlanet.Physics;
 
-import cute.ame.pioneer.Core.API.PioneerAPI;
+import cute.ame.pioneer.Core.Observer.ObserverStates;
 import cute.ame.pioneer.Core.Observer.CubeSurface;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
-import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
 import cute.ame.pioneer.SkyPlanet.Rendering.CelestialMath;
 import net.minecraft.world.level.Level;
 import org.joml.Quaternionf;
@@ -66,13 +65,6 @@ public final class WorldClock
 
     public static Optional<PlanetDefinition> surfaceHost(Level level)
     {
-        Optional<PioneerAPI.DimensionBinding> bOpt = PioneerAPI.getBindingForDimension(level.dimension());
-        if (bOpt.isEmpty()) return Optional.empty();
-
-        PioneerAPI.DimensionBinding binding = bOpt.get();
-        if (binding.type() != PioneerAPI.BindingType.SURFACE || binding.planetId() == null) return Optional.empty();
-
-        Optional<SolarSystemDefinition> sOpt = PioneerAPI.getSolarSystem(binding.systemId());
-        return sOpt.flatMap(s -> s.findById(binding.planetId()));
+        return ObserverStates.surfaceHost(level);
     }
 }

@@ -20,6 +20,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.levelgen.Heightmap;
 
+import java.util.Optional;
 import java.util.Set;
 
 import static cute.ame.pioneer.Command.PioneerCommandFeedback.ERROR_PREFIX;
@@ -46,7 +47,10 @@ public final class ObserverDebugCommand
     private static int executeState(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
     {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
-        PlanetDefinition body = ObserverStates.surfaceBodyOf(player.level());
+        Optional<PlanetDefinition> hostOpt = ObserverStates.surfaceHost(player.level());
+        if (hostOpt.isEmpty()) return noBody(ctx, player);
+
+        PlanetDefinition body = hostOpt.get();
         ObserverState state = ObserverStates.resolve(player.level(), player.position(), 0f);
 
         if (!state.hasBody())
@@ -87,8 +91,10 @@ public final class ObserverDebugCommand
     private static int executeFaces(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
     {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
-        PlanetDefinition body = ObserverStates.surfaceBodyOf(player.level());
-        if (body == null) return noBody(ctx, player);
+        Optional<PlanetDefinition> hostOpt = ObserverStates.surfaceHost(player.level());
+        if (hostOpt.isEmpty()) return noBody(ctx, player);
+
+        PlanetDefinition body = hostOpt.get();
 
         double halfSide = PlanetCube.halfSide(body);
         CommandSourceStack source = ctx.getSource();
@@ -121,8 +127,10 @@ public final class ObserverDebugCommand
     private static int teleport(CommandContext<CommandSourceStack> ctx, double u, double v) throws CommandSyntaxException
     {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
-        PlanetDefinition body = ObserverStates.surfaceBodyOf(player.level());
-        if (body == null) return noBody(ctx, player);
+        Optional<PlanetDefinition> hostOpt = ObserverStates.surfaceHost(player.level());
+        if (hostOpt.isEmpty()) return noBody(ctx, player);
+
+        PlanetDefinition body = hostOpt.get();
 
         String key = StringArgumentType.getString(ctx, "face");
         int face = faceIndexOf(key);
