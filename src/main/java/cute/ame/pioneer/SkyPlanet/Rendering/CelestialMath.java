@@ -24,4 +24,5 @@ public final class CelestialMath
     {
         ps.mulPose(new Quaternionf().rotationY(axialPhaseRadians(speed, tick, partialTick)));
     }
+
 }

@@ -17,7 +17,7 @@ public class Config
 
         BUILDER.push("Transitions");
         ORBIT_ENTRY_ALTITUDE_KM = BUILDER.defineInRange("orbit_entry_altitude_km", 100.0, 0.1, 1_000_000.0);
-        SHOW_OWN_PLANET_START_KM = BUILDER.defineInRange("show_own_planet_start_km", 5.0, 0.0, 1_000_000.0);
+        SHOW_OWN_PLANET_START_KM = BUILDER.defineInRange("show_own_planet_start_km", 1.0, 0.0, 1_000_000.0);
 
         BUILDER.pop();
         SPEC = BUILDER.build();

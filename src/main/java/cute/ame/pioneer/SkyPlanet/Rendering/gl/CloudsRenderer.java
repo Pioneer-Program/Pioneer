@@ -49,7 +49,7 @@ public final class CloudsRenderer
     public static void render(PoseStack poseStack, CloudsDefinition clouds, float camDirX, float camDirY, float camDirZ, float sunDirX, float sunDirY, float sunDirZ, float camDistObj, double timeSeconds)
     {
         final float clampedCamDist = Math.min(camDistObj, MAX_CAM_DIST_OBJ);
-        final float planetHalf = 0.5f;
+        final float planetHalf = 1.0f;
         final float cloudInner = Math.max(clouds.innerAltitude(), 1e-4f);
         final float cloudOuter = Math.max(clouds.outerAltitude(), cloudInner + 1e-4f);
         final float cloudBoundRadius = planetHalf * 1.7320508f + cloudOuter;

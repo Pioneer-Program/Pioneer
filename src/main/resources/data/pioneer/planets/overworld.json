@@ -1,8 +1,7 @@
 {
   "procedural": {
     "type": "telluric",
-    "seed": 8609,
-    "resolution": 16,
+    "seed": 84609,
     "octaves": 8,
     "roughness": 0.55,
     "primary_color": [

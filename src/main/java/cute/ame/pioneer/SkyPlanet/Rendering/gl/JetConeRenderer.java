@@ -18,7 +18,7 @@ public final class JetConeRenderer
     private static final ResourceLocation JET_FLARE_RENDER_TYPE = ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "jet_flare");
 
     private static final float FLARE_TAPER_EXPONENT = 1.6f;
-    private static final float RADIUS_SCALE = .9f;
+    private static final float RADIUS_SCALE = .0001f;
 
     public static void render(PoseStack ps, JetConeDefinition jet, long tick, float partialTick, float apparentSize, MultiBufferSource.BufferSource bufferSource)
     {

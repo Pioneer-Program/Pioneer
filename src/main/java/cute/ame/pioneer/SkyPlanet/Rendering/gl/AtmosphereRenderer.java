@@ -28,7 +28,7 @@ public final class AtmosphereRenderer
     public static void render(PoseStack poseStack, AtmosphereDefinition atmo, PlanetEnvironment env, float radiusKm, float camDirX, float camDirY, float camDirZ, float sunDirX, float sunDirY, float sunDirZ, float camDistObj)
     {
         final float clampedCamDist = Math.min(camDistObj, MAX_CAM_DIST_OBJ);
-        final float planetHalf = 0.5f;
+        final float planetHalf = 1.0f;
         final double tempK = env.surfaceTempK();
         final double gravity = env.gravityMs2();
         final float shellScale = atmo.shellScale(tempK, gravity, radiusKm);

@@ -7,6 +7,7 @@ import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Core.Observer.LocalFrame;
 import cute.ame.pioneer.Core.Observer.ObserverState;
 import cute.ame.pioneer.Core.Observer.ObserverStates;
+import cute.ame.pioneer.Core.Observer.PlanetCube;
 import cute.ame.pioneer.Core.Render.Debug.GPUProfiler;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
@@ -17,6 +18,7 @@ import cute.ame.pioneer.SkyPlanet.Physics.SkyBrightness;
 import cute.ame.pioneer.SkyPlanet.Rendering.ShellProjector.Projected;
 import cute.ame.pioneer.SkyPlanet.Rendering.gl.*;
 import net.minecraft.client.Camera;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -83,7 +85,7 @@ public final class SolarSystemRenderer
         if (sOpt.isEmpty()) return;
         SolarSystemDefinition system = sOpt.get();
 
-        long tick = level.getDayTime();
+        long tick = level.getGameTime();
         double animSeconds = (level.getGameTime() + (double) partialTick) * PhysicalScale.SECONDS_PER_TICK;
 
         Vec3 effectiveCamPos = computeEffectiveCamPos(binding, system, camera, tick, partialTick);
@@ -100,9 +102,13 @@ public final class SolarSystemRenderer
         {
             obs.bodyKm(selfOffsetKm).negate();
             obs.body().computeTrueRotation(tick, partialTick).transform(selfOffsetKm);
-            double startKm = Config.SHOW_OWN_PLANET_START_KM.get();
-            double endKm = Config.ORBIT_ENTRY_ALTITUDE_KM.get();
-            selfAscensionProgress = Mth.clamp((float) ((obs.altitudeKm() - startKm) / Math.max(endKm - startKm, 1.0e-6)), 0.0f, 1.0f);
+
+            float renderDistance = Math.max(Minecraft.getInstance().gameRenderer.getRenderDistance(), 32.0f) * .5f;
+            double fadeEndBlocks = PlanetCube.REFERENCE_LEVEL + renderDistance;
+
+            //FIX: AVOID PLANET TO BUG WITH CAMERA NEAR PLANE
+            double altitudeBlocks = obs.altitudeBlocks();
+            selfAscensionProgress = Mth.clamp((float) ((altitudeBlocks - PlanetCube.REFERENCE_LEVEL) / Math.max(fadeEndBlocks - PlanetCube.REFERENCE_LEVEL, 1.0)), 0.0f, 1.0f);
         }
 
         ps.pushPose();
@@ -120,7 +126,7 @@ public final class SolarSystemRenderer
             starVis = SkyBrightness.starVisibility(horizon.transform(new Vector3f(worldSun)).y, self);
         }
 
-        CelestialFrameContext ctx = new CelestialFrameContext(effectiveCamPos, selfPlanetId, 1.0f, excludedPlanetId, selfOffsetKm, selfAscensionProgress, tick, !isPlanetLocked, binding.type() == PioneerAPI.BindingType.SURFACE, horizon, starVis);
+        CelestialFrameContext ctx = new CelestialFrameContext(effectiveCamPos, selfPlanetId, selfAscensionProgress, excludedPlanetId, selfOffsetKm, selfAscensionProgress, tick, !isPlanetLocked, binding.type() == PioneerAPI.BindingType.SURFACE, horizon, starVis);
         renderSystemUnified(ps, system, ctx, partialTick, camera.getPosition(), projMat, animSeconds);
         ps.popPose();
     }
@@ -255,7 +261,7 @@ public final class SolarSystemRenderer
     private void renderPlanetBody(PoseStack ps, PlanetDefinition planet, boolean isSelf, float alpha, float[] pos, double dx, double dy, double dz, double dist, CelestialFrameContext ctx, long tick, float partialTick, SunDefinition sun, @Nullable PlanetDefinition parent, double animSeconds)
     {
         float cdx = (float) (dx / dist), cdy = (float) (dy / dist), cdz = (float) (dz / dist);
-        float realSize = Math.max(planet.size() * 2.0f, MIN_APPARENT);
+        float realSize = Math.max(planet.size(), MIN_APPARENT);
 
         Projected proj = projectToSafeShell(dx, dy, dz, dist, realSize);
         float apparentSize = proj.size;

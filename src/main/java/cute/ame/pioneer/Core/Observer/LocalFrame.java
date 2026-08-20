@@ -22,10 +22,9 @@ public final class LocalFrame
         double[] n = new double[3];
         CubeSurface.north(face, n);
 
-        Quaternionf spin = CelestialMath.planetOrientation(body.axialTilt(), body.axialRotationSpeed(), tick, partialTick);
-
-        Vector3f up = spin.transform(new Vector3f((float) w[0], (float) w[1], (float) w[2])).normalize();
-        Vector3f north = spin.transform(new Vector3f((float) n[0], (float) n[1], (float) n[2])).normalize();
+        Quaternionf bodyToSystem = CelestialMath.planetOrientation(body.axialTilt(), body.axialRotationSpeed(), tick, partialTick);
+        Vector3f up = bodyToSystem.transform(new Vector3f((float) w[0], (float) w[1], (float) w[2])).normalize();
+        Vector3f north = bodyToSystem.transform(new Vector3f((float) n[0], (float) n[1], (float) n[2])).normalize();
         Vector3f east = new Vector3f(north).cross(up).normalize();
         Vector3f south = new Vector3f(north).negate();
 

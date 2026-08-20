@@ -34,7 +34,6 @@ public record OrbitalElements
     {
         return ((angle % Math.TAU) + Math.TAU) % Math.TAU;
     }
-
     /**
      * recovers elements from a pos and velocity, this is the function a rebase needs, a ship that has been thrusting inside its frame has a state vector, not elements.
      * @param rMc position relative to the parent body
@@ -121,9 +120,9 @@ public record OrbitalElements
     }
 
     /**
-     * WARN: this is intentionally unimplemented, nothing execises it yet, fromOrbitDefinition only ever produces bound orbits, 
+     * WARN: this is intentionally unimplemented, nothing execises it yet, fromOrbitDefinition only ever produces bound orbits,
      * planet JSON has no escape trajectories by construction, and the only place a real vessel could go hyperbolix is when we implement thrusting, which is not yet implemented. so this is a placeholder for now.
-     * 
+     *
      * so ship elliptic first, then we can implement hyperbolic later, but for now this is a placeholder to make sure we don't accidentally call this on an unbound orbit.
      */
     private void requireElliptic(String operation)

@@ -7,13 +7,15 @@
     "MinecraftLevelRendererAccessor",
     "Player.DebugSpectatorFlightSpeedMixin",
     "Player.SpaceFallDamageMixin",
-    "Player.SwimPoseMixin"
+    "Player.SwimPoseMixin",
+    "World.TimeOfDayMixin"
   ],
   "client": [
     "Rendering.BlackHolePostProcessMixin",
     "Rendering.GameRendererMixin",
     "Rendering.SeamlessLoadingScreenMixin",
-    "Rendering.SkyMixin"
+    "Rendering.SkyMixin",
+    "Iris.CelestialUniformsMixin"
   ],
   "injectors": {
     "defaultRequire": 1

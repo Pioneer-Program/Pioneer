@@ -31,7 +31,8 @@ public final class BodyRenderer
     private static final float NIGHT_FLOOR = 0.03f;
     private static final float ATMO_TERMINATOR = 0.35f;
     private static final float RINGSHINE_GAIN = 0.55f;
-    private static final float HALF = 0.5f;
+    private static final float CUBE_SIDE = 2.0f;
+    private static final float HALF = CUBE_SIDE * 0.5f;
     private static final float CURVATURE = 0.45f;
     private static final float SCATTER_WIDTH = 0.35f;
     private static final float SCATTER_STRENGTH = 0.35f;
@@ -87,7 +88,7 @@ public final class BodyRenderer
                 renderType ->
                 {
                     BufferBuilder buf = Tesselator.getInstance().begin(renderType.mode(), renderType.format());
-                    CubeGeometry.emit(buf, 1.0f);
+                    CubeGeometry.emit(buf, CUBE_SIDE);
                     renderType.draw(buf.buildOrThrow());
                 });
 
