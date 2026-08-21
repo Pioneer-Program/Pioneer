@@ -5,18 +5,23 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
+import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Fluid.FluidConstants;
 import cute.ame.pioneer.Fluid.FluidNodeStore;
 import cute.ame.pioneer.Fluid.FluidSpecies;
 import cute.ame.pioneer.Fluid.Level.FluidLevelData;
+import cute.ame.pioneer.Fluid.Room.RoomLevelData;
 import cute.ame.pioneer.Fluid.SpeciesTable;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 
 import static cute.ame.pioneer.Command.PioneerCommandFeedback.ERROR_PREFIX;
 import static cute.ame.pioneer.Command.PioneerCommandFeedback.PREFIX;
@@ -48,7 +53,10 @@ public final class FluidDebugCommand
             .then(Commands.literal("info")
                 .then(Commands.argument("id", IntegerArgumentType.integer(0)).executes(FluidDebugCommand::info)))
             .then(Commands.literal("list").executes(FluidDebugCommand::list))
-            .then(Commands.literal("species").executes(FluidDebugCommand::species));
+            .then(Commands.literal("species").executes(FluidDebugCommand::species))
+            .then(Commands.literal("room").executes(FluidDebugCommand::room)
+                .then(Commands.literal("remove").executes(FluidDebugCommand::roomRemove))
+                .then(Commands.literal("list").executes(FluidDebugCommand::roomList)));
     }
 
     private static int create(CommandContext<CommandSourceStack> ctx, float kelvin)
@@ -73,6 +81,14 @@ public final class FluidDebugCommand
         ServerLevel level = ctx.getSource().getLevel();
         FluidLevelData data = FluidLevelData.get(level);
         int id = IntegerArgumentType.getInteger(ctx, "id");
+
+        RoomLevelData rooms = RoomLevelData.getIfPresent(level);
+        if (rooms != null && rooms.room(id) != null)
+        {
+            rooms.remove(level, id);
+            ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.WHITE + "room " + ChatFormatting.GOLD + "#" + id + ChatFormatting.GRAY + " detached and destroyed"), false);
+            return 1;
+        }
 
         if (!data.store().destroy(id)) return missing(ctx, id);
 
@@ -193,6 +209,68 @@ public final class FluidDebugCommand
             source.sendSuccess(() -> Component.literal(String.format("  " + ChatFormatting.DARK_GRAY + "%2d " + ChatFormatting.YELLOW + "%-5s " + ChatFormatting.GRAY + "M = " + ChatFormatting.AQUA + "%7.3f g/mol " + ChatFormatting.GRAY + "c = " + ChatFormatting.AQUA + "%7.1f J/kg/K", species, table.key(species), table.molarMass(species), table.specificHeat(species))), false);
         }
         return table.size();
+    }
+
+    private static int room(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
+    {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        ServerLevel level = player.serverLevel();
+        BlockPos pos = player.blockPosition();
+
+        RoomLevelData rooms = RoomLevelData.get(level);
+        int nodeId = rooms.attach(level, pos);
+
+        if (nodeId == FluidNodeStore.INVALID)
+        {
+            ctx.getSource().sendFailure(Component.literal(ERROR_PREFIX + "position is not passable - stand inside an air block"));
+            return 0;
+        }
+
+        reportRoom(ctx.getSource(), level, rooms, nodeId);
+        return nodeId + 1;
+    }
+
+    private static int roomRemove(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
+    {
+        ServerPlayer player = ctx.getSource().getPlayerOrException();
+        ServerLevel level = player.serverLevel();
+
+        RoomLevelData rooms = RoomLevelData.get(level);
+        int nodeId = rooms.nodeAt(player.blockPosition());
+
+        if (nodeId == FluidNodeStore.INVALID)
+        {
+            ctx.getSource().sendFailure(Component.literal(ERROR_PREFIX + "no room at this position"));
+            return 0;
+        }
+
+        rooms.remove(level, nodeId);
+        ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.WHITE + "room " + ChatFormatting.GOLD + "#" + nodeId + ChatFormatting.GRAY + " detached"), false);
+        return 1;
+    }
+
+    private static int roomList(CommandContext<CommandSourceStack> ctx)
+    {
+        ServerLevel level = ctx.getSource().getLevel();
+        RoomLevelData rooms = RoomLevelData.get(level);
+        CommandSourceStack source = ctx.getSource();
+
+        source.sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "%d " + ChatFormatting.GRAY + "room(s) | pending rescans = " + ChatFormatting.AQUA + "%d " + ChatFormatting.DARK_GRAY + "(%s)", rooms.roomCount(), rooms.pendingRescans(), level.dimension().location())), false);
+
+        for (RoomLevelData.Room room : rooms.rooms()) reportRoom(source, level, rooms, room.nodeId());
+        return rooms.roomCount();
+    }
+
+    private static void reportRoom(CommandSourceStack source, ServerLevel level, RoomLevelData rooms, int nodeId)
+    {
+        RoomLevelData.Room room = rooms.room(nodeId);
+        if (room == null) return;
+
+        FluidNodeStore store = FluidLevelData.get(level).store();
+        boolean alive = store.alive(nodeId);
+        int cells = room.cells().length;
+
+        source.sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "room " + ChatFormatting.GOLD + "#%d " + ChatFormatting.GRAY + "| " + ChatFormatting.AQUA + "%d " + ChatFormatting.GRAY + "block(s) | V = " + ChatFormatting.AQUA + "%.0f L " + ChatFormatting.GRAY + "| " + (room.sealed() ? ChatFormatting.GREEN + "sealed" : ChatFormatting.RED + "open") + ChatFormatting.GRAY + " | P = " + ChatFormatting.GREEN + "%.5f P%s", nodeId, cells, alive ? store.volume(nodeId) : 0.0f, alive ? store.pressure(nodeId) : 0.0, cells >= Config.ROOM_MAX_BLOCKS.get() ? ChatFormatting.YELLOW + " [cap reached]" : "")), false);
     }
 
     private static int missing(CommandContext<CommandSourceStack> ctx, int id)
