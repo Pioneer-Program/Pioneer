@@ -163,22 +163,28 @@ public final class RoomLevelData extends SavedData
         Room room = rooms.get(nodeId);
         if (room == null) return;
 
-        BlockPos origin = new BlockPos(RoomScanner.unpackX(room.origin()), RoomScanner.unpackY(room.origin()), RoomScanner.unpackZ(room.origin()));
-        RoomScanner.Result scan = scan(level, origin);
-
-        if (scan.isEmpty())
-        {
-            remove(level, nodeId);
-            return;
-        }
-
         FluidLevelData fluids = FluidLevelData.get(level);
         FluidNodeStore store = fluids.store();
+
         if (!store.alive(nodeId))
         {
             rooms.remove(nodeId);
             unindexCells(room);
             setDirty();
+            return;
+        }
+
+        BlockPos origin = new BlockPos(RoomScanner.unpackX(room.origin()), RoomScanner.unpackY(room.origin()), RoomScanner.unpackZ(room.origin()));
+        if (!level.hasChunkAt(origin))
+        {
+            markDirty(nodeId);
+            return;
+        }
+
+        RoomScanner.Result scan = scan(level, origin);
+        if (scan.isEmpty())
+        {
+            remove(level, nodeId);
             return;
         }
 
@@ -188,7 +194,20 @@ public final class RoomLevelData extends SavedData
         rooms.put(nodeId, next);
         indexCells(next);
 
-        store.setVolume(nodeId, (float) scan.volumeLitres(Config.ROOM_LITRES_PER_BLOCK.get()));
+        float oldVolume = store.volume(nodeId);
+        float newVolume = (float) scan.volumeLitres(Config.ROOM_LITRES_PER_BLOCK.get());
+
+        if (oldVolume > 0.0f && newVolume != oldVolume && store.moles(nodeId) > 0.0f)
+        {
+            float scale = newVolume / oldVolume;
+            for (int s = 0; s < store.getStride(); s++)
+            {
+                float mol = store.amount(nodeId, s);
+                if (mol > 0.0f) store.setAmount(nodeId, s, mol * scale);
+            }
+        }
+
+        store.setVolume(nodeId, newVolume);
         store.setFlag(nodeId, FluidNodeStore.FLAG_OPEN, !scan.sealed());
 
         fluids.setDirty();
@@ -218,7 +237,7 @@ public final class RoomLevelData extends SavedData
 
     private void unindexCells(Room room)
     {
-        for (long cell : room.cells()) cellToNode.remove(cell);
+        for (long cell : room.cells()) if (cellToNode.get(cell) == room.nodeId()) cellToNode.remove(cell);
     }
 
     @Override

@@ -8,6 +8,8 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import cute.ame.pioneer.Config;
+import cute.ame.pioneer.Fluid.Ambient.AmbientResolver;
+import cute.ame.pioneer.Fluid.Ambient.AmbientState;
 import cute.ame.pioneer.Fluid.FluidConstants;
 import cute.ame.pioneer.Fluid.FluidNodeStore;
 import cute.ame.pioneer.Fluid.FluidSpecies;
@@ -56,7 +58,10 @@ public final class FluidDebugCommand
             .then(Commands.literal("species").executes(FluidDebugCommand::species))
             .then(Commands.literal("room").executes(FluidDebugCommand::room)
                 .then(Commands.literal("remove").executes(FluidDebugCommand::roomRemove))
-                .then(Commands.literal("list").executes(FluidDebugCommand::roomList)));
+                .then(Commands.literal("list").executes(FluidDebugCommand::roomList)))
+            .then(Commands.literal("ambient").executes(FluidDebugCommand::ambient))
+
+            ;
     }
 
     private static int create(CommandContext<CommandSourceStack> ctx, float kelvin)
@@ -278,4 +283,27 @@ public final class FluidDebugCommand
         ctx.getSource().sendFailure(Component.literal(ERROR_PREFIX + "no live node at id " + ChatFormatting.YELLOW + "#" + id));
         return 0;
     }
+
+    private static int ambient(CommandContext<CommandSourceStack> ctx)
+    {
+        ServerLevel level = ctx.getSource().getLevel();
+        AmbientState ambient = AmbientResolver.of(level.dimension());
+        SpeciesTable table = FluidSpecies.active();
+        CommandSourceStack source = ctx.getSource();
+
+        source.sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "ambient " + ChatFormatting.DARK_GRAY + "(%s) " + ChatFormatting.GRAY + "| P = " + ChatFormatting.GREEN + "%.5f P " + ChatFormatting.GRAY + "| T = " + ChatFormatting.GREEN + "%.2f K " + ChatFormatting.DARK_GRAY + "(%.2f °C) " + ChatFormatting.GRAY + "| %s", level.dimension().location(), ambient.pressureP(), ambient.temperatureK(), FluidConstants.toCelsius(ambient.temperatureK()), ambient.vacuum() ? ChatFormatting.RED + "vacuum" : ChatFormatting.GREEN + "atmosphere")), false);
+
+        if (ambient.vacuum()) return 1;
+
+        for (int s = 0; s < table.size(); s++)
+        {
+            float fraction = ambient.fraction(s);
+            if (fraction <= 0.0f) continue;
+
+            final int species = s;
+            source.sendSuccess(() -> Component.literal(String.format("  " + ChatFormatting.YELLOW + "%-4s " + ChatFormatting.GRAY + "%.2f %%", table.key(species), ambient.fraction(species) * 100.0f)), false);
+        }
+        return 1;
+    }
+
 }

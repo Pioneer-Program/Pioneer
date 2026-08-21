@@ -33,6 +33,6 @@ public final class PlanetaryPhysics
     public static double greenhouseLiftK(double surfacePressureBar, double greenhouseFraction)
     {
         double p = Math.max(surfacePressureBar, 0.0);
-        return 500.0 * Math.clamp(greenhouseFraction, 0.0, 1.0) * (1.0 - Math.exp(-p / 20.0));
+        return 500.0 * Math.clamp(greenhouseFraction, 0.0, 1.0) * (1.0 - Math.exp(-p / 2.0));
     }
 }
