@@ -13,6 +13,8 @@ public class Config
     public static ModConfigSpec.IntValue ROOM_MAX_BLOCKS;
     public static ModConfigSpec.IntValue ROOM_RESCANS_PER_TICK;
 
+    public static ModConfigSpec.DoubleValue AMBIENT_EQUALIZE_RATE;
+
     static final ModConfigSpec SPEC;
     static
     {
@@ -30,6 +32,7 @@ public class Config
         ROOM_MAX_BLOCKS = BUILDER.defineInRange("room_max_blocks", 4096, 64, 65_536);
         ROOM_RESCANS_PER_TICK = BUILDER.defineInRange("room_rescans_per_tick", 1, 1, 16);
 
+        AMBIENT_EQUALIZE_RATE = BUILDER.defineInRange("ambient_equalize_rate", 0.25, 0.001, 1.0);
         BUILDER.pop();
         SPEC = BUILDER.build();
     }
