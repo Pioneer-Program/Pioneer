@@ -7,14 +7,15 @@
     "Player.DebugSpectatorFlightSpeedMixin",
     "Player.SpaceFallDamageMixin",
     "Player.SwimPoseMixin",
+    "World.RoomInvalidationMixin",
     "World.TimeOfDayMixin"
   ],
   "client": [
+    "Iris.CelestialUniformsMixin",
     "Rendering.BlackHolePostProcessMixin",
     "Rendering.GameRendererMixin",
     "Rendering.SeamlessLoadingScreenMixin",
-    "Rendering.SkyMixin",
-    "Iris.CelestialUniformsMixin"
+    "Rendering.SkyMixin"
   ],
   "injectors": {
     "defaultRequire": 1
