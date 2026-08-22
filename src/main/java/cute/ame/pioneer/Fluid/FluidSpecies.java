@@ -78,15 +78,21 @@ public final class FluidSpecies
         String[] array = keys.toArray(new String[0]);
         float[] molarMass = new float[n];
         float[] specificHeat = new float[n];
+        boolean[] breathable = new boolean[n];
+        float[] requiredPressure = new float[n];
+        float[] hazardPressure = new float[n];
 
         for (int i = 0; i < n; i++)
         {
             GasDefinition gas = GasRegistry.get(array[i]);
             molarMass[i] = (float) gas.molarMassGPerMol();
             specificHeat[i] = gas.specificHeat();
+            breathable[i] = gas.breathable();
+            requiredPressure[i] = gas.requiredFraction();
+            hazardPressure[i] = gas.hazardFraction();
         }
 
-        return new SpeciesTable(array, molarMass, specificHeat);
+        return new SpeciesTable(array, molarMass, specificHeat, breathable, requiredPressure, hazardPressure);
     }
 
     private static List<String> registryKeys()

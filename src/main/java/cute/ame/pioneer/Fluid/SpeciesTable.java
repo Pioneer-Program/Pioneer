@@ -18,14 +18,33 @@ public final class SpeciesTable
     private final float[] molarMass;
     private final float[] specificHeat;
 
+    private final boolean[] breathable;
+    private final float[] requiredPressure;
+    private final float[] hazardPressure;
+
     public SpeciesTable(String[] keys, float[] molarMass, float[] specificHeat)
+    {
+        this(keys, molarMass, specificHeat, new boolean[keys.length], filled(keys.length, 0.0f), filled(keys.length, Float.MAX_VALUE));
+    }
+
+    public SpeciesTable(String[] keys, float[] molarMass, float[] specificHeat, boolean[] breathable, float[] requiredPressure, float[] hazardPressure)
     {
         this.keys = keys;
         this.molarMass = molarMass;
         this.specificHeat = specificHeat;
+        this.breathable = breathable;
+        this.requiredPressure = requiredPressure;
+        this.hazardPressure = hazardPressure;
 
         this.index = new HashMap<>(keys.length * 2);
         for (int i = 0; i < keys.length; i++) this.index.put(keys[i], i);
+    }
+
+    private static float[] filled(int size, float value)
+    {
+        float[] array = new float[size];
+        Arrays.fill(array, value);
+        return array;
     }
 
     public int size()
@@ -73,6 +92,21 @@ public final class SpeciesTable
     public float[] specificHeatRaw()
     {
         return specificHeat;
+    }
+
+    public boolean breathable(int species)
+    {
+        return breathable[species];
+    }
+
+    public float requiredPressure(int species)
+    {
+        return requiredPressure[species];
+    }
+
+    public float hazardPressure(int species)
+    {
+        return hazardPressure[species];
     }
 
     public int[] remapFrom(List<String> savedKeys)

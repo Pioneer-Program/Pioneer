@@ -1,5 +1,7 @@
 package cute.ame.pioneer.Core.API;
 
+import cute.ame.pioneer.Fluid.Life.Breathing;
+import cute.ame.pioneer.Fluid.Life.LifeSupport;
 import cute.ame.pioneer.SkyPlanet.Data.AtmosphereDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
@@ -101,6 +103,9 @@ public final class PioneerAPI
 
   public static boolean isUnbreathable(ServerPlayer player)
   {
+    Breathing.Result room = LifeSupport.evaluate(player);
+    if (room != null) return !room.breathable();
+
     return getBindingForDimension(player.level().dimension()).map(b -> !b.isSurfaceDimension() || !isBreathable(player.level().dimension())).orElse(true);
   }
 

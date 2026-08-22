@@ -15,6 +15,11 @@ public class Config
 
     public static ModConfigSpec.DoubleValue AMBIENT_EQUALIZE_RATE;
 
+    public static ModConfigSpec.DoubleValue BREATHING_MIN_PRESSURE_P;
+    public static ModConfigSpec.DoubleValue BREATHING_MOL_PER_TICK;
+    public static ModConfigSpec.DoubleValue ASPHYXIATION_DAMAGE;
+    public static ModConfigSpec.IntValue ASPHYXIATION_DAMAGE_PERIOD;
+
     static final ModConfigSpec SPEC;
     static
     {
@@ -33,6 +38,12 @@ public class Config
         ROOM_RESCANS_PER_TICK = BUILDER.defineInRange("room_rescans_per_tick", 1, 1, 16);
 
         AMBIENT_EQUALIZE_RATE = BUILDER.defineInRange("ambient_equalize_rate", 0.25, 0.001, 1.0);
+
+        BREATHING_MIN_PRESSURE_P = BUILDER.defineInRange("breathing_min_pressure_p", 0.0618, 0.0, 10.0);
+        BREATHING_MOL_PER_TICK = BUILDER.defineInRange("breathing_mol_per_tick", 0.000875, 0.0, 1.0);
+        ASPHYXIATION_DAMAGE = BUILDER.defineInRange("asphyxiation_damage", 2.0, 0.0, 100.0);
+        ASPHYXIATION_DAMAGE_PERIOD = BUILDER.defineInRange("asphyxiation_damage_period", 20, 1, 200);
+
         BUILDER.pop();
         SPEC = BUILDER.build();
     }
