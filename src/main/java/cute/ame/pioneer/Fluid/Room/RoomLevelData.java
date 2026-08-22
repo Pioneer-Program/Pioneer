@@ -2,6 +2,7 @@ package cute.ame.pioneer.Fluid.Room;
 
 import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Fluid.FluidConstants;
+import cute.ame.pioneer.Fluid.FluidLevels;
 import cute.ame.pioneer.Fluid.FluidNodeStore;
 import cute.ame.pioneer.Fluid.Level.FluidLevelData;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -175,7 +176,7 @@ public final class RoomLevelData extends SavedData
         }
 
         BlockPos origin = new BlockPos(RoomScanner.unpackX(room.origin()), RoomScanner.unpackY(room.origin()), RoomScanner.unpackZ(room.origin()));
-        if (!level.hasChunkAt(origin))
+        if (!FluidLevels.isLoaded(level, origin))
         {
             markDirty(nodeId);
             return;
@@ -222,7 +223,7 @@ public final class RoomLevelData extends SavedData
         (x, y, z) ->
         {
             cursor.set(x, y, z);
-            if (!level.hasChunkAt(cursor)) return false;
+            if (!FluidLevels.isLoaded(level, cursor)) return false;
 
             var state = level.getBlockState(cursor);
             return state.isAir() || !state.isCollisionShapeFullBlock(level, cursor);
