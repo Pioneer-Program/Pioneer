@@ -11,6 +11,7 @@ import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Fluid.Ambient.AmbientResolver;
 import cute.ame.pioneer.Fluid.Ambient.AmbientState;
 import cute.ame.pioneer.Fluid.FluidConstants;
+import cute.ame.pioneer.Fluid.FluidLevels;
 import cute.ame.pioneer.Fluid.FluidNodeStore;
 import cute.ame.pioneer.Fluid.FluidSpecies;
 import cute.ame.pioneer.Fluid.Level.FluidLevelData;
@@ -219,11 +220,10 @@ public final class FluidDebugCommand
     private static int room(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
     {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
-        ServerLevel level = player.serverLevel();
-        BlockPos pos = player.blockPosition();
+        FluidLevels.Located at = FluidLevels.resolve(player.serverLevel(), player.position());
 
-        RoomLevelData rooms = RoomLevelData.get(level);
-        int nodeId = rooms.attach(level, pos);
+        RoomLevelData rooms = RoomLevelData.get(at.level());
+        int nodeId = rooms.attach(at.level(), at.pos());
 
         if (nodeId == FluidNodeStore.INVALID)
         {
@@ -231,17 +231,20 @@ public final class FluidDebugCommand
             return 0;
         }
 
-        reportRoom(ctx.getSource(), level, rooms, nodeId);
+        if (at.onSubLevel()) ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.DARK_GRAY + "on sub-level " + at.subLevel().getUniqueId() + " at " + at.pos().toShortString()), false);
+
+        reportRoom(ctx.getSource(), at.level(), rooms, nodeId);
         return nodeId + 1;
     }
 
     private static int roomRemove(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
     {
         ServerPlayer player = ctx.getSource().getPlayerOrException();
-        ServerLevel level = player.serverLevel();
+        FluidLevels.Located at = FluidLevels.resolve(player.serverLevel(), player.position());
+        ServerLevel level = at.level();
 
         RoomLevelData rooms = RoomLevelData.get(level);
-        int nodeId = rooms.nodeAt(player.blockPosition());
+        int nodeId = rooms.nodeAt(at.pos());
 
         if (nodeId == FluidNodeStore.INVALID)
         {
