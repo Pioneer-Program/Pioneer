@@ -3,6 +3,7 @@ package cute.ame.pioneer.Spaceship.Entity;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Registrie.ModAttachmentTypes;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
+import cute.ame.pioneer.Spaceship.Block.ThrusterBlock;
 import cute.ame.pioneer.Spaceship.Data.StoredBlock;
 import cute.ame.pioneer.Spaceship.Helper.WorldHelper;
 import cute.ame.pioneer.Spaceship.Block.ThrusterBlock;

@@ -29,10 +29,10 @@ public class ModAttachmentTypes {
                     .serialize(BlockPos.CODEC.listOf())
                     .build()
     );
+
     public static final Supplier<AttachmentType<BlockPos>> SHIP_CONTROLLER_POS = ATTACHMENT_TYPES.register("ship_controller", () ->
             AttachmentType.builder(() -> BlockPos.ZERO)
                     .serialize(BlockPos.CODEC)
                     .build()
     );
-
 }
