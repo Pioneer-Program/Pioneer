@@ -33,6 +33,8 @@ public final class FluidLevelData extends SavedData
 
     private final FluidNodeStore store;
 
+    private final cute.ame.pioneer.Fluid.Graph.FluidGraph graph = new cute.ame.pioneer.Fluid.Graph.FluidGraph();
+
     private FluidLevelData()
     {
         this.store = new FluidNodeStore(FluidSpecies.stride());
@@ -56,6 +58,11 @@ public final class FluidLevelData extends SavedData
     public FluidNodeStore store()
     {
         return store;
+    }
+
+    public cute.ame.pioneer.Fluid.Graph.FluidGraph graph()
+    {
+        return graph;
     }
 
     @Override

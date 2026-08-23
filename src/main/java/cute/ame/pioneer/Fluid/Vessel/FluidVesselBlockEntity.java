@@ -37,6 +37,14 @@ public class FluidVesselBlockEntity extends BlockEntity
     }
 
     @Override
+    public void setRemoved()
+    {
+        if (level instanceof ServerLevel serverLevel) VesselNodes.onUnloaded(serverLevel, worldPosition);
+
+        super.setRemoved();
+    }
+
+    @Override
     protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries)
     {
         super.loadAdditional(tag, registries);

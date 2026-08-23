@@ -2,6 +2,7 @@ package cute.ame.pioneer.Fluid.Vessel;
 
 import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Fluid.Ambient.AmbientResolver;
+import cute.ame.pioneer.Fluid.FluidLevels;
 import cute.ame.pioneer.Fluid.FluidNodeStore;
 import cute.ame.pioneer.Fluid.FluidSpecies;
 import cute.ame.pioneer.Fluid.Level.FluidLevelData;
@@ -25,6 +26,8 @@ public final class VesselNodes
         FluidLevelData data = FluidLevelData.get(level);
         FluidNodeStore store = data.store();
 
+        data.graph().track(pos);
+
         if (store.resolve(be.getNodeHandle()) != FluidNodeStore.INVALID) return;
 
         FluidVesselBlock block = blockAt(level, pos);
@@ -41,6 +44,12 @@ public final class VesselNodes
         adopt(level, data, pos, block);
     }
 
+    public static void onUnloaded(ServerLevel level, BlockPos pos)
+    {
+        FluidLevelData data = FluidLevelData.getIfPresent(level);
+        if (data != null) data.graph().forget(pos);
+    }
+
     public static void onRemoved(net.minecraft.world.level.Level rawLevel, BlockPos pos, BlockState state)
     {
         if (!(rawLevel instanceof ServerLevel level)) return;
@@ -50,6 +59,7 @@ public final class VesselNodes
         if (data == null) return;
 
         FluidNodeStore store = data.store();
+        data.graph().forget(pos);
 
         FluidVesselBlockEntity be = vesselAt(level, pos);
         int nodeId = be == null ? FluidNodeStore.INVALID : store.resolve(be.getNodeHandle());
@@ -71,6 +81,7 @@ public final class VesselNodes
 
         if (block.merges()) splitIfDisconnected(level, data, pos, block, nodeId);
 
+        data.graph().invalidate();
         data.setDirty();
     }
 
@@ -109,12 +120,14 @@ public final class VesselNodes
             if (be != null) be.setNodeHandle(handle);
         }
 
+        data.graph().invalidate();
         data.setDirty();
     }
 
     private static int fold(FluidNodeStore store, IntOpenHashSet nodes)
     {
         int survivor = FluidNodeStore.INVALID;
+        SpeciesTable table = FluidSpecies.active();
 
         for (int nodeId : nodes)
         {
@@ -124,7 +137,6 @@ public final class VesselNodes
                 continue;
             }
 
-            SpeciesTable table = FluidSpecies.active();
             double capacityA = heatCapacity(store, survivor, table);
             double capacityB = heatCapacity(store, nodeId, table);
             double total = capacityA + capacityB;
@@ -194,11 +206,7 @@ public final class VesselNodes
                 target = store.create(pieceVolume, temperature);
             }
 
-            for (int s = 0; s < stride; s++)
-            {
-                float mol = (float) (amounts[s] * share);
-                store.setAmount(target, s, mol);
-            }
+            for (int s = 0; s < stride; s++) store.setAmount(target, s, (float) (amounts[s] * share));
 
             long handle = store.handle(target);
             for (long packed : piece)
@@ -247,7 +255,7 @@ public final class VesselNodes
     private static boolean sameCluster(ServerLevel level, BlockPos pos, FluidVesselBlock block)
     {
         if (!block.merges()) return false;
-        if (!level.hasChunkAt(pos) && !cute.ame.pioneer.Fluid.FluidLevels.isLoaded(level, pos)) return false;
+        if (!FluidLevels.isLoaded(level, pos)) return false;
 
         return level.getBlockState(pos).is(block);
     }

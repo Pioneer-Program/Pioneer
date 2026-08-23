@@ -14,6 +14,8 @@ import cute.ame.pioneer.Fluid.FluidConstants;
 import cute.ame.pioneer.Fluid.FluidNodeStore;
 import cute.ame.pioneer.Fluid.FluidSpecies;
 import cute.ame.pioneer.Fluid.Level.FluidLevelData;
+import cute.ame.pioneer.Fluid.Graph.ComponentPartition;
+import cute.ame.pioneer.Fluid.Graph.FluidGraph;
 import cute.ame.pioneer.Fluid.Room.RoomLevelData;
 import cute.ame.pioneer.Fluid.Vessel.FluidVesselBlockEntity;
 import cute.ame.pioneer.Fluid.SpeciesTable;
@@ -58,6 +60,7 @@ public final class FluidDebugCommand
                 .then(Commands.argument("id", IntegerArgumentType.integer(0)).executes(FluidDebugCommand::info)))
             .then(Commands.literal("list").executes(FluidDebugCommand::list))
             .then(Commands.literal("species").executes(FluidDebugCommand::species))
+            .then(Commands.literal("net").executes(FluidDebugCommand::net))
             .then(Commands.literal("at")
                 .then(Commands.argument("pos", BlockPosArgument.blockPos()).executes(FluidDebugCommand::at)))
             .then(Commands.literal("room").executes(FluidDebugCommand::room)
@@ -304,6 +307,52 @@ public final class FluidDebugCommand
 
         ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "vessel " + ChatFormatting.DARK_GRAY + "%s " + ChatFormatting.GRAY + "-> node " + ChatFormatting.GOLD + "#%d " + ChatFormatting.GRAY + "| V = " + ChatFormatting.AQUA + "%.1f L " + ChatFormatting.GRAY + "| n = " + ChatFormatting.AQUA + "%.4f mol " + ChatFormatting.GRAY + "| P = " + ChatFormatting.GREEN + "%.5f P", pos.toShortString(), nodeId, store.volume(nodeId), store.moles(nodeId), store.pressure(nodeId))), false);
         return nodeId + 1;
+    }
+
+    private static int net(CommandContext<CommandSourceStack> ctx)
+    {
+        ServerLevel level = ctx.getSource().getLevel();
+        FluidLevelData data = FluidLevelData.get(level);
+        FluidGraph graph = data.graph();
+        FluidNodeStore store = data.store();
+
+        graph.rebuildIfDirty(level, store);
+
+        ComponentPartition.Result partition = graph.partition();
+        CommandSourceStack source = ctx.getSource();
+
+        source.sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "%d " + ChatFormatting.GRAY + "network(s) | vessels = " + ChatFormatting.AQUA + "%d " + ChatFormatting.GRAY + "| edges = " + ChatFormatting.AQUA + "%d " + ChatFormatting.DARK_GRAY + "(%s)", partition.count(), graph.vesselCount(), graph.edgeCount(), level.dimension().location())), false);
+
+        for (int c = 0; c < partition.count() && c < LIST_LIMIT; c++)
+        {
+            double volume = 0.0;
+            double moles = 0.0;
+            double lowest = Double.MAX_VALUE;
+            double highest = 0.0;
+
+            for (int i = partition.nodeOffsets()[c]; i < partition.nodeOffsets()[c + 1]; i++)
+            {
+                int nodeId = partition.nodeOrder()[i];
+                if (!store.alive(nodeId)) continue;
+
+                volume += store.volume(nodeId);
+                moles += store.moles(nodeId);
+
+                double pressure = store.pressure(nodeId);
+                if (pressure < lowest) lowest = pressure;
+                if (pressure > highest) highest = pressure;
+            }
+
+            final int component = c;
+            final double totalVolume = volume;
+            final double totalMoles = moles;
+            final double minPressure = lowest == Double.MAX_VALUE ? 0.0 : lowest;
+            final double maxPressure = highest;
+
+            source.sendSuccess(() -> Component.literal(String.format("  " + ChatFormatting.GOLD + "net %-3d " + ChatFormatting.GRAY + "nodes = " + ChatFormatting.AQUA + "%-4d " + ChatFormatting.GRAY + "edges = " + ChatFormatting.AQUA + "%-4d " + ChatFormatting.GRAY + "V = " + ChatFormatting.AQUA + "%9.1f L " + ChatFormatting.GRAY + "n = " + ChatFormatting.AQUA + "%9.3f mol " + ChatFormatting.GRAY + "P = " + ChatFormatting.GREEN + "%.5f" + ChatFormatting.GRAY + " .. " + ChatFormatting.GREEN + "%.5f P", component, partition.nodeCount(component), partition.edgeCount(component), totalVolume, totalMoles, minPressure, maxPressure)), false);
+        }
+
+        return partition.count();
     }
 
     private static int missing(CommandContext<CommandSourceStack> ctx, int id)
