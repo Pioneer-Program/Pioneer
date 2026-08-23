@@ -159,7 +159,7 @@ public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor 
     public void disassemble() {
         ServerSubLevel subLevel = (ServerSubLevel) getSubLevel();
         this.subLevelUUID = NULL_UUID;
-        getThrusterPositions().clear();
+        setData(ModAttachmentTypes.THRUSTER_POSITIONS.get(), List.of());
         this.setChanged();
         if (subLevel == null)
             return;
@@ -203,34 +203,15 @@ public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor 
         if (this.level == null)
             return;
 
-        final List<BlockPos> cache = getThrusterPositions();
-        final int oldSize = cache.size();
-        boolean changed = false;
-        int i = 0;
+        final List<BlockPos> next = new ArrayList<>();
+        for (BlockPos pos : getAssembledBlocks())
+            if (this.level.getBlockState(pos).getBlock() instanceof ThrusterBlock)
+                next.add(pos.immutable());
 
-        for (BlockPos pos : getAssembledBlocks()) {
-            if (!(this.level.getBlockState(pos).getBlock() instanceof ThrusterBlock))
-                continue;
-
-            final BlockPos immutable = pos.immutable();
-            if (i < oldSize) {
-                if (!cache.get(i).equals(immutable)) {
-                    cache.set(i, immutable);
-                    changed = true;
-                }
-            } else {
-                cache.add(immutable);
-                changed = true;
-            }
-            i++;
-        }
-
-        if (i < oldSize) {
-            cache.subList(i, oldSize).clear();
-            changed = true;
-        }
-        if (changed)
+        if (!next.equals(getThrusterPositions())) {
+            setData(ModAttachmentTypes.THRUSTER_POSITIONS.get(), List.copyOf(next));
             setChanged();
+        }
     }
 
     @Override

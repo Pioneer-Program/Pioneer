@@ -25,10 +25,8 @@ public class ModAttachmentTypes {
     );
 
     public static final Supplier<AttachmentType<List<BlockPos>>> THRUSTER_POSITIONS = ATTACHMENT_TYPES.register("thruster_positions", () ->
-            AttachmentType.builder(() -> (List<BlockPos>) new ArrayList<BlockPos>())
-                    .serialize(BlockPos.CODEC.listOf().<List<BlockPos>>xmap(
-                            ArrayList::new,
-                            java.util.function.Function.identity())
-                    ).build()
+            AttachmentType.<List<BlockPos>>builder(() -> List.of())
+                    .serialize(BlockPos.CODEC.listOf())
+                    .build()
     );
 }
