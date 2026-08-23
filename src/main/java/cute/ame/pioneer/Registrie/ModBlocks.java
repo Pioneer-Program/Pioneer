@@ -1,6 +1,7 @@
 package cute.ame.pioneer.Registrie;
 
 import cute.ame.pioneer.Pioneer;
+import cute.ame.pioneer.Fluid.Vessel.FluidVesselBlock;
 import cute.ame.pioneer.Planet.Arid.Block.*;
 import cute.ame.pioneer.Spaceship.Block.ShipController;
 import cute.ame.pioneer.Spaceship.Block.ThrusterBlock;
@@ -10,6 +11,16 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 public final class ModBlocks
 {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(Pioneer.MODID);
+
+    public static final DeferredBlock<FluidVesselBlock> VACCUM_TANK = BLOCKS.register(
+        "vaccum_tank",
+        () -> new FluidVesselBlock(FluidVesselBlock.Variant.TANK)
+    );
+
+    public static final DeferredBlock<FluidVesselBlock> VACCUM_PIPE = BLOCKS.register(
+        "vaccum_pipe",
+        () -> new FluidVesselBlock(FluidVesselBlock.Variant.PIPE)
+    );
 
     public static final DeferredBlock<AridDust> ARID_DUST = BLOCKS.register(
         "arid_dust",

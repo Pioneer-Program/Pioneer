@@ -20,6 +20,8 @@ public class Config
     public static ModConfigSpec.DoubleValue ASPHYXIATION_DAMAGE;
     public static ModConfigSpec.IntValue ASPHYXIATION_DAMAGE_PERIOD;
 
+    public static ModConfigSpec.IntValue VESSEL_MAX_CLUSTER;
+
     static final ModConfigSpec SPEC;
     static
     {
@@ -44,6 +46,7 @@ public class Config
         ASPHYXIATION_DAMAGE = BUILDER.defineInRange("asphyxiation_damage", 2.0, 0.0, 100.0);
         ASPHYXIATION_DAMAGE_PERIOD = BUILDER.defineInRange("asphyxiation_damage_period", 20, 1, 200);
 
+        VESSEL_MAX_CLUSTER = BUILDER.defineInRange("vessel_max_cluster", 4096, 8, 65_536);
         BUILDER.pop();
         SPEC = BUILDER.build();
     }

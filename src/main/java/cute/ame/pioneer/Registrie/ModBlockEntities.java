@@ -1,5 +1,7 @@
 package cute.ame.pioneer.Registrie;
 
+import cute.ame.pioneer.Fluid.Vessel.FluidVesselBlockEntity;
+import cute.ame.pioneer.Fluid.Vessel.FluidVesselBlockEntity;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Spaceship.Entity.ShipEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -18,5 +20,10 @@ public final class ModBlockEntities
                     ShipEntity::new,
                     ModBlocks.SHIP_CONTROLLER.get()
             ).build(null)
+    );
+
+    public static final Supplier<BlockEntityType<FluidVesselBlockEntity>> FLUID_VESSEL = BLOCK_ENTITIES.register(
+        "fluid_vessel",
+        () -> BlockEntityType.Builder.of(FluidVesselBlockEntity::new, ModBlocks.VACCUM_TANK.get(), ModBlocks.VACCUM_PIPE.get()).build(null)
     );
 }

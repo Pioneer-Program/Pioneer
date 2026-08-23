@@ -19,6 +19,10 @@ public final class ModItems
 
   public static final DeferredItem<AridCrystalShard> ARID_CRYSTAL_SHARD = ITEMS.register("arid_crystal_shard", AridCrystalShard::new);
 
+  public static final DeferredItem<BlockItem> VACCUM_TANK = ITEMS.register("vaccum_tank", () -> new BlockItem(ModBlocks.VACCUM_TANK.get(), new Properties()));
+
+  public static final DeferredItem<BlockItem> VACCUM_PIPE = ITEMS.register("vaccum_pipe", () -> new BlockItem(ModBlocks.VACCUM_PIPE.get(), new Properties()));
+
   public static final DeferredItem<BlockItem> ARID_DUST = ITEMS.register("arid_dust", () -> new BlockItem(ModBlocks.ARID_DUST.get(), new Properties()));
 
   public static final DeferredItem<BlockItem> ARID_ROCK = ITEMS.register("arid_rock", () -> new BlockItem(ModBlocks.ARID_ROCK.get(), new Properties()));
