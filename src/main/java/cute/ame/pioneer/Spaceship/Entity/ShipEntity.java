@@ -4,6 +4,8 @@ import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Registrie.ModAttachmentTypes;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
 import cute.ame.pioneer.Spaceship.Block.ThrusterBlock;
+import cute.ame.pioneer.Spaceship.Data.StoredBlock;
+import cute.ame.pioneer.Spaceship.Helper.WorldHelper;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
 import dev.ryanhcode.sable.api.block.BlockEntitySubLevelActor;
@@ -13,34 +15,29 @@ import dev.ryanhcode.sable.api.physics.force.QueuedForceGroup;
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
-import dev.ryanhcode.sable.companion.math.BoundingBox3i;
 import dev.ryanhcode.sable.companion.math.BoundingBox3ic;
 import dev.ryanhcode.sable.companion.math.Pose3d;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
-import dev.ryanhcode.sable.sublevel.plot.ServerLevelPlot;
 import dev.ryanhcode.sable.sublevel.storage.SubLevelRemovalReason;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3d;
 import org.joml.Vector3dc;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor {
 
@@ -67,6 +64,16 @@ public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor 
 
     public void setAssembledBlocks(HashSet<BlockPos> blocks) {
         this.setData(ModAttachmentTypes.ASSEMBLED_BLOCKS.get(), blocks);
+    }
+
+    // Set ship controller pos in sublevel
+    public void setShipControllerPos(BlockPos pos) {
+        this.setData(ModAttachmentTypes.SHIP_CONTROLLER_POS.get(), pos);
+    }
+
+    // Get ship controller in sublevel
+    public BlockPos getShipControllerPos() {
+        return this.getData(ModAttachmentTypes.SHIP_CONTROLLER_POS.get());
     }
 
     public void assemble(BlockPos anchor, Iterable<BlockPos> blocks, BoundingBox3ic bounds) {
@@ -137,8 +144,10 @@ public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor 
                     if (blockEntity instanceof ShipEntity) {
                         if (newEntity != null)
                             Pioneer.LOGGER.warn("Multiple ship controller detected");
-                        else
+                        else {
                             newEntity = (ShipEntity) blockEntity;
+                            newEntity.setShipControllerPos(pos);
+                        }
                     }
 
                 }
@@ -163,17 +172,22 @@ public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor 
         this.setChanged();
         if (subLevel == null)
             return;
-        ServerLevelPlot plot = subLevel.getPlot();
         Pose3dc pose = subLevel.logicalPose();
         HashSet<BlockPos> assembledBlocks = getAssembledBlocks();
+        BlockPos controllerPos = getShipControllerPos();
+        Vec3 anchorPos = pose.transformPosition(
+                new Vec3(controllerPos.getX() + 0.5, controllerPos.getY() + 0.5, controllerPos.getZ() + 0.5)
+        );
+        Vec3 controllerCoord = new Vec3(controllerPos.getX(), controllerPos.getY(), controllerPos.getZ());
         this.setAssembledBlocks(new HashSet<>());
-        assembledBlocks.forEach(localPos -> {
+        this.setShipControllerPos(BlockPos.ZERO);
+        Set<StoredBlock> toPlace = new HashSet<>();
+        for (BlockPos localPos : assembledBlocks) {
             BlockState state = level.getBlockState(localPos);
             BlockEntity blockEntity = level.getBlockEntity(localPos);
-            Vec3 worldPos = pose.transformPosition(new Vec3(
-                    localPos.getX() + 0.5, localPos.getY() + 0.5, localPos.getZ() + 0.5
-            ));
-            BlockPos targetPos = BlockPos.containing(worldPos);
+            Vec3 localCoord = new Vec3(localPos.getX(), localPos.getY(), localPos.getZ());
+            Vec3 targetCoord = anchorPos.add(localCoord.subtract(controllerCoord));
+            BlockPos targetPos = BlockPos.containing(targetCoord);
             CompoundTag tag = null;
             if (blockEntity != null) {
                 tag = blockEntity.saveWithFullMetadata(level.registryAccess());
@@ -181,11 +195,10 @@ public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor 
                 tag.putInt("y", targetPos.getY());
                 tag.putInt("z", targetPos.getZ());
             }
-            level.setBlock(targetPos, state, Block.UPDATE_CLIENTS);
-            BlockEntity newBlockEntity = level.getBlockEntity(targetPos);
-            if (newBlockEntity != null && tag != null)
-                newBlockEntity.loadWithComponents(tag, level.registryAccess());
-        });
+            toPlace.add(new StoredBlock(targetPos, state, tag));
+        }
+        Vec3i offset = WorldHelper.nearestFreeSpaceOffset(level, toPlace);
+        toPlace.forEach(block -> block.place(level, offset));
         container.removeSubLevel(subLevel, SubLevelRemovalReason.REMOVED);
     }
 
@@ -246,13 +259,13 @@ public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor 
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+    protected void saveAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.saveAdditional(tag, registries);
         tag.putUUID("subLevelUUID", this.subLevelUUID);
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
+    protected void loadAdditional(@NotNull CompoundTag tag, HolderLookup.@NotNull Provider registries) {
         super.loadAdditional(tag, registries);
         this.subLevelUUID = tag.getUUID("subLevelUUID");
     }

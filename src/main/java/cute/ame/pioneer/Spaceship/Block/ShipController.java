@@ -2,6 +2,7 @@ package cute.ame.pioneer.Spaceship.Block;
 
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Spaceship.Entity.ShipEntity;
+import cute.ame.pioneer.Spaceship.Helper.SableHelper;
 import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
 import dev.ryanhcode.sable.command.SableAssembleCommands;
 import net.minecraft.core.BlockPos;
@@ -10,14 +11,22 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Set;
+
 public class ShipController extends Block implements EntityBlock {
+
+    public static final Set<Block> DEFAULT_BLACKLIST = Set.of(
+            Blocks.BEDROCK
+    );
 
     public ShipController() {
         super(BlockBehaviour.Properties.of()
@@ -27,7 +36,7 @@ public class ShipController extends Block implements EntityBlock {
 
 
     private InteractionResult assemble(ServerLevel level, BlockPos pos, ShipEntity controllerEntity) {
-        SubLevelAssemblyHelper.GatherResult result = SubLevelAssemblyHelper.gatherConnectedBlocks(pos, level, SableAssembleCommands.DEFAULT_CONNECTED_ASSEMBLY_CAPACITY, null);
+        SubLevelAssemblyHelper.GatherResult result = SableHelper.gatherConnectedBlocks(pos, level, SableAssembleCommands.DEFAULT_CONNECTED_ASSEMBLY_CAPACITY, DEFAULT_BLACKLIST);
         if (result.blocks() == null) {
             Pioneer.LOGGER.warn("Could not assemble ship controller!");
             return InteractionResult.FAIL;
@@ -42,7 +51,7 @@ public class ShipController extends Block implements EntityBlock {
     }
 
     @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
+    protected @NotNull InteractionResult useWithoutItem(@NotNull BlockState state, Level level, @NotNull BlockPos pos, @NotNull Player player, @NotNull BlockHitResult hitResult) {
         if (level.isClientSide)
             return InteractionResult.SUCCESS;
         ShipEntity controllerEntity = (ShipEntity) level.getBlockEntity(pos);
@@ -55,7 +64,7 @@ public class ShipController extends Block implements EntityBlock {
     }
 
     @Override
-    public @Nullable BlockEntity newBlockEntity(BlockPos blockPos, BlockState blockState) {
+    public @Nullable BlockEntity newBlockEntity(@NotNull BlockPos blockPos, @NotNull BlockState blockState) {
         return new ShipEntity(blockPos, blockState);
     }
 }
