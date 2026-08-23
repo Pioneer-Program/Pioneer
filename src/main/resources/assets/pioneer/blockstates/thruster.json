@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "facing=down,lit=false":  { "model": "minecraft:block/dispenser_vertical", "x": 180 },
+    "facing=down,lit=true":   { "model": "minecraft:block/dispenser_vertical", "x": 180 },
+    "facing=up,lit=false":    { "model": "minecraft:block/dispenser_vertical" },
+    "facing=up,lit=true":     { "model": "minecraft:block/dispenser_vertical" },
+    "facing=north,lit=false": { "model": "minecraft:block/dispenser" },
+    "facing=north,lit=true":  { "model": "minecraft:block/dispenser" },
+    "facing=south,lit=false": { "model": "minecraft:block/dispenser", "y": 180 },
+    "facing=south,lit=true":  { "model": "minecraft:block/dispenser", "y": 180 },
+    "facing=west,lit=false":  { "model": "minecraft:block/dispenser", "y": 270 },
+    "facing=west,lit=true":   { "model": "minecraft:block/dispenser", "y": 270 },
+    "facing=east,lit=false":  { "model": "minecraft:block/dispenser", "y": 90 },
+    "facing=east,lit=true":   { "model": "minecraft:block/dispenser", "y": 90 }
+  }
+}

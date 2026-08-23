@@ -3,27 +3,36 @@ package cute.ame.pioneer.Spaceship.Entity;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Registrie.ModAttachmentTypes;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
+import cute.ame.pioneer.Spaceship.Block.ThrusterBlock;
 import cute.ame.pioneer.Spaceship.Data.StoredBlock;
 import cute.ame.pioneer.Spaceship.Helper.WorldHelper;
+import cute.ame.pioneer.Spaceship.Block.ThrusterBlock;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
+import dev.ryanhcode.sable.api.block.BlockEntitySubLevelActor;
 import dev.ryanhcode.sable.api.physics.PhysicsPipeline;
+import dev.ryanhcode.sable.api.physics.force.ForceGroups;
+import dev.ryanhcode.sable.api.physics.force.QueuedForceGroup;
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
+import dev.ryanhcode.sable.companion.math.BoundingBox3i;
 import dev.ryanhcode.sable.companion.math.BoundingBox3ic;
 import dev.ryanhcode.sable.companion.math.Pose3d;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
+import dev.ryanhcode.sable.sublevel.plot.ServerLevelPlot;
 import dev.ryanhcode.sable.sublevel.storage.SubLevelRemovalReason;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -34,7 +43,7 @@ import org.joml.Vector3dc;
 
 import java.util.*;
 
-public class ShipEntity extends BlockEntity {
+public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor {
 
     private static final UUID NULL_UUID = new UUID(0, 0);
 
@@ -150,8 +159,10 @@ public class ShipEntity extends BlockEntity {
         }
         if (newEntity == null)
             Pioneer.LOGGER.error("Ship controller not found!");
-        else
+        else {
             newEntity.setAssembledBlocks(assembledBlocks);
+            newEntity.rebuildThrusterCache();
+        }
     }
 
     public boolean isAssemble() {
@@ -161,6 +172,7 @@ public class ShipEntity extends BlockEntity {
     public void disassemble() {
         ServerSubLevel subLevel = (ServerSubLevel) getSubLevel();
         this.subLevelUUID = NULL_UUID;
+        setData(ModAttachmentTypes.THRUSTER_POSITIONS.get(), List.of());
         this.setChanged();
         if (subLevel == null)
             return;
@@ -198,6 +210,56 @@ public class ShipEntity extends BlockEntity {
         if (subLevelUUID.equals(NULL_UUID))
             return null;
         return container.getSubLevel(subLevelUUID);
+    }
+
+    public List<BlockPos> getThrusterPositions() {
+        return this.getData(ModAttachmentTypes.THRUSTER_POSITIONS.get());
+    }
+
+    private void rebuildThrusterCache() {
+        if (this.level == null)
+            return;
+
+        final List<BlockPos> next = new ArrayList<>();
+        for (BlockPos pos : getAssembledBlocks())
+            if (this.level.getBlockState(pos).getBlock() instanceof ThrusterBlock)
+                next.add(pos.immutable());
+
+        if (!next.equals(getThrusterPositions())) {
+            setData(ModAttachmentTypes.THRUSTER_POSITIONS.get(), List.copyOf(next));
+            setChanged();
+        }
+    }
+
+    @Override
+    public void sable$tick(final ServerSubLevel subLevel) {
+        rebuildThrusterCache();
+    }
+
+    @Override
+    public void sable$physicsTick(final ServerSubLevel subLevel, final RigidBodyHandle handle, final double timeStep) {
+        final List<BlockPos> thrusters = getThrusterPositions();
+        if (thrusters.isEmpty() || this.level == null)
+            return;
+
+        final QueuedForceGroup forceGroup = subLevel.getOrCreateQueuedForceGroup(ForceGroups.PROPULSION.get());
+
+        int activeCount = 0;
+        for (BlockPos pos : thrusters) {
+            final BlockState state = this.level.getBlockState(pos);
+            if (!(state.getBlock() instanceof ThrusterBlock))
+                continue;
+            if (!state.getValue(ThrusterBlock.ACTIVE))
+                continue;
+
+            final Direction dir = state.getValue(ThrusterBlock.FACING);
+            final Vector3d thrust = new Vector3d(dir.getStepX(), dir.getStepY(), dir.getStepZ())
+                    .mul(ThrusterBlock.THRUST * timeStep);
+            final Vector3d point = new Vector3d(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
+
+            forceGroup.applyAndRecordPointForce(point, thrust);
+            activeCount++;
+        }
     }
 
     @Override
