@@ -22,6 +22,8 @@ public class Config
 
     public static ModConfigSpec.IntValue VESSEL_MAX_CLUSTER;
 
+    public static ModConfigSpec.IntValue FLUID_SWEEPS_PER_TICK;
+
     static final ModConfigSpec SPEC;
     static
     {
@@ -47,6 +49,7 @@ public class Config
         ASPHYXIATION_DAMAGE_PERIOD = BUILDER.defineInRange("asphyxiation_damage_period", 20, 1, 200);
 
         VESSEL_MAX_CLUSTER = BUILDER.defineInRange("vessel_max_cluster", 4096, 8, 65_536);
+        FLUID_SWEEPS_PER_TICK = BUILDER.defineInRange("fluid_sweeps_per_tick", 1, 1, 8);
         BUILDER.pop();
         SPEC = BUILDER.build();
     }

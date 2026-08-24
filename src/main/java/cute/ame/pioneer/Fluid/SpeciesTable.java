@@ -18,6 +18,7 @@ public final class SpeciesTable
     private final float[] molarMass;
     private final float[] specificHeat;
 
+    private final float[] molarHeat;
     private final boolean[] breathable;
     private final float[] requiredPressure;
     private final float[] hazardPressure;
@@ -35,6 +36,9 @@ public final class SpeciesTable
         this.breathable = breathable;
         this.requiredPressure = requiredPressure;
         this.hazardPressure = hazardPressure;
+
+        this.molarHeat = new float[keys.length];
+        for (int i = 0; i < keys.length; i++) this.molarHeat[i] = specificHeat[i] * molarMass[i] * 0.001f;
 
         this.index = new HashMap<>(keys.length * 2);
         for (int i = 0; i < keys.length; i++) this.index.put(keys[i], i);
@@ -92,6 +96,16 @@ public final class SpeciesTable
     public float[] specificHeatRaw()
     {
         return specificHeat;
+    }
+
+    public float[] molarHeatRaw()
+    {
+        return molarHeat;
+    }
+
+    public float molarHeat(int species)
+    {
+        return molarHeat[species];
     }
 
     public boolean breathable(int species)

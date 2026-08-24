@@ -24,6 +24,8 @@ public final class FluidGraph
     private float[] edgeConductance = new float[0];
     private int edgeCount;
 
+    private double[] gap = new double[0];
+
     public void track(BlockPos pos)
     {
         if (vessels.add(pos.asLong())) dirty = true;
@@ -74,6 +76,31 @@ public final class FluidGraph
         return edgeConductance[edge];
     }
 
+    public int[] edgeARaw()
+    {
+        return edgeA;
+    }
+
+    public int[] edgeBRaw()
+    {
+        return edgeB;
+    }
+
+    public float[] conductanceRaw()
+    {
+        return edgeConductance;
+    }
+
+    public double gap(int component)
+    {
+        return (component >= 0 && component < gap.length) ? gap[component] : 0.0;
+    }
+
+    public void setGap(int component, double value)
+    {
+        if (component >= 0 && component < gap.length) gap[component] = value;
+    }
+
     public void rebuildIfDirty(ServerLevel level, FluidNodeStore store)
     {
         if (!dirty) return;
@@ -104,7 +131,7 @@ public final class FluidGraph
         {
             BlockPos pos = BlockPos.of(packed);
 
-            int node = nodeAt(level, pos);
+            int node = nodeAt(level, pos, store);
             if (node == FluidNodeStore.INVALID) continue;
 
             if (!seen[node])
@@ -123,7 +150,7 @@ public final class FluidGraph
                 cursor.setWithOffset(pos, direction);
                 if (!vessels.contains(cursor.asLong())) continue;
 
-                int other = nodeAt(level, cursor);
+                int other = nodeAt(level, cursor, store);
                 if (other == FluidNodeStore.INVALID || other == node) continue;
 
                 float there = conductanceAt(level, cursor);
@@ -143,8 +170,7 @@ public final class FluidGraph
         for (int e = 0; e < edgeCount; e++)
         {
             int b = edgeB[e];
-            if (b >= seen.length) continue;
-            if (seen[b]) continue;
+            if (b >= seen.length || seen[b]) continue;
 
             seen[b] = true;
             if (nodeCount == nodes.length) nodes = Arrays.copyOf(nodes, nodeCount * 2);
@@ -152,6 +178,9 @@ public final class FluidGraph
         }
 
         partition = ComponentPartition.of(nodes, nodeCount, edgeA, edgeB, edgeCount, maxNodeId);
+
+        gap = new double[partition.count()];
+        Arrays.fill(gap, Double.MAX_VALUE);
     }
 
     private void growEdges()
@@ -162,11 +191,11 @@ public final class FluidGraph
         edgeConductance = Arrays.copyOf(edgeConductance, next);
     }
 
-    private static int nodeAt(ServerLevel level, BlockPos pos)
+    private static int nodeAt(ServerLevel level, BlockPos pos, FluidNodeStore store)
     {
         if (!(level.getBlockEntity(pos) instanceof FluidVesselBlockEntity vessel)) return FluidNodeStore.INVALID;
 
-        return cute.ame.pioneer.Fluid.Level.FluidLevelData.get(level).store().resolve(vessel.getNodeHandle());
+        return store.resolve(vessel.getNodeHandle());
     }
 
     private static float conductanceAt(ServerLevel level, BlockPos pos)
