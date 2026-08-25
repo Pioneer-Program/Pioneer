@@ -3,12 +3,19 @@ package cute.ame.pioneer;
 import com.mojang.logging.LogUtils;
 import cute.ame.pioneer.Command.PioneerDebugCommand;
 import cute.ame.pioneer.Registrie.*;
+import cute.ame.pioneer.Seamless.Network.SeamlessNetworking;
+import dev.ryanhcode.sable.sublevel.ServerSubLevel;
+import dev.ryanhcode.sable.sublevel.SubLevel;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import org.slf4j.Logger;
 
 @Mod(Pioneer.MODID)
@@ -26,6 +33,7 @@ public class Pioneer
     ModDataComponents.DATA_COMPONENTS.register(modEventBus);
     ModItems.ITEMS.register(modEventBus);
     ModBlocks.BLOCKS.register(modEventBus);
+    ModAttachmentTypes.ATTACHMENT_TYPES.register(modEventBus);
     ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
     modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
 
@@ -36,4 +44,5 @@ public class Pioneer
   {
     PioneerDebugCommand.register(event.getDispatcher());
   }
+
 }
