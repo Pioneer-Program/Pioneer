@@ -20,21 +20,4 @@ public final class SeamlessTickHandler
 
         TransitionManager.tick(player);
     }
-
-    @SubscribeEvent
-    public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event)
-    {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-
-        MinecraftServerLookup.withServer(player, server -> TransitionManager.onPlayerDisconnect(player, dimKey -> server.getLevel(dimKey)));
-    }
-
-    private static final class MinecraftServerLookup
-    {
-        static void withServer(ServerPlayer player, Consumer<MinecraftServer> action)
-        {
-            MinecraftServer server = player.getServer();
-            if (server != null) action.accept(server);
-        }
-    }
 }

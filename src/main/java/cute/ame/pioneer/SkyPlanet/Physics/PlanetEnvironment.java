@@ -3,7 +3,6 @@ package cute.ame.pioneer.SkyPlanet.Physics;
 import cute.ame.pioneer.SkyPlanet.Data.AtmosphereDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SunDefinition;
-import cute.ame.pioneer.SkyPlanet.Rendering.PhysicalScale;
 
 public record PlanetEnvironment
 (
@@ -17,7 +16,7 @@ public record PlanetEnvironment
     public static PlanetEnvironment of(SunDefinition sun, PlanetDefinition planet)
     {
         double au = PhysicalScale.semiMajorAxisAu(planet.orbit(), sun.massSolar());
-        double gravity = PlanetaryPhysics.surfaceGravityMs2(planet.massEarth(), planet.size());
+        double gravity = PlanetaryPhysics.surfaceGravityMs2(planet.massEarth(), planet.radiusKm());
 
         double lum = StellarPhysics.luminositySolar(sun.massSolar(), sun.stage());
         double irradiance = StellarPhysics.irradianceRelative(lum, au);
@@ -36,7 +35,7 @@ public record PlanetEnvironment
     public static PlanetEnvironment ofMoon(SunDefinition sun, PlanetDefinition parent, PlanetDefinition moon)
     {
         double au = PhysicalScale.semiMajorAxisAu(parent.orbit(), sun.massSolar());
-        double gravity = PlanetaryPhysics.surfaceGravityMs2(moon.massEarth(), moon.size());
+        double gravity = PlanetaryPhysics.surfaceGravityMs2(moon.massEarth(), moon.radiusKm());
         double lum = StellarPhysics.luminositySolar(sun.massSolar(), sun.stage());
         double irradiance = StellarPhysics.irradianceRelative(lum, au);
         double tEq = PlanetaryPhysics.equilibriumTemperatureK(StellarPhysics.temperatureK(sun.massSolar(), sun.stage()), StellarPhysics.radiusSolar(sun.massSolar(), sun.stage()), au, moon.bondAlbedo());

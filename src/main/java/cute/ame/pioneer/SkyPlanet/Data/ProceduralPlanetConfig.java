@@ -12,7 +12,6 @@ public record ProceduralPlanetConfig(
     long seed,
     List<Float> primaryColor,
     List<Float> secondaryColor,
-    int resolution,
     int octaves,
     float roughness,
     Optional<ResourceLocation> generatorOverride
@@ -24,7 +23,6 @@ public record ProceduralPlanetConfig(
             Codec.LONG.optionalFieldOf("seed", 0L).forGetter(ProceduralPlanetConfig::seed),
             Codec.FLOAT.listOf().optionalFieldOf("primary_color",   List.of(0.6f, 0.5f, 0.4f)).forGetter(ProceduralPlanetConfig::primaryColor),
             Codec.FLOAT.listOf().optionalFieldOf("secondary_color", List.of(0.3f, 0.3f, 0.3f)).forGetter(ProceduralPlanetConfig::secondaryColor),
-            Codec.INT.optionalFieldOf("resolution", 256).forGetter(ProceduralPlanetConfig::resolution),
             Codec.INT.optionalFieldOf("octaves", 8).forGetter(ProceduralPlanetConfig::octaves),
             Codec.FLOAT.optionalFieldOf("roughness", 0.55f).forGetter(ProceduralPlanetConfig::roughness),
             ResourceLocation.CODEC.optionalFieldOf("generator").forGetter(ProceduralPlanetConfig::generatorOverride)

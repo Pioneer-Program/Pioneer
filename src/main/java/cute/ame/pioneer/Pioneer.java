@@ -38,7 +38,6 @@ public class Pioneer
     modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
 
     NeoForge.EVENT_BUS.addListener(Pioneer::onRegisterCommands);
-    modEventBus.addListener(SeamlessNetworking::register);
   }
 
   private static void onRegisterCommands(RegisterCommandsEvent event)

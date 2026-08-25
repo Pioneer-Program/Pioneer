@@ -1,9 +1,7 @@
 package cute.ame.pioneer.Mixin.Rendering;
 
 import cute.ame.pioneer.Core.Render.Debug.GPUProfiler;
-import cute.ame.pioneer.Seamless.Client.SeamlessGhostRenderer;
 import cute.ame.pioneer.SkyPlanet.Rendering.PostProcess.BlackHolePostProcessRenderer;
-import cute.ame.pioneer.SkyPlanet.Rendering.gl.GalaxyRenderer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.GameRenderer;
@@ -21,8 +19,6 @@ public abstract class BlackHolePostProcessMixin
     @Inject(method = "renderLevel", at = @At("TAIL"))
     private void pioneer$renderBlackHolePostProcess(DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f frustumMatrix, Matrix4f projectionMatrix, CallbackInfo ci)
     {
-        if (SeamlessGhostRenderer.IN_GHOST_DEBUG_FRAME) return;
-
         float partialTick = deltaTracker.getGameTimeDeltaPartialTick(true);
         GPUProfiler.begin("celestial.blackhole");
         BlackHolePostProcessRenderer.renderIfActive(camera, frustumMatrix, projectionMatrix, partialTick);

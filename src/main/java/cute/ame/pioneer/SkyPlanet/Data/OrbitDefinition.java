@@ -4,7 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 public record OrbitDefinition
-        (
+(
     double radius,
     double periodDays,
     double startAngle,

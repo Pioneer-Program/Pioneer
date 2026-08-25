@@ -28,9 +28,8 @@ public final class RingRenderer
     private static final float EXPOSURE = 1.75f;
     private static final float SHINE_R = 0.95f, SHINE_G = 0.85f, SHINE_B = 0.70f;
 
-    public static void render(PoseStack ps, RingDefinition rings, float apparentSize, float camObjX, float camObjY, float camObjZ, float sunX, float sunY, float sunZ, float sunAngRad)
+    public static void render(PoseStack ps, RingDefinition rings, float planetHalf, float camObjX, float camObjY, float camObjZ, float sunX, float sunY, float sunZ, float sunAngRad)
     {
-        final float planetHalf = apparentSize * 0.5f;
         final float innerR = rings.innerRadius() * planetHalf;
         final float outerR = rings.outerRadius() * planetHalf;
         if (outerR <= innerR) return;

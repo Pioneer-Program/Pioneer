@@ -12,7 +12,6 @@
       0.22,
       0.12
     ],
-    "resolution": 16,
     "octaves": 8,
     "roughness": 0.58
   },
@@ -68,7 +67,9 @@
     "opposition_h": 0.035,
     "planet_shine": 0.2
   },
-  "origin_latitude": 0.0,
-  "origin_longitude": 0.0,
-  "surface_scale": 1000.0
+  "surface_scale": 1000.0,
+  "home_face": 0,
+  "home_u": 0.0,
+  "home_v": 0.0,
+  "vertical_scale": 1.0
 }

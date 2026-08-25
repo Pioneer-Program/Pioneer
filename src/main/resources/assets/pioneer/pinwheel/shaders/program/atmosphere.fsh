@@ -28,7 +28,7 @@ const int NUM_VIEW_STEPS  = 12;
 const int NUM_SUN_STEPS   = 6;
 const float PI = 3.14159265359;
 
-const float RAYLEIGH_STRENGTH = 9.0;
+const float RAYLEIGH_STRENGTH = 19.0;
 const float MIE_STRENGTH_BASE = 4.0;
 
 float clamp01(float v) { return clamp(v, 0.0, 1.0); }

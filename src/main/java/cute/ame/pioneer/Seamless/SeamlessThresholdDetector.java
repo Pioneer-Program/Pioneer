@@ -1,7 +1,9 @@
 package cute.ame.pioneer.Seamless;
 
-import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.Config;
+import cute.ame.pioneer.Core.API.PioneerAPI;
+import cute.ame.pioneer.Core.Observer.ObserverState;
+import cute.ame.pioneer.Core.Observer.ObserverStates;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
 import net.minecraft.resources.ResourceKey;
@@ -38,18 +40,20 @@ public final class SeamlessThresholdDetector
         return switch (binding.type())
         {
             case SURFACE -> evaluateSurface(player);
-            default -> ThresholdResult.NONE_RESULT;
+            case SPACE -> evaluateSpaceProximity(player, binding);
         };
     }
 
     private static ThresholdResult evaluateSurface(ServerPlayer player)
     {
-        double entryY = Config.ORBIT_ENTRY_Y.get();
-        double margin = surfaceApproachMarginFor(player);
+        ObserverState obs = ObserverStates.resolve(player.level(), player.position(), 0f);
+        if (!obs.hasBody()) return ThresholdResult.NONE_RESULT;
 
-        if (player.getY() < entryY - margin) return ThresholdResult.NONE_RESULT;
+        double altKm = obs.altitudeKm();
+        double entryKm = Config.ORBIT_ENTRY_ALTITUDE_KM.get();
+        if (altKm < entryKm - surfaceApproachMarginKm(player, obs)) return ThresholdResult.NONE_RESULT;
 
-        return new ThresholdResult(ThresholdKind.SURFACE_APPROACHING_ORBIT, Optional.empty(), player.getY());
+        return new ThresholdResult(ThresholdKind.SURFACE_APPROACHING_ORBIT, Optional.empty(), altKm);
     }
 
     private static ThresholdResult evaluateSpaceProximity(ServerPlayer player, PioneerAPI.DimensionBinding binding)
@@ -57,22 +61,22 @@ public final class SeamlessThresholdDetector
         Optional<SolarSystemDefinition> systemOpt = PioneerAPI.getSolarSystem(binding.systemId());
         if (systemOpt.isEmpty()) return ThresholdResult.NONE_RESULT;
 
-        SolarSystemDefinition system = systemOpt.get();
-        List<PlanetDefinition> planets = system.allPlanetsFlat();
+        List<PlanetDefinition> planets = systemOpt.get().allPlanetsFlat();
 
         PlanetDefinition closest = null;
         double closestDist = Double.MAX_VALUE;
 
         for (PlanetDefinition planet : planets)
         {
+            if (planet.dimension().isEmpty()) continue;
+
             double[] pos = planet.currentWorldPosition(player.level().getGameTime());
             double dx = player.getX() - pos[0];
             double dy = player.getY() - pos[1];
             double dz = player.getZ() - pos[2];
             double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-            double margin = approachMarginFor(player, planet.approachRadius());
-            double approachRadius = planet.approachRadius() + margin;
+            double approachRadius = planet.approachRadius() + approachMarginFor(player, planet.approachRadius());
             if (dist <= approachRadius && dist < closestDist)
             {
                 closest = planet;
@@ -84,12 +88,12 @@ public final class SeamlessThresholdDetector
         return new ThresholdResult(ThresholdKind.SPACE_APPROACHING_PLANET, Optional.of(closest), closestDist);
     }
 
-    private static double surfaceApproachMarginFor(ServerPlayer player)
+    private static double surfaceApproachMarginKm(ServerPlayer player, ObserverState obs)
     {
-        double speed = player.getDeltaMovement().length() * 20.0;
-        double velocityMargin = speed * 2.0;
-        double minMargin = 32.0;
-        return Math.max(minMargin, velocityMargin);
+        double blocksPerTick = player.getDeltaMovement().length();
+        double kmPerTick = blocksPerTick * obs.body().verticalScale() * 1.0e-3;
+        double travelledBetweenChecks = kmPerTick * CHECK_INTERVAL_TICKS * 2.0;
+        return Math.max(0.05, travelledBetweenChecks);
     }
 
     private static double approachMarginFor(ServerPlayer player, double approachRadius)

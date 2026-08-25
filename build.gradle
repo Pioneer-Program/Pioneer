@@ -128,7 +128,9 @@ dependencies {
     runtimeOnly "maven.modrinth:l6YH9Als:v5qtqRQi" // SPARK TPS
 
     // TESTING UNIT
-    testImplementation "org.junit.jupiter:junit-jupiter:5.10.2"
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation "org.joml:joml:1.10.5"
     testImplementation "com.mojang:datafixerupper:8.0.16"
 }
@@ -195,4 +197,7 @@ tasks.matching { it.name in ['runClient', 'runServer', 'runData', 'runGameTestSe
     dependsOn 'copyRunMods'
 }
 
-test { useJUnitPlatform() }
+test {
+    useJUnitPlatform()
+    testLogging { events "passed", "failed", "skipped" }
+}

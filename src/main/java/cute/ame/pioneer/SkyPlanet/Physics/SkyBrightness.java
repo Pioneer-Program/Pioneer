@@ -23,7 +23,7 @@ public final class SkyBrightness
     public static float starVisibility(double sinSunAltitude, PlanetDefinition planet)
     {
         if (planet == null) return 1.0f;
-        return starVisibility(sinSunAltitude, planet, PlanetaryPhysics.surfaceGravityMs2(planet.massEarth(), planet.size()));
+        return starVisibility(sinSunAltitude, planet, PlanetaryPhysics.surfaceGravityMs2(planet.massEarth(), planet.radiusKm()));
     }
 
     private static double smoothstep(double edge0, double edge1, double x)

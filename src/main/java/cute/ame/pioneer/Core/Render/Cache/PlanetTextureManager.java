@@ -10,8 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 public final class PlanetTextureManager
 {
     private static final int MAX_IDLE_PLANETS = 32;
-    private static final int MIN_RES = 32;
-    private static final int MAX_RES = 64;
+    private static final int PLANET_TEXTURE_RESOLUTION = 32;
 
     private static final TextureManager<CubemapTextures> CACHE = new TextureManager<>(MAX_IDLE_PLANETS);
 
@@ -21,15 +20,14 @@ public final class PlanetTextureManager
         String cacheKey = planetId + "@" + cfg.seed() + "_" + generatorId;
 
         PlanetTextureBaker generator = PlanetTextureRegistry.get(generatorId);
-        int res = Math.clamp(cfg.resolution(), MIN_RES, MAX_RES);
 
         CubemapTextures group = CACHE.acquire(
             cacheKey,
             CubemapTextures.FACE_NAMES,
             face ->
             {
-                Pioneer.LOGGER.debug("[Pioneer] Generating '{}' face {} for '{}' ({}x{}, seed={})", generatorId, CubemapTextures.FACE_NAMES[face], planetId, res, res, cfg.seed());
-                return generator.generateFace(cfg, res, face);
+                Pioneer.LOGGER.debug("[Pioneer] Generating '{}' face {} for '{}' ({}x{}, seed={})", generatorId, CubemapTextures.FACE_NAMES[face], planetId, PLANET_TEXTURE_RESOLUTION, PLANET_TEXTURE_RESOLUTION, cfg.seed());
+                return generator.generateFace(cfg, PLANET_TEXTURE_RESOLUTION, face);
             },
             CubemapTextures::of);
 
