@@ -2,12 +2,12 @@ package cute.ame.pioneer.Spaceship.Helper;
 
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Spaceship.Data.StoredBlock;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Vec3i;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.block.LiquidBlock;
+import net.minecraft.world.level.block.state.BlockState;
 
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Set;
 
 public class WorldHelper {
@@ -24,25 +24,42 @@ public class WorldHelper {
 
     public static Vec3i nearestFreeSpaceOffset(Level level, Set<StoredBlock> blocks) {
         Vec3i nearest = Vec3i.ZERO;
+        int maxHeight = level.getMaxBuildHeight();
+        int halfRadius = RADIUS / 2;
         double nearestLength = Double.MAX_VALUE;
         for (int x = 0; x < RADIUS; ++x) {
-            if (x >= nearestLength)
+            int realX = x;
+            if (x > halfRadius)
+                realX = halfRadius - x;
+            if (Math.abs(realX) >= nearestLength)
                 break;
             for (int y = 0; y < RADIUS; ++y) {
-                if (getVectorLength(x, y, 0) >= nearestLength)
+                int realY = y;
+                if (y > halfRadius)
+                    realY = halfRadius - y;
+                if (getVectorLength(realX, realY, 0) >= nearestLength)
                     break;
                 for (int z = 0; z < RADIUS; ++z) {
-                    if (getVectorLength(x, y, z) >= nearestLength)
+                    int realZ = z;
+                    if (z > halfRadius)
+                        realZ = halfRadius - z;
+                    if (getVectorLength(realX, realY, realZ) >= nearestLength)
                         break;
                     boolean placeable = true;
                     for (StoredBlock block : blocks) {
-                        if (!level.getBlockState(block.pos().offset(x, y, z)).isAir()) {
+                        BlockPos pos =  block.pos().offset(realX, realY, realZ);
+                        if (pos.getY() >= maxHeight) {
+                            placeable = false;
+                            break;
+                        }
+                        BlockState state = level.getBlockState(pos);
+                        if (!state.isAir() && !(state.getBlock() instanceof LiquidBlock)) {
                             placeable = false;
                             break;
                         }
                     }
                     if (placeable) {
-                        Vec3i offset = new Vec3i(x, y, z);
+                        Vec3i offset = new Vec3i(realX, realY, realZ);
                         double length = getVectorLength(offset);
                         if (length < nearestLength) {
                             nearest = offset;

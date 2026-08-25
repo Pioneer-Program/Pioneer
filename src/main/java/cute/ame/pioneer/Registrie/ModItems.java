@@ -43,5 +43,7 @@ public final class ModItems
 
   public static final DeferredItem<BlockItem> ARID_GLYPH = ITEMS.register("arid_glyph", () -> new BlockItem(ModBlocks.ARID_GLYPH.get(), new Properties()));
 
+  public static final DeferredItem<BlockItem> SHIP_CONTROLLER = ITEMS.register("ship_controller",  () -> new BlockItem(ModBlocks.SHIP_CONTROLLER.get(), new Properties()));
+
   public static final DeferredItem<BlockItem> THRUSTER = ITEMS.register("thruster", () -> new BlockItem(ModBlocks.THRUSTER.get(), new Properties()));
 }

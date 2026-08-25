@@ -6,7 +6,6 @@ import cute.ame.pioneer.Registrie.ModBlockEntities;
 import cute.ame.pioneer.Spaceship.Block.ThrusterBlock;
 import cute.ame.pioneer.Spaceship.Data.StoredBlock;
 import cute.ame.pioneer.Spaceship.Helper.WorldHelper;
-import cute.ame.pioneer.Spaceship.Block.ThrusterBlock;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.SubLevelAssemblyHelper;
 import dev.ryanhcode.sable.api.block.BlockEntitySubLevelActor;
@@ -16,14 +15,12 @@ import dev.ryanhcode.sable.api.physics.force.QueuedForceGroup;
 import dev.ryanhcode.sable.api.physics.handle.RigidBodyHandle;
 import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
-import dev.ryanhcode.sable.companion.math.BoundingBox3i;
 import dev.ryanhcode.sable.companion.math.BoundingBox3ic;
 import dev.ryanhcode.sable.companion.math.Pose3d;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
 import dev.ryanhcode.sable.sublevel.plot.LevelPlot;
-import dev.ryanhcode.sable.sublevel.plot.ServerLevelPlot;
 import dev.ryanhcode.sable.sublevel.storage.SubLevelRemovalReason;
 import dev.ryanhcode.sable.sublevel.system.SubLevelPhysicsSystem;
 import net.minecraft.core.BlockPos;
@@ -32,7 +29,6 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -244,7 +240,6 @@ public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor 
 
         final QueuedForceGroup forceGroup = subLevel.getOrCreateQueuedForceGroup(ForceGroups.PROPULSION.get());
 
-        int activeCount = 0;
         for (BlockPos pos : thrusters) {
             final BlockState state = this.level.getBlockState(pos);
             if (!(state.getBlock() instanceof ThrusterBlock))
@@ -258,7 +253,6 @@ public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor 
             final Vector3d point = new Vector3d(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5);
 
             forceGroup.applyAndRecordPointForce(point, thrust);
-            activeCount++;
         }
     }
 
