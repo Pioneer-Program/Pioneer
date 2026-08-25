@@ -24,6 +24,9 @@ public class Config
 
     public static ModConfigSpec.IntValue FLUID_SWEEPS_PER_TICK;
 
+    public static ModConfigSpec.DoubleValue FLUID_SLEEP_EPSILON;
+    public static ModConfigSpec.IntValue FLUID_SLEEP_TICKS;
+
     static final ModConfigSpec SPEC;
     static
     {
@@ -50,6 +53,9 @@ public class Config
 
         VESSEL_MAX_CLUSTER = BUILDER.defineInRange("vessel_max_cluster", 4096, 8, 65_536);
         FLUID_SWEEPS_PER_TICK = BUILDER.defineInRange("fluid_sweeps_per_tick", 1, 1, 8);
+
+        FLUID_SLEEP_EPSILON = BUILDER.defineInRange("fluid_sleep_epsilon", 1.0e-5, 0.0, 1.0);
+        FLUID_SLEEP_TICKS = BUILDER.defineInRange("fluid_sleep_ticks", 20, 1, 1200);
         BUILDER.pop();
         SPEC = BUILDER.build();
     }

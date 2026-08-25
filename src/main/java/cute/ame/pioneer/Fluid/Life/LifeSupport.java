@@ -89,6 +89,6 @@ public final class LifeSupport
         store.add(nodeId, o2, -actual);
         store.add(nodeId, co2, actual);
 
-        data.setDirty();
+        data.touch(nodeId);
     }
 }

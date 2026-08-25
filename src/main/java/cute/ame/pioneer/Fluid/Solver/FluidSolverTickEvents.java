@@ -27,12 +27,15 @@ public final class FluidSolverTickEvents
         FluidGraph graph = data.graph();
 
         graph.rebuildIfDirty(level, store);
+        if (graph.awakeCount() == 0) return;
 
         ComponentPartition.Result partition = graph.partition();
         if (partition.count() == 0) return;
 
         float[] molarHeat = FluidSpecies.active().molarHeatRaw();
         int sweeps = Config.FLUID_SWEEPS_PER_TICK.get();
+        double epsilon = Config.FLUID_SLEEP_EPSILON.get();
+        int patience = Config.FLUID_SLEEP_TICKS.get();
 
         int[] edgeOrder = partition.edgeOrder();
         int[] edgeOffsets = partition.edgeOffsets();
@@ -44,9 +47,16 @@ public final class FluidSolverTickEvents
 
         for (int c = 0; c < partition.count(); c++)
         {
+            if (graph.isAsleep(c)) continue;
+
             int from = edgeOffsets[c];
             int to = edgeOffsets[c + 1];
-            if (from == to) continue;
+
+            if (from == to)
+            {
+                graph.settle(c, 0.0, epsilon, patience);
+                continue;
+            }
 
             double largest = 0.0;
             for (int pass = 0; pass < sweeps; pass++)
@@ -54,7 +64,7 @@ public final class FluidSolverTickEvents
                 largest = FluidSolver.sweep(store, edgeOrder, from, to, edgeA, edgeB, conductance, molarHeat);
             }
 
-            graph.setGap(c, largest);
+            graph.settle(c, largest, epsilon, patience);
             if (largest >= FluidSolver.EPSILON) moved = true;
         }
 

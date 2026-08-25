@@ -35,6 +35,7 @@ public final class AmbientTickEvents
             if (!store.alive(id) || !store.hasFlag(id, FluidNodeStore.FLAG_OPEN)) continue;
 
             AmbientEqualizer.equalize(store, id, ambient, rate);
+            data.touch(id);
             touched = true;
         }
 

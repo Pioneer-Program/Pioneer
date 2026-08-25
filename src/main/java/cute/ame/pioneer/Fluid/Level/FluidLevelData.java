@@ -2,6 +2,7 @@ package cute.ame.pioneer.Fluid.Level;
 
 import cute.ame.pioneer.Fluid.FluidNodeStore;
 import cute.ame.pioneer.Fluid.FluidSpecies;
+import cute.ame.pioneer.Fluid.Graph.FluidGraph;
 import cute.ame.pioneer.Fluid.SpeciesTable;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -33,7 +34,7 @@ public final class FluidLevelData extends SavedData
 
     private final FluidNodeStore store;
 
-    private final cute.ame.pioneer.Fluid.Graph.FluidGraph graph = new cute.ame.pioneer.Fluid.Graph.FluidGraph();
+    private final FluidGraph graph = new FluidGraph();
 
     private FluidLevelData()
     {
@@ -63,6 +64,12 @@ public final class FluidLevelData extends SavedData
     public cute.ame.pioneer.Fluid.Graph.FluidGraph graph()
     {
         return graph;
+    }
+
+    public void touch(int nodeId)
+    {
+        graph.wakeNode(nodeId);
+        setDirty();
     }
 
     @Override

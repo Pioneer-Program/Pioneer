@@ -60,7 +60,8 @@ public final class FluidDebugCommand
                 .then(Commands.argument("id", IntegerArgumentType.integer(0)).executes(FluidDebugCommand::info)))
             .then(Commands.literal("list").executes(FluidDebugCommand::list))
             .then(Commands.literal("species").executes(FluidDebugCommand::species))
-            .then(Commands.literal("net").executes(FluidDebugCommand::net))
+            .then(Commands.literal("net").executes(FluidDebugCommand::net)
+                .then(Commands.literal("wake").executes(FluidDebugCommand::netWake)))
             .then(Commands.literal("at")
                 .then(Commands.argument("pos", BlockPosArgument.blockPos()).executes(FluidDebugCommand::at)))
             .then(Commands.literal("room").executes(FluidDebugCommand::room)
@@ -129,7 +130,7 @@ public final class FluidDebugCommand
 
         float mol = FloatArgumentType.getFloat(ctx, "mol");
         store.add(id, species, mol);
-        data.setDirty();
+        data.touch(id);
 
         ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "#%d " + ChatFormatting.GRAY + "%+.3f mol " + ChatFormatting.YELLOW + "%s " + ChatFormatting.GRAY + "| n = " + ChatFormatting.AQUA + "%.3f mol " + ChatFormatting.GRAY + "| P = " + ChatFormatting.GREEN + "%.5f P", id, mol, key, store.moles(id), store.pressure(id))), false);
         return 1;
@@ -146,7 +147,7 @@ public final class FluidDebugCommand
 
         float kelvin = FloatArgumentType.getFloat(ctx, "kelvin");
         store.setTemperature(id, kelvin);
-        data.setDirty();
+        data.touch(id);
 
         ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "#%d " + ChatFormatting.GRAY + "T = " + ChatFormatting.GREEN + "%.2f K " + ChatFormatting.DARK_GRAY + "(%.2f °C) " + ChatFormatting.GRAY + "| P = " + ChatFormatting.GREEN + "%.5f P", id, kelvin, FluidConstants.toCelsius(kelvin), store.pressure(id))), false);
         return 1;
@@ -321,7 +322,7 @@ public final class FluidDebugCommand
         ComponentPartition.Result partition = graph.partition();
         CommandSourceStack source = ctx.getSource();
 
-        source.sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "%d " + ChatFormatting.GRAY + "network(s) | vessels = " + ChatFormatting.AQUA + "%d " + ChatFormatting.GRAY + "| edges = " + ChatFormatting.AQUA + "%d " + ChatFormatting.DARK_GRAY + "(%s)", partition.count(), graph.vesselCount(), graph.edgeCount(), level.dimension().location())), false);
+        source.sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "%d " + ChatFormatting.GRAY + "network(s) | " + ChatFormatting.GREEN + "%d awake " + ChatFormatting.GRAY + "| vessels = " + ChatFormatting.AQUA + "%d " + ChatFormatting.GRAY + "| edges = " + ChatFormatting.AQUA + "%d " + ChatFormatting.DARK_GRAY + "(%s)", partition.count(), graph.awakeCount(), graph.vesselCount(), graph.edgeCount(), level.dimension().location())), false);
 
         for (int c = 0; c < partition.count() && c < LIST_LIMIT; c++)
         {
@@ -349,10 +350,22 @@ public final class FluidDebugCommand
             final double minPressure = lowest == Double.MAX_VALUE ? 0.0 : lowest;
             final double maxPressure = highest;
 
-            source.sendSuccess(() -> Component.literal(String.format("  " + ChatFormatting.GOLD + "net %-3d " + ChatFormatting.GRAY + "nodes = " + ChatFormatting.AQUA + "%-4d " + ChatFormatting.GRAY + "edges = " + ChatFormatting.AQUA + "%-4d " + ChatFormatting.GRAY + "V = " + ChatFormatting.AQUA + "%9.1f L " + ChatFormatting.GRAY + "n = " + ChatFormatting.AQUA + "%9.3f mol " + ChatFormatting.GRAY + "P = " + ChatFormatting.GREEN + "%.5f" + ChatFormatting.GRAY + " .. " + ChatFormatting.GREEN + "%.5f P", component, partition.nodeCount(component), partition.edgeCount(component), totalVolume, totalMoles, minPressure, maxPressure)), false);
+            final String state = graph.isAsleep(component) ? ChatFormatting.DARK_GRAY + "asleep" : ChatFormatting.GREEN + "awake";
+
+            source.sendSuccess(() -> Component.literal(String.format("  " + ChatFormatting.GOLD + "net %-3d " + ChatFormatting.GRAY + "nodes = " + ChatFormatting.AQUA + "%-4d " + ChatFormatting.GRAY + "edges = " + ChatFormatting.AQUA + "%-4d " + ChatFormatting.GRAY + "V = " + ChatFormatting.AQUA + "%9.1f L " + ChatFormatting.GRAY + "n = " + ChatFormatting.AQUA + "%9.3f mol " + ChatFormatting.GRAY + "P = " + ChatFormatting.GREEN + "%.5f" + ChatFormatting.GRAY + " .. " + ChatFormatting.GREEN + "%.5f P " + ChatFormatting.GRAY + "| %s", component, partition.nodeCount(component), partition.edgeCount(component), totalVolume, totalMoles, minPressure, maxPressure, state)), false);
         }
 
         return partition.count();
+    }
+
+    private static int netWake(CommandContext<CommandSourceStack> ctx)
+    {
+        ServerLevel level = ctx.getSource().getLevel();
+        FluidLevelData data = FluidLevelData.get(level);
+
+        data.graph().wakeAll();
+        ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.GRAY + "every network woken"), false);
+        return data.graph().awakeCount();
     }
 
     private static int missing(CommandContext<CommandSourceStack> ctx, int id)

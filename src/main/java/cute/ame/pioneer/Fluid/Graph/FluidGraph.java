@@ -12,7 +12,12 @@ import java.util.Arrays;
 
 public final class FluidGraph
 {
-    private static final Direction[] FORWARD = { Direction.EAST, Direction.UP, Direction.SOUTH };
+    private static final Direction[] FORWARD =
+    {
+        Direction.EAST,
+        Direction.UP,
+        Direction.SOUTH
+    };
 
     private final LongOpenHashSet vessels = new LongOpenHashSet();
 
@@ -25,6 +30,11 @@ public final class FluidGraph
     private int edgeCount;
 
     private double[] gap = new double[0];
+
+    private int[] calm = new int[0];
+
+    private boolean[] asleep = new boolean[0];
+    private int awake;
 
     public void track(BlockPos pos)
     {
@@ -61,21 +71,6 @@ public final class FluidGraph
         return edgeCount;
     }
 
-    public int edgeA(int edge)
-    {
-        return edgeA[edge];
-    }
-
-    public int edgeB(int edge)
-    {
-        return edgeB[edge];
-    }
-
-    public float conductance(int edge)
-    {
-        return edgeConductance[edge];
-    }
-
     public int[] edgeARaw()
     {
         return edgeA;
@@ -91,14 +86,65 @@ public final class FluidGraph
         return edgeConductance;
     }
 
+    public int awakeCount()
+    {
+        return awake;
+    }
+
+    public boolean isAsleep(int component)
+    {
+        return component >= 0 && component < asleep.length && asleep[component];
+    }
+
     public double gap(int component)
     {
         return (component >= 0 && component < gap.length) ? gap[component] : 0.0;
     }
 
-    public void setGap(int component, double value)
+    public boolean settle(int component, double largestGap, double epsilon, int patience)
     {
-        if (component >= 0 && component < gap.length) gap[component] = value;
+        if (component < 0 || component >= gap.length) return false;
+
+        gap[component] = largestGap;
+
+        if (largestGap >= epsilon)
+        {
+            calm[component] = 0;
+            return false;
+        }
+
+        if (++calm[component] < patience) return false;
+
+        if (!asleep[component])
+        {
+            asleep[component] = true;
+            awake--;
+        }
+        return true;
+    }
+
+    public void wakeNode(int nodeId)
+    {
+        int component = partition.componentOf(nodeId);
+        if (component < 0) return;
+
+        wake(component);
+    }
+
+    public void wake(int component)
+    {
+        if (component < 0 || component >= asleep.length) return;
+
+        calm[component] = 0;
+        if (!asleep[component]) return;
+
+        asleep[component] = false;
+        awake++;
+    }
+
+    public void wakeAll()
+    {
+        for (int c = 0; c < asleep.length; c++) wake(c);
     }
 
     public void rebuildIfDirty(ServerLevel level, FluidNodeStore store)
@@ -179,7 +225,11 @@ public final class FluidGraph
 
         partition = ComponentPartition.of(nodes, nodeCount, edgeA, edgeB, edgeCount, maxNodeId);
 
-        gap = new double[partition.count()];
+        int count = partition.count();
+        gap = new double[count];
+        calm = new int[count];
+        asleep = new boolean[count];
+        awake = count;
         Arrays.fill(gap, Double.MAX_VALUE);
     }
 
