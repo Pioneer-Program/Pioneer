@@ -26,6 +26,8 @@ public class Config
 
     public static ModConfigSpec.DoubleValue FLUID_SLEEP_EPSILON;
     public static ModConfigSpec.IntValue FLUID_SLEEP_TICKS;
+    public static ModConfigSpec.DoubleValue FLUID_SLEEP_TEMPERATURE_EPSILON;
+    public static ModConfigSpec.DoubleValue FLUID_THERMAL_CONDUCTANCE;
 
     static final ModConfigSpec SPEC;
     static
@@ -48,7 +50,6 @@ public class Config
 
         BREATHING_MIN_PRESSURE_P = BUILDER.defineInRange("breathing_min_pressure_p", 0.0618, 0.0, 10.0);
         BREATHING_MOL_PER_TICK = BUILDER.defineInRange("breathing_mol_per_tick", 0.000875, 0.0, 1.0);
-        ASPHYXIATION_DAMAGE = BUILDER.defineInRange("asphyxiation_damage", 2.0, 0.0, 100.0);
         ASPHYXIATION_DAMAGE_PERIOD = BUILDER.defineInRange("asphyxiation_damage_period", 20, 1, 200);
 
         VESSEL_MAX_CLUSTER = BUILDER.defineInRange("vessel_max_cluster", 4096, 8, 65_536);
@@ -56,6 +57,10 @@ public class Config
 
         FLUID_SLEEP_EPSILON = BUILDER.defineInRange("fluid_sleep_epsilon", 1.0e-5, 0.0, 1.0);
         FLUID_SLEEP_TICKS = BUILDER.defineInRange("fluid_sleep_ticks", 20, 1, 1200);
+
+        FLUID_SLEEP_TEMPERATURE_EPSILON = BUILDER.defineInRange("fluid_sleep_temperature_epsilon", 0.01, 0.0, 100.0);
+        FLUID_THERMAL_CONDUCTANCE = BUILDER.defineInRange("fluid_thermal_conductance", 0.05, 0.0, 1.0);
+
         BUILDER.pop();
         SPEC = BUILDER.build();
     }

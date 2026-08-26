@@ -14,10 +14,12 @@ public final class FluidGraph
 {
     private static final Direction[] FORWARD =
     {
-        Direction.EAST,
-        Direction.UP,
-        Direction.SOUTH
+            Direction.EAST,
+            Direction.UP,
+            Direction.SOUTH
     };
+
+    public static final double SETTLED = 1.0;
 
     private final LongOpenHashSet vessels = new LongOpenHashSet();
 
@@ -29,7 +31,7 @@ public final class FluidGraph
     private float[] edgeConductance = new float[0];
     private int edgeCount;
 
-    private double[] gap = new double[0];
+    private double[] activity = new double[0];
 
     private int[] calm = new int[0];
 
@@ -96,18 +98,18 @@ public final class FluidGraph
         return component >= 0 && component < asleep.length && asleep[component];
     }
 
-    public double gap(int component)
+    public double activity(int component)
     {
-        return (component >= 0 && component < gap.length) ? gap[component] : 0.0;
+        return (component >= 0 && component < activity.length) ? activity[component] : 0.0;
     }
 
-    public boolean settle(int component, double largestGap, double epsilon, int patience)
+    public boolean settle(int component, double value, int patience)
     {
-        if (component < 0 || component >= gap.length) return false;
+        if (component < 0 || component >= activity.length) return false;
 
-        gap[component] = largestGap;
+        activity[component] = value;
 
-        if (largestGap >= epsilon)
+        if (value >= SETTLED)
         {
             calm[component] = 0;
             return false;
@@ -125,10 +127,7 @@ public final class FluidGraph
 
     public void wakeNode(int nodeId)
     {
-        int component = partition.componentOf(nodeId);
-        if (component < 0) return;
-
-        wake(component);
+        wake(partition.componentOf(nodeId));
     }
 
     public void wake(int component)
@@ -226,11 +225,11 @@ public final class FluidGraph
         partition = ComponentPartition.of(nodes, nodeCount, edgeA, edgeB, edgeCount, maxNodeId);
 
         int count = partition.count();
-        gap = new double[count];
+        activity = new double[count];
         calm = new int[count];
         asleep = new boolean[count];
         awake = count;
-        Arrays.fill(gap, Double.MAX_VALUE);
+        Arrays.fill(activity, Double.MAX_VALUE);
     }
 
     private void growEdges()

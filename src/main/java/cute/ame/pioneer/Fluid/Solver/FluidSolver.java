@@ -6,9 +6,9 @@ public final class FluidSolver
 {
     public static final double EPSILON = 1.0e-7;
 
-    public static double sweep(FluidNodeStore store, int[] edgeOrder, int from, int to, int[] edgeA, int[] edgeB, float[] conductance, float[] molarHeat)
+    public static double sweep(FluidNodeStore store, int[] edgeOrder, int from, int to, int[] edgeA, int[] edgeB, float[] conductance, float[] molarHeat, float thermalConductance, double potentialEpsilon, double temperatureEpsilon)
     {
-        double largest = 0.0;
+        double activity = 0.0;
         int stride = store.getStride();
 
         for (int i = from; i < to; i++)
@@ -24,20 +24,27 @@ public final class FluidSolver
             double gap = potentialA - potentialB;
 
             double magnitude = Math.abs(gap);
-            if (magnitude > largest) largest = magnitude;
-            if (magnitude < EPSILON) continue;
+            if (magnitude / potentialEpsilon > activity) activity = magnitude / potentialEpsilon;
 
-            double slopes = FluidPotential.slope(store, a) + FluidPotential.slope(store, b);
-            if (slopes <= 0.0) continue;
+            if (magnitude >= EPSILON)
+            {
+                double slopes = FluidPotential.slope(store, a) + FluidPotential.slope(store, b);
+                if (slopes > 0.0)
+                {
+                    double moved = gap / slopes * conductance[edge];
 
-            double exact = gap / slopes;
-            double moved = exact * conductance[edge];
+                    if (moved > 0.0) transfer(store, a, b, moved, stride, molarHeat);
+                    else if (moved < 0.0) transfer(store, b, a, -moved, stride, molarHeat);
+                }
+            }
 
-            if (moved > 0.0) transfer(store, a, b, moved, stride, molarHeat);
-            else if (moved < 0.0) transfer(store, b, a, -moved, stride, molarHeat);
+            double temperatureGap = Math.abs(store.temperature(a) - store.temperature(b));
+            if (temperatureGap / temperatureEpsilon > activity) activity = temperatureGap / temperatureEpsilon;
+
+            if (thermalConductance > 0.0f && temperatureGap > 0.0) conduct(store, a, b, stride, molarHeat, thermalConductance);
         }
 
-        return largest;
+        return activity;
     }
 
     private static void transfer(FluidNodeStore store, int source, int target, double amount, int stride, float[] molarHeat)
@@ -66,27 +73,29 @@ public final class FluidSolver
 
         if (movedHeat <= 0.0) return;
 
-        double targetHeat = heatCapacity(store, target, stride, molarHeat) - movedHeat;
+        double targetHeat = FluidHeat.capacity(store, target, molarHeat) - movedHeat;
         if (targetHeat < 0.0) targetHeat = 0.0;
 
         double total = targetHeat + movedHeat;
         if (total <= 0.0) return;
 
-        float mixed = (float) ((store.temperature(target) * targetHeat + store.temperature(source) * movedHeat) / total);
-        store.setTemperature(target, mixed);
+        store.setTemperature(target, (float) ((store.temperature(target) * targetHeat + store.temperature(source) * movedHeat) / total));
     }
 
-    public static double heatCapacity(FluidNodeStore store, int nodeId, int stride, float[] molarHeat)
+    private static void conduct(FluidNodeStore store, int a, int b, int stride, float[] molarHeat, float rate)
     {
-        double sum = 0.0;
-        int limit = Math.min(stride, molarHeat.length);
+        double capacityA = FluidHeat.capacity(store, a, molarHeat);
+        double capacityB = FluidHeat.capacity(store, b, molarHeat);
 
-        for (int s = 0; s < limit; s++)
-        {
-            float mol = store.amount(nodeId, s);
-            if (mol > 0.0f) sum += mol * molarHeat[s];
-        }
+        if (capacityA <= 0.0 || capacityB <= 0.0) return;
 
-        return sum;
+        float temperatureA = store.temperature(a);
+        float temperatureB = store.temperature(b);
+
+        double shared = (capacityA * temperatureA + capacityB * temperatureB) / (capacityA + capacityB);
+        double step = Math.min(rate, 1.0f);
+
+        store.setTemperature(a, (float) (temperatureA + step * (shared - temperatureA)));
+        store.setTemperature(b, (float) (temperatureB + step * (shared - temperatureB)));
     }
 }

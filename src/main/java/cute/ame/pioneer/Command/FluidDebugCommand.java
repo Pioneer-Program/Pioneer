@@ -1,5 +1,6 @@
 package cute.ame.pioneer.Command;
 
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.FloatArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -16,6 +17,7 @@ import cute.ame.pioneer.Fluid.FluidSpecies;
 import cute.ame.pioneer.Fluid.Level.FluidLevelData;
 import cute.ame.pioneer.Fluid.Graph.ComponentPartition;
 import cute.ame.pioneer.Fluid.Graph.FluidGraph;
+import cute.ame.pioneer.Fluid.Solver.FluidHeat;
 import cute.ame.pioneer.Fluid.Room.RoomLevelData;
 import cute.ame.pioneer.Fluid.Vessel.FluidVesselBlockEntity;
 import cute.ame.pioneer.Fluid.SpeciesTable;
@@ -53,6 +55,9 @@ public final class FluidDebugCommand
                 .then(Commands.argument("id", IntegerArgumentType.integer(0))
                     .then(Commands.argument("species", StringArgumentType.word()).suggests(SPECIES)
                         .then(Commands.argument("mol", FloatArgumentType.floatArg()).executes(FluidDebugCommand::inject)))))
+            .then(Commands.literal("heat")
+                .then(Commands.argument("id", IntegerArgumentType.integer(0))
+                    .then(Commands.argument("joules", DoubleArgumentType.doubleArg()).executes(FluidDebugCommand::heat))))
             .then(Commands.literal("temp")
                 .then(Commands.argument("id", IntegerArgumentType.integer(0))
                     .then(Commands.argument("kelvin", FloatArgumentType.floatArg(0.1f)).executes(FluidDebugCommand::temp))))
@@ -330,6 +335,8 @@ public final class FluidDebugCommand
             double moles = 0.0;
             double lowest = Double.MAX_VALUE;
             double highest = 0.0;
+            double coldest = Double.MAX_VALUE;
+            double hottest = 0.0;
 
             for (int i = partition.nodeOffsets()[c]; i < partition.nodeOffsets()[c + 1]; i++)
             {
@@ -342,6 +349,10 @@ public final class FluidDebugCommand
                 double pressure = store.pressure(nodeId);
                 if (pressure < lowest) lowest = pressure;
                 if (pressure > highest) highest = pressure;
+
+                float temperature = store.temperature(nodeId);
+                if (temperature < coldest) coldest = temperature;
+                if (temperature > hottest) hottest = temperature;
             }
 
             final int component = c;
@@ -349,10 +360,12 @@ public final class FluidDebugCommand
             final double totalMoles = moles;
             final double minPressure = lowest == Double.MAX_VALUE ? 0.0 : lowest;
             final double maxPressure = highest;
+            final double minTemperature = coldest == Double.MAX_VALUE ? 0.0 : coldest;
+            final double maxTemperature = hottest;
 
             final String state = graph.isAsleep(component) ? ChatFormatting.DARK_GRAY + "asleep" : ChatFormatting.GREEN + "awake";
 
-            source.sendSuccess(() -> Component.literal(String.format("  " + ChatFormatting.GOLD + "net %-3d " + ChatFormatting.GRAY + "nodes = " + ChatFormatting.AQUA + "%-4d " + ChatFormatting.GRAY + "edges = " + ChatFormatting.AQUA + "%-4d " + ChatFormatting.GRAY + "V = " + ChatFormatting.AQUA + "%9.1f L " + ChatFormatting.GRAY + "n = " + ChatFormatting.AQUA + "%9.3f mol " + ChatFormatting.GRAY + "P = " + ChatFormatting.GREEN + "%.5f" + ChatFormatting.GRAY + " .. " + ChatFormatting.GREEN + "%.5f P " + ChatFormatting.GRAY + "| %s", component, partition.nodeCount(component), partition.edgeCount(component), totalVolume, totalMoles, minPressure, maxPressure, state)), false);
+            source.sendSuccess(() -> Component.literal(String.format("  " + ChatFormatting.GOLD + "net %-3d " + ChatFormatting.GRAY + "nodes = " + ChatFormatting.AQUA + "%-4d " + ChatFormatting.GRAY + "edges = " + ChatFormatting.AQUA + "%-4d " + ChatFormatting.GRAY + "V = " + ChatFormatting.AQUA + "%9.1f L " + ChatFormatting.GRAY + "n = " + ChatFormatting.AQUA + "%9.3f mol " + ChatFormatting.GRAY + "P = " + ChatFormatting.GREEN + "%.5f" + ChatFormatting.GRAY + " .. " + ChatFormatting.GREEN + "%.5f P " + ChatFormatting.GRAY + "T = " + ChatFormatting.GREEN + "%.1f" + ChatFormatting.GRAY + " .. " + ChatFormatting.GREEN + "%.1f K " + ChatFormatting.GRAY + "| %s", component, partition.nodeCount(component), partition.edgeCount(component), totalVolume, totalMoles, minPressure, maxPressure, minTemperature, maxTemperature, state)), false);
         }
 
         return partition.count();
@@ -366,6 +379,32 @@ public final class FluidDebugCommand
         data.graph().wakeAll();
         ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.GRAY + "every network woken"), false);
         return data.graph().awakeCount();
+    }
+
+    private static int heat(CommandContext<CommandSourceStack> ctx)
+    {
+        ServerLevel level = ctx.getSource().getLevel();
+        FluidLevelData data = FluidLevelData.get(level);
+        FluidNodeStore store = data.store();
+
+        int id = IntegerArgumentType.getInteger(ctx, "id");
+        if (!store.alive(id)) return missing(ctx, id);
+
+        double joules = DoubleArgumentType.getDouble(ctx, "joules");
+        float[] molarHeat = FluidSpecies.active().molarHeatRaw();
+
+        double capacity = FluidHeat.capacity(store, id, molarHeat);
+        if (capacity <= 0.0)
+        {
+            ctx.getSource().sendFailure(Component.literal(ERROR_PREFIX + "node #" + id + " is empty - nothing to heat"));
+            return 0;
+        }
+
+        float delta = FluidHeat.addJoules(store, id, joules, molarHeat);
+        data.touch(id);
+
+        ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "#%d " + ChatFormatting.GRAY + "%+.1f J " + ChatFormatting.GRAY + "| C = " + ChatFormatting.AQUA + "%.2f J/K " + ChatFormatting.GRAY + "| " + ChatFormatting.GREEN + "%+.2f K " + ChatFormatting.GRAY + "-> " + ChatFormatting.GREEN + "%.2f K " + ChatFormatting.DARK_GRAY + "(%.2f °C)", id, joules, capacity, delta, store.temperature(id), FluidConstants.toCelsius(store.temperature(id)))), false);
+        return 1;
     }
 
     private static int missing(CommandContext<CommandSourceStack> ctx, int id)
