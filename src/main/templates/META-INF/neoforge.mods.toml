@@ -45,14 +45,6 @@ ordering = "AFTER"
 side = "CLIENT"
 
 [[dependencies."${mod_id}"]]
-modId = "iris"
-type = "required"
-reason = "ShaderHelper imports net.irisshaders.iris.api.v0.IrisApi directly, so its absence is a NoClassDefFoundError rather than a graceful fallback."
-versionRange = "${iris_version_range}"
-ordering = "AFTER"
-side = "CLIENT"
-
-[[dependencies."${mod_id}"]]
 modId = "irisveil"
 type = "optional"
 versionRange = "${irisveil_version_range}"
