@@ -2,5 +2,7 @@
   "molar_mass": 20.18,
   "refractivity": 6700.0,
   "breathable": true,
-  "specific_heat": 1030.0
+  "specific_heat": 1030.0,
+  "boiling_point": 27.1,
+  "latent_heat": 85900
 }

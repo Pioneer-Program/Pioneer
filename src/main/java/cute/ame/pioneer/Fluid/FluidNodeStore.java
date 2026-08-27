@@ -22,6 +22,9 @@ public final class FluidNodeStore
     private int[] flags;
     private int[] generation;
 
+    private float[] latent;
+    private float[] vapour;
+
     private int[] free;
     private int freeCount;
 
@@ -44,6 +47,8 @@ public final class FluidNodeStore
         temperature = new float[capacity];
         flags = new int[capacity];
         generation = new int[capacity];
+        latent = new float[capacity];
+        vapour = new float[capacity];
         free = new int[32];
     }
 
@@ -113,6 +118,8 @@ public final class FluidNodeStore
         volume[id] = Math.max(volumeLitres, FluidConstants.MIN_VOLUME_L);
         temperature[id] = temperatureKelvin;
         flags[id] = FLAG_ALIVE;
+        latent[id] = 0.0f;
+        vapour[id] = 0.0f;
         liveCount++;
         return id;
     }
@@ -237,9 +244,36 @@ public final class FluidNodeStore
 
     public double pressure(int id)
     {
+        if ((flags[id] & FLAG_LIQUID) != 0) return vapour[id];
+
         float v = volume[id];
         if (v <= 0.0f) return 0.0;
         return moles[id] * FluidConstants.R * temperature[id] / v;
+    }
+
+    public float latent(int id)
+    {
+        return latent[id];
+    }
+
+    public void setLatent(int id, float joules)
+    {
+        latent[id] = Math.max(joules, 0.0f);
+    }
+
+    public float vapourPressure(int id)
+    {
+        return vapour[id];
+    }
+
+    public void setVapourPressure(int id, float pressure)
+    {
+        vapour[id] = Math.max(pressure, 0.0f);
+    }
+
+    public boolean isLiquid(int id)
+    {
+        return (flags[id] & FLAG_LIQUID) != 0;
     }
 
     private void recomputeMoles(int id)
@@ -258,6 +292,8 @@ public final class FluidNodeStore
         temperature = Arrays.copyOf(temperature, newCapacity);
         flags = Arrays.copyOf(flags, newCapacity);
         generation = Arrays.copyOf(generation, newCapacity);
+        latent = Arrays.copyOf(latent, newCapacity);
+        vapour = Arrays.copyOf(vapour, newCapacity);
         capacity = newCapacity;
     }
 
@@ -308,6 +344,12 @@ public final class FluidNodeStore
         freeCount = 0;
     }
 
+    public void restore(int id, float volumeLitres, float temperatureKelvin, int nodeFlags, int nodeGeneration, float latentJoules)
+    {
+        restore(id, volumeLitres, temperatureKelvin, nodeFlags, nodeGeneration);
+        latent[id] = Math.max(latentJoules, 0.0f);
+    }
+
     public void restore(int id, float volumeLitres, float temperatureKelvin, int nodeFlags, int nodeGeneration)
     {
         if (id >= capacity) grow(Math.max(id + 1, capacity << 1));
@@ -319,6 +361,8 @@ public final class FluidNodeStore
         temperature[id] = temperatureKelvin;
         flags[id] = nodeFlags | FLAG_ALIVE;
         generation[id] = nodeGeneration;
+        latent[id] = 0.0f;
+        vapour[id] = 0.0f;
 
         if (id >= highWater) highWater = id + 1;
         liveCount++;

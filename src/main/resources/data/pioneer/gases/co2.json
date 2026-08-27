@@ -3,5 +3,7 @@
   "refractivity": 44900.0,
   "hazard_fraction": 0.05,
   "greenhouse_potency": 1.0,
-  "specific_heat": 844.0
+  "specific_heat": 844.0,
+  "boiling_point": 194.65,
+  "latent_heat": 571000
 }

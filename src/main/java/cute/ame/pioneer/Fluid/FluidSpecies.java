@@ -81,6 +81,8 @@ public final class FluidSpecies
         boolean[] breathable = new boolean[n];
         float[] requiredPressure = new float[n];
         float[] hazardPressure = new float[n];
+        float[] boilingPoint = new float[n];
+        float[] latentHeat = new float[n];
 
         for (int i = 0; i < n; i++)
         {
@@ -90,9 +92,11 @@ public final class FluidSpecies
             breathable[i] = gas.breathable();
             requiredPressure[i] = gas.requiredFraction();
             hazardPressure[i] = gas.hazardFraction();
+            boilingPoint[i] = gas.boilingPointK();
+            latentHeat[i] = gas.latentHeatJPerKg();
         }
 
-        return new SpeciesTable(array, molarMass, specificHeat, breathable, requiredPressure, hazardPressure);
+        return new SpeciesTable(array, molarMass, specificHeat, boilingPoint, latentHeat, breathable, requiredPressure, hazardPressure);
     }
 
     private static List<String> registryKeys()

@@ -19,17 +19,33 @@ public final class SpeciesTable
     private final float[] specificHeat;
 
     private final float[] molarHeat;
+    private final float[] boilingPoint;
+    private final float[] latentHeat;
     private final boolean[] breathable;
     private final float[] requiredPressure;
     private final float[] hazardPressure;
 
     public SpeciesTable(String[] keys, float[] molarMass, float[] specificHeat)
     {
-        this(keys, molarMass, specificHeat, new boolean[keys.length], filled(keys.length, 0.0f), filled(keys.length, Float.MAX_VALUE));
+        this(keys, molarMass, specificHeat, filled(keys.length, 1.0f), filled(keys.length, 200_000.0f), new boolean[keys.length], filled(keys.length, 0.0f), filled(keys.length, Float.MAX_VALUE));
+    }
+
+    public SpeciesTable(String[] keys, float[] molarMass, float[] specificHeat, float[] boilingPoint, float[] latentHeatJPerKg)
+    {
+        this(keys, molarMass, specificHeat, boilingPoint, latentHeatJPerKg, new boolean[keys.length], filled(keys.length, 0.0f), filled(keys.length, Float.MAX_VALUE));
     }
 
     public SpeciesTable(String[] keys, float[] molarMass, float[] specificHeat, boolean[] breathable, float[] requiredPressure, float[] hazardPressure)
     {
+        this(keys, molarMass, specificHeat, filled(keys.length, 1.0f), filled(keys.length, 200_000.0f), breathable, requiredPressure, hazardPressure);
+    }
+
+    public SpeciesTable(String[] keys, float[] molarMass, float[] specificHeat, float[] boilingPoint, float[] latentHeatJPerKg, boolean[] breathable, float[] requiredPressure, float[] hazardPressure)
+    {
+        this.boilingPoint = boilingPoint;
+        this.latentHeat = new float[keys.length];
+        for (int i = 0; i < keys.length; i++) this.latentHeat[i] = latentHeatJPerKg[i] * molarMass[i] * 0.001f;
+
         this.keys = keys;
         this.molarMass = molarMass;
         this.specificHeat = specificHeat;
@@ -106,6 +122,16 @@ public final class SpeciesTable
     public float molarHeat(int species)
     {
         return molarHeat[species];
+    }
+
+    public float boilingPoint(int species)
+    {
+        return boilingPoint[species];
+    }
+
+    public float latentHeat(int species)
+    {
+        return latentHeat[species];
     }
 
     public boolean breathable(int species)

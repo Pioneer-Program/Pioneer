@@ -55,6 +55,10 @@ public final class FluidDebugCommand
                 .then(Commands.argument("id", IntegerArgumentType.integer(0))
                     .then(Commands.argument("species", StringArgumentType.word()).suggests(SPECIES)
                         .then(Commands.argument("mol", FloatArgumentType.floatArg()).executes(FluidDebugCommand::inject)))))
+            .then(Commands.literal("phase")
+                .then(Commands.argument("id", IntegerArgumentType.integer(0))
+                    .then(Commands.literal("liquid").executes(ctx -> phase(ctx, true)))
+                    .then(Commands.literal("gas").executes(ctx -> phase(ctx, false)))))
             .then(Commands.literal("heat")
                 .then(Commands.argument("id", IntegerArgumentType.integer(0))
                     .then(Commands.argument("joules", DoubleArgumentType.doubleArg()).executes(FluidDebugCommand::heat))))
@@ -168,7 +172,7 @@ public final class FluidDebugCommand
         if (!store.alive(id)) return missing(ctx, id);
 
         CommandSourceStack source = ctx.getSource();
-        source.sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "node " + ChatFormatting.GOLD + "#%d " + ChatFormatting.GRAY + "| V = " + ChatFormatting.AQUA + "%.1f L " + ChatFormatting.GRAY + "| T = " + ChatFormatting.GREEN + "%.2f K " + ChatFormatting.DARK_GRAY + "(%.2f °C) " + ChatFormatting.GRAY + "| n = " + ChatFormatting.AQUA + "%.4f mol " + ChatFormatting.GRAY + "| P = " + ChatFormatting.GREEN + "%.5f P " + ChatFormatting.GRAY + "| %s", id, store.volume(id), store.temperature(id), FluidConstants.toCelsius(store.temperature(id)), store.moles(id), store.pressure(id), store.hasFlag(id, FluidNodeStore.FLAG_OPEN) ? "open" : "sealed")), false);
+        source.sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "node " + ChatFormatting.GOLD + "#%d " + ChatFormatting.GRAY + "| V = " + ChatFormatting.AQUA + "%.1f L " + ChatFormatting.GRAY + "| T = " + ChatFormatting.GREEN + "%.2f K " + ChatFormatting.DARK_GRAY + "(%.2f °C) " + ChatFormatting.GRAY + "| n = " + ChatFormatting.AQUA + "%.4f mol " + ChatFormatting.GRAY + "| P = " + ChatFormatting.GREEN + "%.5f P " + ChatFormatting.GRAY + "| %s", id, store.volume(id), store.temperature(id), FluidConstants.toCelsius(store.temperature(id)), store.moles(id), store.pressure(id), (store.isLiquid(id) ? "liquid" : "gas") + (store.hasFlag(id, FluidNodeStore.FLAG_OPEN) ? ", open" : ", sealed") + (store.latent(id) > 0.0f ? String.format(", boiling %.0f J", store.latent(id)) : ""))), false);
 
         if (store.moles(id) <= 0.0f)
         {
@@ -404,6 +408,23 @@ public final class FluidDebugCommand
         data.touch(id);
 
         ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "#%d " + ChatFormatting.GRAY + "%+.1f J " + ChatFormatting.GRAY + "| C = " + ChatFormatting.AQUA + "%.2f J/K " + ChatFormatting.GRAY + "| " + ChatFormatting.GREEN + "%+.2f K " + ChatFormatting.GRAY + "-> " + ChatFormatting.GREEN + "%.2f K " + ChatFormatting.DARK_GRAY + "(%.2f °C)", id, joules, capacity, delta, store.temperature(id), FluidConstants.toCelsius(store.temperature(id)))), false);
+        return 1;
+    }
+
+    private static int phase(CommandContext<CommandSourceStack> ctx, boolean liquid)
+    {
+        ServerLevel level = ctx.getSource().getLevel();
+        FluidLevelData data = FluidLevelData.get(level);
+        FluidNodeStore store = data.store();
+
+        int id = IntegerArgumentType.getInteger(ctx, "id");
+        if (!store.alive(id)) return missing(ctx, id);
+
+        store.setFlag(id, FluidNodeStore.FLAG_LIQUID, liquid);
+        store.setLatent(id, 0.0f);
+        data.touch(id);
+
+        ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.WHITE + "#" + id + ChatFormatting.GRAY + " forced to " + ChatFormatting.YELLOW + (liquid ? "liquid" : "gas")), false);
         return 1;
     }
 

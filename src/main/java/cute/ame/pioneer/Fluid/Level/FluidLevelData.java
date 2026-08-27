@@ -26,6 +26,7 @@ public final class FluidLevelData extends SavedData
     private static final String K_TEMPERATURE = "tmp";
     private static final String K_FLAGS = "flg";
     private static final String K_GENERATION = "gen";
+    private static final String K_LATENT = "lat";
     private static final String K_AMOUNT_NODE = "an";
     private static final String K_AMOUNT_SPECIES = "as";
     private static final String K_AMOUNT_VALUE = "av";
@@ -88,6 +89,7 @@ public final class FluidLevelData extends SavedData
         int[] temperature = new int[live];
         int[] flags = new int[live];
         int[] generation = new int[live];
+        int[] latent = new int[live];
 
         float[] amounts = store.getAmountsRaw();
 
@@ -133,6 +135,7 @@ public final class FluidLevelData extends SavedData
         tag.putIntArray(K_TEMPERATURE, temperature);
         tag.putIntArray(K_FLAGS, flags);
         tag.putIntArray(K_GENERATION, generation);
+        tag.putIntArray(K_LATENT, latent);
         tag.putIntArray(K_AMOUNT_NODE, amountNode);
         tag.putByteArray(K_AMOUNT_SPECIES, amountSpecies);
         tag.putIntArray(K_AMOUNT_VALUE, amountValue);
@@ -147,6 +150,7 @@ public final class FluidLevelData extends SavedData
         int[] temperature = tag.getIntArray(K_TEMPERATURE);
         int[] flags = tag.getIntArray(K_FLAGS);
         int[] generation = tag.getIntArray(K_GENERATION);
+        int[] latent = tag.getIntArray(K_LATENT);
 
         int live = ids.length;
         int high = 0;
@@ -162,7 +166,8 @@ public final class FluidLevelData extends SavedData
                 slot < volume.length ? Float.intBitsToFloat(volume[slot]) : 0.0f,
                 slot < temperature.length ? Float.intBitsToFloat(temperature[slot]) : 0.0f,
                 slot < flags.length ? flags[slot] : FluidNodeStore.FLAG_ALIVE,
-                slot < generation.length ? generation[slot] : 0
+                slot < generation.length ? generation[slot] : 0,
+                slot < latent.length ? Float.intBitsToFloat(latent[slot]) : 0.0f
             );
         }
 

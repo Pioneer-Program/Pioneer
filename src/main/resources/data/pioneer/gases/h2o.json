@@ -3,5 +3,7 @@
   "refractivity": 25600.0,
   "breathable": true,
   "greenhouse_potency": 0.1,
-  "specific_heat": 1996.0
+  "specific_heat": 1996.0,
+  "boiling_point": 373.15,
+  "latent_heat": 2256000
 }
