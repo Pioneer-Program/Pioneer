@@ -301,9 +301,12 @@ public final class SolarSystemRenderer
         ps.pushPose();
         ps.scale(apparentSize, apparentSize, apparentSize);
 
-        GPUProfiler.begin("celestial.planet.core");
-        BodyRenderer.render(ps, planet.resolveTexture(), alpha, -camLX * camDistObj, -camLY * camDistObj, -camLZ * camDistObj, sunLX, sunLY, sunLZ, planet.rings().orElse(null), sunAngRad, planet.atmosphere().isPresent());
-        GPUProfiler.end();
+        if(alpha > 0)
+        {
+            GPUProfiler.begin("celestial.planet.core");
+            BodyRenderer.render(ps, planet.resolveTexture(), alpha, -camLX * camDistObj, -camLY * camDistObj, -camLZ * camDistObj, sunLX, sunLY, sunLZ, planet.rings().orElse(null), sunAngRad, planet.atmosphere().isPresent());
+            GPUProfiler.end();
+        }
 
         planet.rings().ifPresent(rings ->
         {

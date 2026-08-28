@@ -17,19 +17,21 @@ public class FluidVesselBlock extends Block implements EntityBlock
 {
     public enum Variant
     {
-        TANK(FluidConstants.TANK_VOLUME_L, true, 1.0f),
-        PIPE(FluidConstants.PIPE_VOLUME_L, false, 0.5f);
+        TANK(FluidConstants.TANK_VOLUME_L, true, 1.0f, 25.0f),
+        PIPE(FluidConstants.PIPE_VOLUME_L, false, 0.5f, 10.0f);
 
         public final float volumeLitres;
         public final boolean merges;
 
         public final float conductance;
+        public final float burstPressureP;
 
-        Variant(float volumeLitres, boolean merges, float conductance)
+        Variant(float volumeLitres, boolean merges, float conductance, float burstPressureP)
         {
             this.volumeLitres = volumeLitres;
             this.merges = merges;
             this.conductance = conductance;
+            this.burstPressureP = burstPressureP;
         }
     }
 
@@ -59,6 +61,11 @@ public class FluidVesselBlock extends Block implements EntityBlock
     public float getConductance()
     {
         return variant.conductance;
+    }
+
+    public float getNominalBurstPressure()
+    {
+        return variant.burstPressureP;
     }
 
     private static BlockBehaviour.Properties properties(Variant variant)

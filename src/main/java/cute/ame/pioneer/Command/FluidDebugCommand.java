@@ -315,7 +315,7 @@ public final class FluidDebugCommand
             return 0;
         }
 
-        ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "vessel " + ChatFormatting.DARK_GRAY + "%s " + ChatFormatting.GRAY + "-> node " + ChatFormatting.GOLD + "#%d " + ChatFormatting.GRAY + "| V = " + ChatFormatting.AQUA + "%.1f L " + ChatFormatting.GRAY + "| n = " + ChatFormatting.AQUA + "%.4f mol " + ChatFormatting.GRAY + "| P = " + ChatFormatting.GREEN + "%.5f P", pos.toShortString(), nodeId, store.volume(nodeId), store.moles(nodeId), store.pressure(nodeId))), false);
+        ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "vessel " + ChatFormatting.DARK_GRAY + "%s " + ChatFormatting.GRAY + "-> node " + ChatFormatting.GOLD + "#%d " + ChatFormatting.GRAY + "| V = " + ChatFormatting.AQUA + "%.1f L " + ChatFormatting.GRAY + "| n = " + ChatFormatting.AQUA + "%.4f mol " + ChatFormatting.GRAY + "| P = " + ChatFormatting.GREEN + "%.5f P " + ChatFormatting.GRAY + "| bursts at " + ChatFormatting.RED + "%.2f P", pos.toShortString(), nodeId, store.volume(nodeId), store.moles(nodeId), store.pressure(nodeId), vessel.getBurstPressure())), false);
         return nodeId + 1;
     }
 

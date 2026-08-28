@@ -31,6 +31,8 @@ public final class FluidGraph
     private float[] edgeConductance = new float[0];
     private int edgeCount;
 
+    private long[] vesselOrder = new long[0];
+    private int[] vesselStart = new int[1];
     private double[] activity = new double[0];
 
     private int[] calm = new int[0];
@@ -86,6 +88,21 @@ public final class FluidGraph
     public float[] conductanceRaw()
     {
         return edgeConductance;
+    }
+
+    public long[] vesselOrderRaw()
+    {
+        return vesselOrder;
+    }
+
+    public int vesselStart(int nodeId)
+    {
+        return (nodeId >= 0 && nodeId + 1 < vesselStart.length) ? vesselStart[nodeId] : 0;
+    }
+
+    public int vesselEnd(int nodeId)
+    {
+        return (nodeId >= 0 && nodeId + 1 < vesselStart.length) ? vesselStart[nodeId + 1] : 0;
     }
 
     public int awakeCount()
@@ -169,6 +186,10 @@ public final class FluidGraph
             edgeConductance = new float[capacity * 3];
         }
 
+        long[] scratchPos = new long[capacity];
+        int[] scratchNode = new int[capacity];
+        int vesselCount = 0;
+
         boolean[] seen = new boolean[store.getHighWater() + 1];
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
@@ -178,6 +199,15 @@ public final class FluidGraph
 
             int node = nodeAt(level, pos, store);
             if (node == FluidNodeStore.INVALID) continue;
+
+            if (vesselCount == scratchPos.length)
+            {
+                scratchPos = Arrays.copyOf(scratchPos, vesselCount * 2);
+                scratchNode = Arrays.copyOf(scratchNode, vesselCount * 2);
+            }
+            scratchPos[vesselCount] = packed;
+            scratchNode[vesselCount] = node;
+            vesselCount++;
 
             if (!seen[node])
             {
@@ -222,6 +252,7 @@ public final class FluidGraph
             nodes[nodeCount++] = b;
         }
 
+        buildVesselIndex(scratchPos, scratchNode, vesselCount, maxNodeId);
         partition = ComponentPartition.of(nodes, nodeCount, edgeA, edgeB, edgeCount, maxNodeId);
 
         int count = partition.count();
@@ -230,6 +261,17 @@ public final class FluidGraph
         asleep = new boolean[count];
         awake = count;
         Arrays.fill(activity, Double.MAX_VALUE);
+    }
+
+    private void buildVesselIndex(long[] positions, int[] owners, int count, int maxNodeId)
+    {
+        vesselStart = new int[maxNodeId + 2];
+        for (int i = 0; i < count; i++) vesselStart[owners[i] + 1]++;
+        for (int n = 0; n < maxNodeId + 1; n++) vesselStart[n + 1] += vesselStart[n];
+
+        vesselOrder = new long[count];
+        int[] cursor = Arrays.copyOf(vesselStart, maxNodeId + 1);
+        for (int i = 0; i < count; i++) vesselOrder[cursor[owners[i]]++] = positions[i];
     }
 
     private void growEdges()
