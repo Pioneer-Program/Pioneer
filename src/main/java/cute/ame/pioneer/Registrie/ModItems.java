@@ -21,6 +21,8 @@ public final class ModItems
 
   public static final DeferredItem<BlockItem> ARID_DUST = ITEMS.register("arid_dust", () -> new BlockItem(ModBlocks.ARID_DUST.get(), new Properties()));
 
+  public static final DeferredItem<BlockItem> CERAMIC_TILES = ITEMS.register("ceramic_tiles", () -> new BlockItem(ModBlocks.CERAMIC_TILES.get(), new Properties()));
+
   public static final DeferredItem<BlockItem> ARID_ROCK = ITEMS.register("arid_rock", () -> new BlockItem(ModBlocks.ARID_ROCK.get(), new Properties()));
 
   public static final DeferredItem<BlockItem> ARID_ROCK_CRACKED = ITEMS.register("arid_rock_cracked", () -> new BlockItem(ModBlocks.ARID_ROCK_CRACKED.get(), new Properties()));
