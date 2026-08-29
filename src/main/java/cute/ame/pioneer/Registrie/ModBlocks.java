@@ -1,5 +1,6 @@
 package cute.ame.pioneer.Registrie;
 
+import cute.ame.pioneer.Block.CeramicTiles;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Fluid.Block.SensorBlock;
 import cute.ame.pioneer.Fluid.Block.BarometerBlock;
@@ -33,6 +34,11 @@ public final class ModBlocks
     public static final DeferredBlock<AridDust> ARID_DUST = BLOCKS.register(
         "arid_dust",
         AridDust::new
+    );
+
+    public static final DeferredBlock<CeramicTiles> CERAMIC_TILES = BLOCKS.register(
+            "ceramic_tiles",
+            CeramicTiles::new
     );
 
     public static final DeferredBlock<AridRock> ARID_ROCK = BLOCKS.register(
