@@ -14,7 +14,7 @@ public final class LUTRegistry
     public static void register(ResourceLocation id, LUTBaker baker)
     {
         LUTBaker existing = BAKERS.putIfAbsent(id, baker);
-        if (existing != null) Pioneer.LOGGER.warn("[Pioneer] LUT baker '{}' registered twice — keeping the first registration", id);
+        if (existing != null) Pioneer.LOGGER.warn("[Pioneer] LUT baker '{}' registered twice, keeping the first registration", id);
     }
 
     public static boolean isRegistered(ResourceLocation id) { return BAKERS.containsKey(id); }

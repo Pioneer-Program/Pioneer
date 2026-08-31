@@ -28,6 +28,12 @@ public final class VesselNodes
 
         data.graph().track(pos);
 
+        if (level.getBlockState(pos).getBlock() instanceof VentBlock)
+        {
+            VentBlock.attachRoom(level, pos, level.getBlockState(pos));
+            data.graph().invalidate();
+        }
+
         if (store.resolve(be.getNodeHandle()) != FluidNodeStore.INVALID) return;
 
         FluidVesselBlock block = blockAt(level, pos);
@@ -60,6 +66,7 @@ public final class VesselNodes
 
         FluidNodeStore store = data.store();
         data.graph().forget(pos);
+        if (block instanceof VentBlock) VentBlock.detachRoom(level, pos, state);
 
         FluidVesselBlockEntity be = vesselAt(level, pos);
         int nodeId = be == null ? FluidNodeStore.INVALID : store.resolve(be.getNodeHandle());

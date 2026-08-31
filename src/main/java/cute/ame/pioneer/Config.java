@@ -32,6 +32,8 @@ public class Config
     public static ModConfigSpec.BooleanValue BURST_ENABLED;
     public static ModConfigSpec.DoubleValue BURST_JITTER;
     public static ModConfigSpec.DoubleValue BURST_SCREEN_PRESSURE;
+
+    public static ModConfigSpec.DoubleValue PUMP_BOOST_P;
     public static ModConfigSpec.DoubleValue BURST_EXPLOSION_POWER;
     public static ModConfigSpec.DoubleValue BURST_EXPLOSION_MAX_POWER;
 
@@ -73,6 +75,7 @@ public class Config
         BURST_EXPLOSION_POWER = BUILDER.defineInRange("burst_explosion_power", 5, 0.0, 10.0);
         BURST_EXPLOSION_MAX_POWER = BUILDER.defineInRange("burst_explosion_max_power", 4.0, 0.0, 20.0);
 
+        PUMP_BOOST_P = BUILDER.defineInRange("pump_boost_p", 4.0, 0.0, 100.0);
         BUILDER.pop();
         SPEC = BUILDER.build();
     }

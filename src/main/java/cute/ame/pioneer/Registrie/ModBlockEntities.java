@@ -24,6 +24,6 @@ public final class ModBlockEntities
 
     public static final Supplier<BlockEntityType<FluidVesselBlockEntity>> FLUID_VESSEL = BLOCK_ENTITIES.register(
         "fluid_vessel",
-        () -> BlockEntityType.Builder.of(FluidVesselBlockEntity::new, ModBlocks.VACCUM_TANK.get(), ModBlocks.VACCUM_PIPE.get()).build(null)
+        () -> BlockEntityType.Builder.of(FluidVesselBlockEntity::new, ModBlocks.VACCUM_TANK.get(), ModBlocks.VACCUM_PIPE.get(), ModBlocks.VACCUM_PUMP.get(), ModBlocks.VALVE.get(), ModBlocks.VENT.get()).build(null)
     );
 }

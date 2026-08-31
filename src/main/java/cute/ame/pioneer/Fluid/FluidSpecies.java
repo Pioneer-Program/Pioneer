@@ -54,7 +54,7 @@ public final class FluidSpecies
 
         remapLoadedLevels(server, previous, next);
 
-        Pioneer.LOGGER.info("[Pioneer] Fluid species table: {} specie(s) — {}", next.size(), String.join(", ", next.keys()));
+        Pioneer.LOGGER.info("[Pioneer] Fluid species table: {} specie(s), {}", next.size(), String.join(", ", next.keys()));
     }
 
     private static void remapLoadedLevels(MinecraftServer server, SpeciesTable previous, SpeciesTable next)

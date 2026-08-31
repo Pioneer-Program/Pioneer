@@ -2,6 +2,9 @@ package cute.ame.pioneer.Registrie;
 
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Fluid.Vessel.FluidVesselBlock;
+import cute.ame.pioneer.Fluid.Vessel.PumpBlock;
+import cute.ame.pioneer.Fluid.Vessel.ValveBlock;
+import cute.ame.pioneer.Fluid.Vessel.VentBlock;
 import cute.ame.pioneer.Planet.Arid.Block.*;
 import cute.ame.pioneer.Spaceship.Block.ShipController;
 import cute.ame.pioneer.Spaceship.Block.ThrusterBlock;
@@ -16,6 +19,12 @@ public final class ModBlocks
         "vaccum_tank",
         () -> new FluidVesselBlock(FluidVesselBlock.Variant.TANK)
     );
+
+    public static final DeferredBlock<PumpBlock> VACCUM_PUMP = BLOCKS.register("vaccum_pump", PumpBlock::new);
+
+    public static final DeferredBlock<ValveBlock> VALVE = BLOCKS.register("valve", ValveBlock::new);
+
+    public static final DeferredBlock<VentBlock> VENT = BLOCKS.register("vent", VentBlock::new);
 
     public static final DeferredBlock<FluidVesselBlock> VACCUM_PIPE = BLOCKS.register(
         "vaccum_pipe",

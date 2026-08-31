@@ -21,6 +21,12 @@ public final class ModItems
 
   public static final DeferredItem<BlockItem> VACCUM_TANK = ITEMS.register("vaccum_tank", () -> new BlockItem(ModBlocks.VACCUM_TANK.get(), new Properties()));
 
+  public static final DeferredItem<BlockItem> VACCUM_PUMP = ITEMS.register("vaccum_pump", () -> new BlockItem(ModBlocks.VACCUM_PUMP.get(), new Properties()));
+
+  public static final DeferredItem<BlockItem> VALVE = ITEMS.register("valve", () -> new BlockItem(ModBlocks.VALVE.get(), new Properties()));
+
+  public static final DeferredItem<BlockItem> VENT = ITEMS.register("vent", () -> new BlockItem(ModBlocks.VENT.get(), new Properties()));
+
   public static final DeferredItem<BlockItem> VACCUM_PIPE = ITEMS.register("vaccum_pipe", () -> new BlockItem(ModBlocks.VACCUM_PIPE.get(), new Properties()));
 
   public static final DeferredItem<BlockItem> ARID_DUST = ITEMS.register("arid_dust", () -> new BlockItem(ModBlocks.ARID_DUST.get(), new Properties()));

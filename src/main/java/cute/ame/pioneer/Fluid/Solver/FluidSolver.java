@@ -1,12 +1,13 @@
 package cute.ame.pioneer.Fluid.Solver;
 
 import cute.ame.pioneer.Fluid.FluidNodeStore;
+import cute.ame.pioneer.Fluid.Graph.FluidGraph;
 
 public final class FluidSolver
 {
     public static final double EPSILON = 1.0e-7;
 
-    public static double sweep(FluidNodeStore store, int[] edgeOrder, int from, int to, int[] edgeA, int[] edgeB, float[] conductance, float[] molarHeat, float thermalConductance, double potentialEpsilon, double temperatureEpsilon)
+    public static double sweep(FluidNodeStore store, int[] edgeOrder, int from, int to, int[] edgeA, int[] edgeB, float[] conductance, float[] boost, float[] molarHeat, float thermalConductance, double potentialEpsilon, double temperatureEpsilon)
     {
         double activity = 0.0;
         int stride = store.getStride();
@@ -21,7 +22,18 @@ public final class FluidSolver
 
             double potentialA = FluidPotential.of(store, a);
             double potentialB = FluidPotential.of(store, b);
-            double gap = potentialA - potentialB;
+
+            float drive = boost[edge];
+            boolean directed = drive >= 0.0f;
+            double gap = directed ? (potentialA + drive) - potentialB : potentialA - potentialB;
+
+            if (directed && gap <= 0.0)
+            {
+                double temperatureIdle = Math.abs(store.temperature(a) - store.temperature(b));
+                if (temperatureIdle / temperatureEpsilon > activity) activity = temperatureIdle / temperatureEpsilon;
+                if (thermalConductance > 0.0f && temperatureIdle > 0.0) conduct(store, a, b, stride, molarHeat, thermalConductance);
+                continue;
+            }
 
             double magnitude = Math.abs(gap);
             if (magnitude / potentialEpsilon > activity) activity = magnitude / potentialEpsilon;
@@ -45,6 +57,14 @@ public final class FluidSolver
         }
 
         return activity;
+    }
+
+    public static double sweep(FluidNodeStore store, int[] edgeOrder, int from, int to, int[] edgeA, int[] edgeB, float[] conductance, float[] molarHeat, float thermalConductance, double potentialEpsilon, double temperatureEpsilon)
+    {
+        float[] undirected = new float[edgeA.length];
+        java.util.Arrays.fill(undirected, FluidGraph.UNDIRECTED);
+
+        return sweep(store, edgeOrder, from, to, edgeA, edgeB, conductance, undirected, molarHeat, thermalConductance, potentialEpsilon, temperatureEpsilon);
     }
 
     private static void transfer(FluidNodeStore store, int source, int target, double amount, int stride, float[] molarHeat)

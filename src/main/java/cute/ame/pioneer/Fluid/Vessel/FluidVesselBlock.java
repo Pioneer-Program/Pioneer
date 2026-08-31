@@ -13,12 +13,16 @@ import net.minecraft.world.level.material.MapColor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+//TODO: SPLIT THIS INTO MULTIPLE CLASS BEFORE MERGING, CUZ I HATE IT, BUT FOR TESTING PURPOSE, IT'S FINE
 public class FluidVesselBlock extends Block implements EntityBlock
 {
     public enum Variant
     {
         TANK(FluidConstants.TANK_VOLUME_L, true, 1.0f, 25.0f),
-        PIPE(FluidConstants.PIPE_VOLUME_L, false, 0.5f, 10.0f);
+        PIPE(FluidConstants.PIPE_VOLUME_L, false, 0.5f, 10.0f),
+        PUMP(FluidConstants.PIPE_VOLUME_L, false, 0.5f, 20.0f),
+        VALVE(50.0f, false, 0.5f, 15.0f),
+        VENT(FluidConstants.PIPE_VOLUME_L, false, 0.5f, 10.0f);
 
         public final float volumeLitres;
         public final boolean merges;
@@ -39,7 +43,12 @@ public class FluidVesselBlock extends Block implements EntityBlock
 
     public FluidVesselBlock(Variant variant)
     {
-        super(properties(variant));
+        this(variant, properties(variant));
+    }
+
+    protected FluidVesselBlock(Variant variant, BlockBehaviour.Properties properties)
+    {
+        super(properties);
         this.variant = variant;
     }
 
@@ -68,7 +77,7 @@ public class FluidVesselBlock extends Block implements EntityBlock
         return variant.burstPressureP;
     }
 
-    private static BlockBehaviour.Properties properties(Variant variant)
+    protected static BlockBehaviour.Properties properties(Variant variant)
     {
         return BlockBehaviour.Properties.of()
             .mapColor(MapColor.METAL)

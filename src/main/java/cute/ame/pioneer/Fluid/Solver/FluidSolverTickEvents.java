@@ -44,6 +44,7 @@ public final class FluidSolverTickEvents
         int[] edgeA = graph.edgeARaw();
         int[] edgeB = graph.edgeBRaw();
         float[] conductance = graph.conductanceRaw();
+        float[] boost = graph.boostRaw();
 
         boolean moved = false;
 
@@ -63,7 +64,7 @@ public final class FluidSolverTickEvents
             double activity = 0.0;
             for (int pass = 0; pass < sweeps; pass++)
             {
-                activity = FluidSolver.sweep(store, edgeOrder, from, to, edgeA, edgeB, conductance, molarHeat, thermal, potentialEpsilon, temperatureEpsilon);
+                activity = FluidSolver.sweep(store, edgeOrder, from, to, edgeA, edgeB, conductance, boost, molarHeat, thermal, potentialEpsilon, temperatureEpsilon);
             }
 
             graph.settle(c, activity, patience);

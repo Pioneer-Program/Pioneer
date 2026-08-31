@@ -1,6 +1,10 @@
 {
   "block.pioneer.vaccum_tank": "Vaccum Tank",
   "block.pioneer.vaccum_pipe": "Vaccum Pipe",
+  "block.pioneer.vaccum_pump": "Vaccum Pump",
+  "block.pioneer.valve": "Valve",
+  "block.pioneer.vent": "Vent",
+
   "death.attack.pioneer.asphyxiation": "%1$s ran out of air",
-  "death.attack.pioneer.asphyxiation.player": "%1$s ran out of air whilst fighting %2$s"
+  "death.attack.pioneer.asphyxiation.player": "%1$s ran out of air whilst fighting %2$s",
 }
