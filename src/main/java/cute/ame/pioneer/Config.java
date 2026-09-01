@@ -37,6 +37,8 @@ public class Config
     public static ModConfigSpec.DoubleValue BURST_EXPLOSION_POWER;
     public static ModConfigSpec.DoubleValue BURST_EXPLOSION_MAX_POWER;
 
+    public static ModConfigSpec.IntValue SENSOR_PERIOD_TICKS;
+
     static final ModConfigSpec SPEC;
     static
     {
@@ -76,6 +78,8 @@ public class Config
         BURST_EXPLOSION_MAX_POWER = BUILDER.defineInRange("burst_explosion_max_power", 4.0, 0.0, 20.0);
 
         PUMP_BOOST_P = BUILDER.defineInRange("pump_boost_p", 4.0, 0.0, 100.0);
+
+        SENSOR_PERIOD_TICKS = BUILDER.defineInRange("sensor_period_ticks", 5, 1, 200);
         BUILDER.pop();
         SPEC = BUILDER.build();
     }

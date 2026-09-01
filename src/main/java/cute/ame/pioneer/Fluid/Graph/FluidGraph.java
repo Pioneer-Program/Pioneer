@@ -1,12 +1,15 @@
 package cute.ame.pioneer.Fluid.Graph;
 
+import cute.ame.pioneer.Fluid.Physics.ComponentPartition;
+
 import cute.ame.pioneer.Config;
-import cute.ame.pioneer.Fluid.FluidNodeStore;
-import cute.ame.pioneer.Fluid.Vessel.FluidVesselBlock;
-import cute.ame.pioneer.Fluid.Vessel.FluidVesselBlockEntity;
-import cute.ame.pioneer.Fluid.Vessel.PumpBlock;
-import cute.ame.pioneer.Fluid.Vessel.ValveBlock;
-import cute.ame.pioneer.Fluid.Vessel.VentBlock;
+import cute.ame.pioneer.Fluid.Data.FluidNodeStore;
+import cute.ame.pioneer.Fluid.Block.FluidVesselBlock;
+import cute.ame.pioneer.Fluid.BlockEntity.FluidVesselBlockEntity;
+import cute.ame.pioneer.Fluid.Block.PumpBlock;
+import cute.ame.pioneer.Fluid.Block.ValveBlock;
+import cute.ame.pioneer.Fluid.Block.VentBlock;
+import cute.ame.pioneer.Fluid.Physics.FluidSolver;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -25,7 +28,6 @@ public final class FluidGraph
     };
 
     public static final double SETTLED = 1.0;
-    public static final float UNDIRECTED = -1.0f;
     private final LongOpenHashSet vessels = new LongOpenHashSet();
 
     private boolean dirty = true;
@@ -233,7 +235,7 @@ public final class FluidGraph
                 int room = VentBlock.roomAt(level, pos, state);
                 if (room != FluidNodeStore.INVALID)
                 {
-                    addEdge(node, room, here, UNDIRECTED);
+                    addEdge(node, room, here, FluidSolver.UNDIRECTED);
                     if (room > maxNodeId) maxNodeId = room;
 
                     if (room < seen.length && !seen[room])
@@ -266,7 +268,7 @@ public final class FluidGraph
                 float there = conductanceOf(neighbourVessel, neighbourState);
                 if (there <= 0.0f) continue;
 
-                addEdge(node, other, Math.min(here, there), UNDIRECTED);
+                addEdge(node, other, Math.min(here, there), FluidSolver.UNDIRECTED);
                 if (other > maxNodeId) maxNodeId = other;
             }
         }

@@ -1,0 +1,41 @@
+
+{
+  "textures": {
+    "tex": "pioneer:block/thermometer",
+    "particle": "pioneer:block/thermometer"
+  },
+  "elements": [
+    {
+      "from": [
+        4,
+        4.01,
+        7.5
+      ],
+      "to": [
+        12,
+        4.03,
+        8.5
+      ],
+      "faces": {
+        "up": {
+          "uv": [
+            14.0,
+            6.5,
+            10.0,
+            6.0
+          ],
+          "texture": "#tex"
+        },
+        "down": {
+          "uv": [
+            14.0,
+            6.5,
+            10.0,
+            7.0
+          ],
+          "texture": "#tex"
+        }
+      }
+    }
+  ]
+}

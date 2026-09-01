@@ -1,7 +1,7 @@
 package cute.ame.pioneer.Core.API;
 
-import cute.ame.pioneer.Fluid.Life.Breathing;
-import cute.ame.pioneer.Fluid.Life.LifeSupport;
+import cute.ame.pioneer.Fluid.Physics.Breathing;
+import cute.ame.pioneer.Fluid.Helper.LifeSupport;
 import cute.ame.pioneer.SkyPlanet.Data.AtmosphereDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;

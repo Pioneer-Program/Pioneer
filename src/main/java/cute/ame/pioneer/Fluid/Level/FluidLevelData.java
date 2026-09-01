@@ -1,9 +1,9 @@
 package cute.ame.pioneer.Fluid.Level;
 
-import cute.ame.pioneer.Fluid.FluidNodeStore;
-import cute.ame.pioneer.Fluid.FluidSpecies;
+import cute.ame.pioneer.Fluid.Data.FluidNodeStore;
+import cute.ame.pioneer.Fluid.Registry.FluidSpecies;
 import cute.ame.pioneer.Fluid.Graph.FluidGraph;
-import cute.ame.pioneer.Fluid.SpeciesTable;
+import cute.ame.pioneer.Fluid.Data.SpeciesTable;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;

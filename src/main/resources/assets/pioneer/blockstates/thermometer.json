@@ -1,0 +1,57 @@
+{
+  "variants": {
+    "face=floor,facing=north": {
+      "model": "pioneer:block/thermometer"
+    },
+    "face=floor,facing=east": {
+      "model": "pioneer:block/thermometer",
+      "y": 90
+    },
+    "face=floor,facing=south": {
+      "model": "pioneer:block/thermometer",
+      "y": 180
+    },
+    "face=floor,facing=west": {
+      "model": "pioneer:block/thermometer",
+      "y": 270
+    },
+    "face=wall,facing=north": {
+      "model": "pioneer:block/thermometer",
+      "x": 90
+    },
+    "face=wall,facing=east": {
+      "model": "pioneer:block/thermometer",
+      "x": 90,
+      "y": 90
+    },
+    "face=wall,facing=south": {
+      "model": "pioneer:block/thermometer",
+      "x": 90,
+      "y": 180
+    },
+    "face=wall,facing=west": {
+      "model": "pioneer:block/thermometer",
+      "x": 90,
+      "y": 270
+    },
+    "face=ceiling,facing=north": {
+      "model": "pioneer:block/thermometer",
+      "x": 180,
+      "y": 180
+    },
+    "face=ceiling,facing=east": {
+      "model": "pioneer:block/thermometer",
+      "x": 180,
+      "y": 270
+    },
+    "face=ceiling,facing=south": {
+      "model": "pioneer:block/thermometer",
+      "x": 180
+    },
+    "face=ceiling,facing=west": {
+      "model": "pioneer:block/thermometer",
+      "x": 180,
+      "y": 90
+    }
+  }
+}
