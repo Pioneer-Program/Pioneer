@@ -1,13 +1,13 @@
 package cute.ame.pioneer.Fluid.Event;
 
-import cute.ame.pioneer.Fluid.Physics.FluidPhase;
-
 import cute.ame.pioneer.Fluid.Data.FluidNodeStore;
-import cute.ame.pioneer.Fluid.Registry.FluidSpecies;
-import cute.ame.pioneer.Fluid.Physics.ComponentPartition;
-import cute.ame.pioneer.Fluid.Graph.FluidGraph;
-import cute.ame.pioneer.Fluid.Level.FluidLevelData;
 import cute.ame.pioneer.Fluid.Data.SpeciesTable;
+import cute.ame.pioneer.Fluid.Graph.FluidGraph;
+import cute.ame.pioneer.Fluid.Helper.Containment;
+import cute.ame.pioneer.Fluid.Level.FluidLevelData;
+import cute.ame.pioneer.Fluid.Physics.ComponentPartition;
+import cute.ame.pioneer.Fluid.Physics.FluidPhase;
+import cute.ame.pioneer.Fluid.Registry.FluidSpecies;
 import cute.ame.pioneer.Pioneer;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -42,7 +42,8 @@ public final class FluidPhaseTickEvents
             int component = partition.componentOf(id);
             if (component >= 0 && graph.isAsleep(component)) continue;
 
-            if (FluidPhase.update(store, id, table))
+            double containment = store.isLiquid(id) ? Containment.of(level, store, graph, table, id) : FluidPhase.DEFAULT_CONTAINMENT_P;
+            if (FluidPhase.update(store, id, table, containment))
             {
                 changed = true;
                 data.touch(id);

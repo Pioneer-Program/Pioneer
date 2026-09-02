@@ -39,6 +39,10 @@ public class Config
 
     public static ModConfigSpec.IntValue SENSOR_PERIOD_TICKS;
 
+    public static ModConfigSpec.DoubleValue FLUID_BLOCK_COUPLING;
+    public static ModConfigSpec.IntValue FLUID_COUPLING_PERIOD;
+    public static ModConfigSpec.DoubleValue VACUUM_BLOCK_TEMPERATURE_K;
+
     static final ModConfigSpec SPEC;
     static
     {
@@ -74,12 +78,16 @@ public class Config
         BURST_ENABLED = BUILDER.define("burst_enabled", true);
         BURST_JITTER = BUILDER.defineInRange("burst_jitter", 0.15, 0.0, 0.9);
         BURST_SCREEN_PRESSURE = BUILDER.defineInRange("burst_screen_pressure", 8.0, 0.1, 1000.0);
-        BURST_EXPLOSION_POWER = BUILDER.defineInRange("burst_explosion_power", 5, 0.0, 10.0);
+        BURST_EXPLOSION_POWER = BUILDER.defineInRange("burst_explosion_power", 1.2, 0.0, 10.0);
         BURST_EXPLOSION_MAX_POWER = BUILDER.defineInRange("burst_explosion_max_power", 4.0, 0.0, 20.0);
 
         PUMP_BOOST_P = BUILDER.defineInRange("pump_boost_p", 4.0, 0.0, 100.0);
 
         SENSOR_PERIOD_TICKS = BUILDER.defineInRange("sensor_period_ticks", 5, 1, 200);
+
+        FLUID_BLOCK_COUPLING = BUILDER.defineInRange("fluid_block_coupling", 0.001, 0.0, 1.0);
+        FLUID_COUPLING_PERIOD = BUILDER.defineInRange("fluid_coupling_period", 20, 1, 200);
+        VACUUM_BLOCK_TEMPERATURE_K = BUILDER.defineInRange("vacuum_block_temperature_k", 293.15, 0.1, 1000.0);
         BUILDER.pop();
         SPEC = BUILDER.build();
     }

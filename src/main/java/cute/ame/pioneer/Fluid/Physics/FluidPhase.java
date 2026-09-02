@@ -1,20 +1,16 @@
 package cute.ame.pioneer.Fluid.Physics;
 
+import cute.ame.pioneer.Fluid.Data.FluidConstants;
 import cute.ame.pioneer.Fluid.Data.FluidNodeStore;
 import cute.ame.pioneer.Fluid.Data.SpeciesTable;
 
-/* TODO: FUTURE AME LISTEN HERE:
-   AN INSULATED TANK OF LIQUID OXYGEN DOES NOT BOIL, AND THAT IS CORRECT, WHAT MAKE IT BOIL
-   IS HEAT LEAKING IN THROUGH THE WALL (BLOCK / FLUID DECOUPLING).
-   U NEED TO IMPLEMENT THE "LIQUID OXYGEN IN A WARM TANK BOILS BY ITSELF", BUT IM TOO LAZY TO DO THIS RIGHT NOW
- */
 public final class FluidPhase
 {
     private static final double R_JOULES = 8.314462618;
     private static final float MINIMUM_MOLES = 1.0e-6f;
-    public static final double CONTAINMENT_PRESSURE_P = 1.0;
+    public static final double DEFAULT_CONTAINMENT_P = 1.0;
 
-    public static boolean update(FluidNodeStore store, int nodeId, SpeciesTable table)
+    public static boolean update(FluidNodeStore store, int nodeId, SpeciesTable table, double containmentP)
     {
         float moles = store.moles(nodeId);
         if (moles < MINIMUM_MOLES)
@@ -31,9 +27,9 @@ public final class FluidPhase
         boolean liquid = store.isLiquid(nodeId);
         float temperature = store.temperature(nodeId);
 
-        double reference = referencePressure(store, nodeId, table, liquid, temperature);
+        double reference = liquid ? Math.max(containmentP, 1.0e-6) : store.pressure(nodeId);
         double boiling = boilingPoint(store, nodeId, table, reference);
-        store.setVapourPressure(nodeId, liquid ? (float) saturationPressure(store, nodeId, table, temperature) : 0.0f);
+        store.setVapourPressure(nodeId, liquid ? (float) vapourPressure(store, nodeId, table, temperature) : 0.0f);
 
         double latentTotal = latentHeat(store, nodeId, table);
         if (latentTotal <= 0.0) return false;
@@ -92,7 +88,7 @@ public final class FluidPhase
             {
                 store.setFlag(nodeId, FluidNodeStore.FLAG_LIQUID, true);
                 store.setTemperature(nodeId, (float) (boiling - (bank - latentTotal) / heatCapacity));
-                store.setVapourPressure(nodeId, (float) saturationPressure(store, nodeId, table, store.temperature(nodeId)));
+                store.setVapourPressure(nodeId, (float) vapourPressure(store, nodeId, table, store.temperature(nodeId)));
                 store.setLatent(nodeId, 0.0f);
                 return true;
             }
@@ -144,6 +140,19 @@ public final class FluidPhase
         return sum;
     }
 
+    public static double vapourPressure(FluidNodeStore store, int nodeId, SpeciesTable table, double temperature)
+    {
+        double volume = Math.max(store.volume(nodeId), FluidConstants.MIN_VOLUME_L);
+        double everything = store.moles(nodeId) * FluidConstants.R * temperature / volume;
+
+        return Math.min(saturationPressure(store, nodeId, table, temperature), everything);
+    }
+
+    public static double selfContainment(FluidNodeStore store, int nodeId, SpeciesTable table)
+    {
+        return vapourPressure(store, nodeId, table, store.temperature(nodeId));
+    }
+
     public static double saturationPressure(FluidNodeStore store, int nodeId, SpeciesTable table, double temperature)
     {
         int stride = Math.min(store.getStride(), table.size());
@@ -168,10 +177,5 @@ public final class FluidPhase
 
         double pressure = Math.exp((latentMolar / R_JOULES) * (1.0 / base - 1.0 / temperature));
         return Double.isFinite(pressure) ? Math.min(pressure, 1000.0) : 0.0;
-    }
-
-    private static double referencePressure(FluidNodeStore store, int nodeId, SpeciesTable table, boolean liquid, float temperature)
-    {
-        return liquid ? CONTAINMENT_PRESSURE_P : store.pressure(nodeId);
     }
 }
