@@ -19,6 +19,13 @@ public class ModCreativeModeTabs {
                     .title(Component.translatable("creativetab.pioneer.pioneer"))
                     .displayItems((itemDisplayParameters, output) -> {
                             output.accept(ModBlocks.CERAMIC_TILES);
+                            output.accept(ModBlocks.VACCUM_PIPE);
+                            output.accept(ModBlocks.VACCUM_TANK);
+                            output.accept(ModBlocks.VACCUM_PUMP);
+                            output.accept(ModBlocks.VALVE);
+                            output.accept(ModBlocks.VENT);
+                            output.accept(ModBlocks.THERMOMETER);
+                            output.accept(ModBlocks.BAROMETER);
                     }).build());
 
     public static void register(IEventBus eventBus) {
