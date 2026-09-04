@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "side": "pioneer:block/vaccum_tank_side",
+    "end": "pioneer:block/vaccum_tank_top"
+  }
+}
