@@ -26,6 +26,7 @@ public class ModCreativeModeTabs {
                             output.accept(ModBlocks.VENT);
                             output.accept(ModBlocks.THERMOMETER);
                             output.accept(ModBlocks.BAROMETER);
+                            output.accept(ModBlocks.MASS_SPECTROMETER);
                     }).build());
 
     public static void register(IEventBus eventBus) {
