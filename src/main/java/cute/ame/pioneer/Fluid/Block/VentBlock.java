@@ -32,7 +32,7 @@ public class VentBlock extends FluidVesselBlock
 {
     public static final EnumProperty<AttachFace> FACE = BlockStateProperties.ATTACH_FACE;
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
-    private static final VoxelShape FLOOR_SHAPE = Block.box(3.0, 0.0, 1.0, 13.0, 4.0, 15.0);
+    private static final VoxelShape FLOOR_SHAPE = Block.box(1.0, 0.0, 3.0, 15.0, 4.0, 13.0);
     private static final Map<AttachFace, Map<Direction, VoxelShape>> SHAPES = buildShapes();
 
     public VentBlock()
@@ -159,7 +159,7 @@ public class VentBlock extends FluidVesselBlock
 
     private static VoxelShape transform(AttachFace face, Direction facing)
     {
-        double[] box = { 3.0, 0.0, 1.0, 13.0, 4.0, 15.0 };
+        double[] box = { 1.0, 0.0, 3.0, 15.0, 4.0, 13.0 };
 
         double[] placed = switch (face)
         {

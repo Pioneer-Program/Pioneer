@@ -1,77 +1,24 @@
 {
-  "parent": "block/block",
-  "textures": {
-    "tex": "pioneer:block/vent",
-    "particle": "pioneer:block/vent"
-  },
-  "elements": [
-    {
-      "from": [
-        3,
-        0,
-        1
-      ],
-      "to": [
-        13,
-        4,
-        15
-      ],
-      "faces": {
-        "north": {
-          "uv": [
-            0.0,
-            9.0,
-            5.0,
-            11.0
-          ],
-          "texture": "#tex"
-        },
-        "east": {
-          "uv": [
-            0.0,
-            7.0,
-            7.0,
-            9.0
-          ],
-          "texture": "#tex"
-        },
-        "south": {
-          "uv": [
-            5.0,
-            9.0,
-            10.0,
-            11.0
-          ],
-          "texture": "#tex"
-        },
-        "west": {
-          "uv": [
-            7.0,
-            7.0,
-            14.0,
-            9.0
-          ],
-          "texture": "#tex"
-        },
-        "up": {
-          "uv": [
-            5.0,
-            7.0,
-            0.0,
-            0.0
-          ],
-          "texture": "#tex"
-        },
-        "down": {
-          "uv": [
-            10.0,
-            0.0,
-            5.0,
-            7.0
-          ],
-          "texture": "#tex"
-        }
-      }
-    }
-  ]
+	"format_version": "1.21.11",
+	"credit": "Made with Blockbench",
+	"parent": "block/block",
+	"textures": {
+		"particle": "pioneer:block/vent",
+		"tex": "pioneer:block/vent"
+	},
+	"elements": [
+		{
+			"from": [1, 0, 3],
+			"to": [15, 4, 13],
+			"rotation": {"angle": 0, "axis": "y", "origin": [16, 0, 0]},
+			"faces": {
+				"north": {"uv": [7, 7, 14, 9], "texture": "#tex"},
+				"east": {"uv": [0, 9, 5, 11], "texture": "#tex"},
+				"south": {"uv": [0, 7, 7, 9], "texture": "#tex"},
+				"west": {"uv": [5, 9, 10, 11], "texture": "#tex"},
+				"up": {"uv": [5, 7, 0, 0], "rotation": 90, "texture": "#tex"},
+				"down": {"uv": [10, 0, 5, 7], "rotation": 270, "texture": "#tex"}
+			}
+		}
+	]
 }
