@@ -26,20 +26,26 @@ public final class VesselNodes
     public static void onLoaded(ServerLevel level, BlockPos pos, FluidVesselBlockEntity be)
     {
         FluidLevelData data = FluidLevelData.get(level);
-        FluidNodeStore store = data.store();
 
         data.graph().track(pos);
+        if (VesselRelocation.arrive(level, pos)) return;
 
-        if (level.getBlockState(pos).getBlock() instanceof VentBlock)
+        settle(level, data, pos, be);
+    }
+
+    static void settle(ServerLevel level, FluidLevelData data, BlockPos pos, FluidVesselBlockEntity be)
+    {
+        FluidNodeStore store = data.store();
+        BlockState state = level.getBlockState(pos);
+
+        if (state.getBlock() instanceof VentBlock)
         {
-            VentBlock.attachRoom(level, pos, level.getBlockState(pos));
+            VentBlock.attachRoom(level, pos, state);
             data.graph().invalidate();
         }
 
         if (store.resolve(be.getNodeHandle()) != FluidNodeStore.INVALID) return;
-
-        FluidVesselBlock block = blockAt(level, pos);
-        if (block == null) return;
+        if (!(state.getBlock() instanceof FluidVesselBlock block)) return;
 
         if (!block.merges())
         {
@@ -65,6 +71,12 @@ public final class VesselNodes
 
         FluidLevelData data = FluidLevelData.getIfPresent(level);
         if (data == null) return;
+
+        if (VesselRelocation.depart(level, pos))
+        {
+            data.graph().forget(pos);
+            return;
+        }
 
         FluidNodeStore store = data.store();
         data.graph().forget(pos);
@@ -267,11 +279,6 @@ public final class VesselNodes
         if (!FluidLevels.isLoaded(level, pos)) return false;
 
         return level.getBlockState(pos).is(block);
-    }
-
-    private static @Nullable FluidVesselBlock blockAt(ServerLevel level, BlockPos pos)
-    {
-        return level.getBlockState(pos).getBlock() instanceof FluidVesselBlock vessel ? vessel : null;
     }
 
     private static @Nullable FluidVesselBlockEntity vesselAt(ServerLevel level, BlockPos pos)

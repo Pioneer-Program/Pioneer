@@ -102,6 +102,28 @@ public final class RoomLevelData extends SavedData
         return nodeId;
     }
 
+    public boolean relocate(ServerLevel level, int nodeId, BlockPos origin)
+    {
+        Room room = rooms.get(nodeId);
+        if (room == null) return false;
+
+        if (nodeAt(origin) == nodeId) return true;
+
+        FluidLevelData fluids = FluidLevelData.get(level);
+        FluidNodeStore store = fluids.store();
+
+        if (!store.alive(nodeId))
+        {
+            rooms.remove(nodeId);
+            unindexCells(room);
+            queued.remove(nodeId);
+            setDirty();
+            return false;
+        }
+
+        return rebind(level, fluids, store, room, origin);
+    }
+
     public boolean remove(ServerLevel level, int nodeId)
     {
         Room room = rooms.remove(nodeId);
@@ -183,16 +205,23 @@ public final class RoomLevelData extends SavedData
             return;
         }
 
+        rebind(level, fluids, store, room, origin);
+    }
+
+    private boolean rebind(ServerLevel level, FluidLevelData fluids, FluidNodeStore store, Room room, BlockPos origin)
+    {
+        int nodeId = room.nodeId();
+
         RoomScanner.Result scan = scan(level, origin);
         if (scan.isEmpty())
         {
             remove(level, nodeId);
-            return;
+            return false;
         }
 
         unindexCells(room);
 
-        Room next = new Room(nodeId, room.origin(), scan.cells(), scan.sealed());
+        Room next = new Room(nodeId, RoomScanner.pack(origin.getX(), origin.getY(), origin.getZ()), scan.cells(), scan.sealed());
         rooms.put(nodeId, next);
         indexCells(next);
 
@@ -214,6 +243,7 @@ public final class RoomLevelData extends SavedData
 
         fluids.setDirty();
         setDirty();
+        return true;
     }
 
     private RoomScanner.Result scan(ServerLevel level, BlockPos origin)
