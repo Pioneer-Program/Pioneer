@@ -19,6 +19,7 @@ public class ModCreativeModeTabs {
                     .title(Component.translatable("creativetab.pioneer.pioneer"))
                     .displayItems((itemDisplayParameters, output) -> {
                             output.accept(ModBlocks.CERAMIC_TILES);
+                            output.accept(ModItems.ALUMINUM_INGOT);
                     }).build());
 
     public static void register(IEventBus eventBus) {

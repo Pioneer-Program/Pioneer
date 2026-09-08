@@ -1,5 +1,6 @@
 package cute.ame.pioneer.Registrie;
 
+import cute.ame.pioneer.Item.AluminumIngotItem;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Planet.Arid.Item.AridCrystalShard;
 import cute.ame.pioneer.Item.PortableThrusterItem;
@@ -14,6 +15,8 @@ public final class ModItems
   public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(Pioneer.MODID);
 
   public static final DeferredItem<PortableThrusterItem> PORTABLE_THRUSTER = ITEMS.register("portable_thruster", () -> new PortableThrusterItem(new Properties().stacksTo(1)));
+
+  public static final DeferredItem<AluminumIngotItem> ALUMINUM_INGOT = ITEMS.register("aluminum_ingot", () -> new AluminumIngotItem(new Properties()));
 
   public static final DeferredItem<SpaceNavigatorItemDebug> SPACE_NAVIGATOR = ITEMS.register("space_navigator", () -> new SpaceNavigatorItemDebug(new Properties().stacksTo(1)));
 
