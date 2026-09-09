@@ -325,7 +325,7 @@ public final class FluidNodeStore
         openSlot[id] = -1;
     }
 
-    private void recomputeMoles(int id)
+    public void recomputeMoles(int id)
     {
         int base = id * stride;
         double sum = 0.0;
