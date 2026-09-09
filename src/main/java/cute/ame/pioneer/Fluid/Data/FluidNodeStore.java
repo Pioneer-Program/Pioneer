@@ -11,6 +11,8 @@ public final class FluidNodeStore
     public static final int FLAG_LIQUID = 1 << 2;
     public static final int FLAG_DIRTY = 1 << 3;
 
+    private static final int OPEN_MASK = FLAG_ALIVE | FLAG_OPEN;
+
     private static final int MIN_CAPACITY = 64;
 
     private int stride;
@@ -27,6 +29,10 @@ public final class FluidNodeStore
 
     private int[] free;
     private int freeCount;
+
+    private int[] openNodes;
+    private int[] openSlot;
+    private int openCount;
 
     private int capacity;
     private int highWater;
@@ -50,6 +56,10 @@ public final class FluidNodeStore
         latent = new float[capacity];
         vapour = new float[capacity];
         free = new int[32];
+
+        openNodes = new int[capacity];
+        openSlot = new int[capacity];
+        Arrays.fill(openSlot, -1);
     }
 
     public int getStride()
@@ -102,6 +112,16 @@ public final class FluidNodeStore
         return flags;
     }
 
+    public int[] getOpenNodesRaw()
+    {
+        return openNodes;
+    }
+
+    public int getOpenCount()
+    {
+        return openCount;
+    }
+
     public int create(float volumeLitres, float temperatureKelvin)
     {
         int id;
@@ -120,6 +140,7 @@ public final class FluidNodeStore
         flags[id] = FLAG_ALIVE;
         latent[id] = 0.0f;
         vapour[id] = 0.0f;
+        unindexOpen(id);
         liveCount++;
         return id;
     }
@@ -132,6 +153,8 @@ public final class FluidNodeStore
     public boolean destroy(int id)
     {
         if (!alive(id)) return false;
+
+        unindexOpen(id);
 
         flags[id] = 0;
         generation[id]++;
@@ -193,8 +216,15 @@ public final class FluidNodeStore
 
     public void setFlag(int id, int flag, boolean on)
     {
-        if (on) flags[id] |= flag;
-        else flags[id] &= ~flag;
+        int before = flags[id];
+        int after = on ? (before | flag) : (before & ~flag);
+        if (before == after) return;
+
+        flags[id] = after;
+        if (((before ^ after) & OPEN_MASK) == 0) return;
+
+        if ((after & OPEN_MASK) == OPEN_MASK) indexOpen(id);
+        else unindexOpen(id);
     }
 
     public float amount(int id, int species)
@@ -276,6 +306,25 @@ public final class FluidNodeStore
         return (flags[id] & FLAG_LIQUID) != 0;
     }
 
+    private void indexOpen(int id)
+    {
+        if (openSlot[id] >= 0) return;
+
+        openNodes[openCount] = id;
+        openSlot[id] = openCount++;
+    }
+
+    private void unindexOpen(int id)
+    {
+        int slot = openSlot[id];
+        if (slot < 0) return;
+
+        int last = openNodes[--openCount];
+        openNodes[slot] = last;
+        openSlot[last] = slot;
+        openSlot[id] = -1;
+    }
+
     private void recomputeMoles(int id)
     {
         int base = id * stride;
@@ -286,6 +335,8 @@ public final class FluidNodeStore
 
     private void grow(int newCapacity)
     {
+        int previous = capacity;
+
         amount = Arrays.copyOf(amount, newCapacity * stride);
         moles = Arrays.copyOf(moles, newCapacity);
         volume = Arrays.copyOf(volume, newCapacity);
@@ -294,6 +345,11 @@ public final class FluidNodeStore
         generation = Arrays.copyOf(generation, newCapacity);
         latent = Arrays.copyOf(latent, newCapacity);
         vapour = Arrays.copyOf(vapour, newCapacity);
+
+        openNodes = Arrays.copyOf(openNodes, newCapacity);
+        openSlot = Arrays.copyOf(openSlot, newCapacity);
+        Arrays.fill(openSlot, previous, newCapacity, -1);
+
         capacity = newCapacity;
     }
 
@@ -339,6 +395,8 @@ public final class FluidNodeStore
         if (expectedHighWater > capacity) grow(Math.max(expectedHighWater, MIN_CAPACITY));
         Arrays.fill(flags, 0, highWater, 0);
         Arrays.fill(moles, 0, highWater, 0.0f);
+        Arrays.fill(openSlot, 0, highWater, -1);
+        openCount = 0;
         highWater = 0;
         liveCount = 0;
         freeCount = 0;
@@ -376,6 +434,15 @@ public final class FluidNodeStore
             if ((flags[id] & FLAG_ALIVE) != 0) continue;
             if (freeCount == free.length) free = Arrays.copyOf(free, free.length << 1);
             free[freeCount++] = id;
+        }
+
+        openCount = 0;
+        for (int id = 0; id < highWater; id++)
+        {
+            if ((flags[id] & OPEN_MASK) != OPEN_MASK) continue;
+
+            openNodes[openCount] = id;
+            openSlot[id] = openCount++;
         }
     }
 }
