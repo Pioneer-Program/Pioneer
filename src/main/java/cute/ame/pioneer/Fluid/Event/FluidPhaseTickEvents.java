@@ -31,8 +31,7 @@ public final class FluidPhaseTickEvents
         if (data == null) return;
 
         FluidNodeStore store = data.store();
-        int high = store.getHighWater();
-        if (high == 0) return;
+        if (store.getLiveCount() == 0) return;
 
         SpeciesTable table = FluidSpecies.active();
         FluidGraph graph = data.graph();
@@ -41,15 +40,40 @@ public final class FluidPhaseTickEvents
 
         CONTAINMENT.rebuild(store, graph, partition);
 
+        int[] nodeOrder = partition.nodeOrder();
+        int[] nodeOffsets = partition.nodeOffsets();
+
+        for (int c = 0, components = partition.count(); c < components; c++)
+        {
+            if (graph.isAsleep(c)) continue;
+
+            for (int i = nodeOffsets[c], to = nodeOffsets[c + 1]; i < to; i++)
+            {
+                update(data, store, table, ambient, nodeOrder[i], c);
+            }
+        }
+
+        sweepOrphans(data, store, table, ambient, graph, partition, nodeOrder);
+    }
+
+    private static void sweepOrphans(FluidLevelData data, FluidNodeStore store, SpeciesTable table, AmbientState ambient, FluidGraph graph, ComponentPartition.Result partition, int[] nodeOrder)
+    {
+        if (!graph.isDirty() && nodeOrder.length == store.getLiveCount()) return;
+
+        int high = store.getHighWater();
         for (int id = 0; id < high; id++)
         {
-            if (!store.alive(id)) continue;
+            if (!store.alive(id) || partition.componentOf(id) >= 0) continue;
 
-            int component = partition.componentOf(id);
-            if (component >= 0 && graph.isAsleep(component)) continue;
-
-            double containment = store.isLiquid(id) ? Containment.of(store, table, ambient, id, component, CONTAINMENT) : FluidPhase.DEFAULT_CONTAINMENT_P;
-            if (FluidPhase.update(store, id, table, containment)) data.touch(id);
+            update(data, store, table, ambient, id, -1);
         }
+    }
+
+    private static void update(FluidLevelData data, FluidNodeStore store, SpeciesTable table, AmbientState ambient, int id, int component)
+    {
+        if (!store.alive(id)) return;
+
+        double containment = store.isLiquid(id) ? Containment.of(store, table, ambient, id, component, CONTAINMENT) : FluidPhase.DEFAULT_CONTAINMENT_P;
+        if (FluidPhase.update(store, id, table, containment)) data.touch(id);
     }
 }
