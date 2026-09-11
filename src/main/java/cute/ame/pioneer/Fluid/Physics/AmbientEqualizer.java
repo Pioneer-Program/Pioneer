@@ -28,6 +28,8 @@ public final class AmbientEqualizer
 
         if (settled(amounts, base, stride, ambient, targetTotal, temperature, epsilon)) return false;
 
+        boolean moved = false;
+
         for (int s = 0; s < stride; s++)
         {
             float target = (float) (targetTotal * ambient.fraction(s));
@@ -35,11 +37,24 @@ public final class AmbientEqualizer
             if (current == target) continue;
 
             float next = current + step * (target - current);
-            amounts[base + s] = next > 0.0f ? next : 0.0f;
+            if (next < 0.0f) next = 0.0f;
+
+            if (next == current) continue;
+
+            amounts[base + s] = next;
+            moved = true;
         }
 
+        float nextTemperature = temperature + step * (ambient.temperatureK() - temperature);
+        if (nextTemperature != temperature)
+        {
+            store.setTemperature(id, nextTemperature);
+            moved = true;
+        }
+
+        if (!moved) return false;
+
         store.recomputeMoles(id);
-        store.setTemperature(id, temperature + step * (ambient.temperatureK() - temperature));
         if (store.moles(id) < EMPTY_EPSILON) store.clear(id);
 
         return true;
@@ -74,10 +89,24 @@ public final class AmbientEqualizer
         float[] amounts = store.getAmountsRaw();
         int base = id * stride;
 
+        boolean moved = false;
+
         for (int s = 0; s < stride; s++)
         {
             float current = amounts[base + s];
-            if (current > 0.0f) amounts[base + s] = current * keep;
+            if (current <= 0.0f) continue;
+
+            float next = current * keep;
+            if (next == current) continue;
+
+            amounts[base + s] = next;
+            moved = true;
+        }
+
+        if (!moved)
+        {
+            store.clear(id);
+            return true;
         }
 
         store.recomputeMoles(id);
