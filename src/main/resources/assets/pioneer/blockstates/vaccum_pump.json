@@ -1,0 +1,50 @@
+{
+  "variants": {
+    "facing=north,lit=true": {
+      "model": "pioneer:block/vaccum_pump"
+    },
+    "facing=east,lit=true": {
+      "model": "pioneer:block/vaccum_pump",
+      "y": 90
+    },
+    "facing=south,lit=true": {
+      "model": "pioneer:block/vaccum_pump",
+      "y": 180
+    },
+    "facing=west,lit=true": {
+      "model": "pioneer:block/vaccum_pump",
+      "y": 270
+    },
+    "facing=down,lit=true": {
+      "model": "pioneer:block/vaccum_pump",
+      "x": 90
+    },
+    "facing=up,lit=true": {
+      "model": "pioneer:block/vaccum_pump",
+      "x": 270
+    },
+    "facing=north,lit=false": {
+      "model": "pioneer:block/vaccum_pump"
+    },
+    "facing=east,lit=false": {
+      "model": "pioneer:block/vaccum_pump",
+      "y": 90
+    },
+    "facing=south,lit=false": {
+      "model": "pioneer:block/vaccum_pump",
+      "y": 180
+    },
+    "facing=west,lit=false": {
+      "model": "pioneer:block/vaccum_pump",
+      "y": 270
+    },
+    "facing=down,lit=false": {
+      "model": "pioneer:block/vaccum_pump",
+      "x": 90
+    },
+    "facing=up,lit=false": {
+      "model": "pioneer:block/vaccum_pump",
+      "x": 270
+    }
+  }
+}

@@ -26,23 +26,21 @@ public final class AmbientTickEvents
         if (data == null) return;
 
         FluidNodeStore store = data.store();
-        int high = store.getHighWater();
-        if (high == 0) return;
+        int open = store.getOpenCount();
+        if (open == 0) return;
 
         AmbientState ambient = AmbientResolver.of(level.dimension());
         float rate = Config.AMBIENT_EQUALIZE_RATE.get().floatValue();
+        float epsilon = Config.AMBIENT_EQUALIZE_EPSILON.get().floatValue();
 
-        boolean touched = false;
-        for (int id = 0; id < high; id++)
+        int[] openNodes = store.getOpenNodesRaw();
+
+        for (int i = 0; i < open; i++)
         {
-            if (!store.alive(id) || !store.hasFlag(id, FluidNodeStore.FLAG_OPEN)) continue;
+            int id = openNodes[i];
 
-            AmbientEqualizer.equalize(store, id, ambient, rate);
-            data.touch(id);
-            touched = true;
+            if (AmbientEqualizer.equalize(store, id, ambient, rate, epsilon)) data.touch(id);
         }
-
-        if (touched) data.setDirty();
     }
 
     @SubscribeEvent

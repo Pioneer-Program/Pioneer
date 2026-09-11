@@ -8,6 +8,7 @@ public interface ComputerPeripheral
     ResourceLocation PRESSURE_READING = ResourceLocation.fromNamespaceAndPath("pioneer", "pressure_reading");
     ResourceLocation TEMPERATURE_READING = ResourceLocation.fromNamespaceAndPath("pioneer", "temperature_reading");
     ResourceLocation GAS_READING = ResourceLocation.fromNamespaceAndPath("pioneer", "gas_reading");
+    ResourceLocation POWER_READING = ResourceLocation.fromNamespaceAndPath("pioneer", "power_reading");
 
     double UNREADABLE = Double.NaN;
 

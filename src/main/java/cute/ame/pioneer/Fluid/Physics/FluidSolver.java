@@ -59,14 +59,6 @@ public final class FluidSolver
         return activity;
     }
 
-    public static double sweep(FluidNodeStore store, int[] edgeOrder, int from, int to, int[] edgeA, int[] edgeB, float[] conductance, float[] molarHeat, float thermalConductance, double potentialEpsilon, double temperatureEpsilon)
-    {
-        float[] undirected = new float[edgeA.length];
-        java.util.Arrays.fill(undirected, UNDIRECTED);
-
-        return sweep(store, edgeOrder, from, to, edgeA, edgeB, conductance, undirected, molarHeat, thermalConductance, potentialEpsilon, temperatureEpsilon);
-    }
-
     private static void transfer(FluidNodeStore store, int source, int target, double amount, int stride, float[] molarHeat)
     {
         float available = store.moles(source);

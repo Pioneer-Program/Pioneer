@@ -14,6 +14,7 @@ public class Config
     public static ModConfigSpec.IntValue ROOM_RESCANS_PER_TICK;
 
     public static ModConfigSpec.DoubleValue AMBIENT_EQUALIZE_RATE;
+    public static ModConfigSpec.DoubleValue AMBIENT_EQUALIZE_EPSILON;
 
     public static ModConfigSpec.DoubleValue BREATHING_MIN_PRESSURE_P;
     public static ModConfigSpec.DoubleValue BREATHING_MOL_PER_TICK;
@@ -41,6 +42,7 @@ public class Config
 
     public static ModConfigSpec.DoubleValue FLUID_BLOCK_COUPLING;
     public static ModConfigSpec.IntValue FLUID_COUPLING_PERIOD;
+    public static ModConfigSpec.IntValue FLUID_COUPLING_SAMPLES;
     public static ModConfigSpec.DoubleValue VACUUM_BLOCK_TEMPERATURE_K;
 
     static final ModConfigSpec SPEC;
@@ -55,12 +57,12 @@ public class Config
         BUILDER.pop();
 
         BUILDER.push("Fluids");
-
         ROOM_LITRES_PER_BLOCK = BUILDER.defineInRange("room_litres_per_block", 200.0, 1.0, 1000.0);
         ROOM_MAX_BLOCKS = BUILDER.defineInRange("room_max_blocks", 4096, 64, 65_536);
         ROOM_RESCANS_PER_TICK = BUILDER.defineInRange("room_rescans_per_tick", 1, 1, 16);
 
         AMBIENT_EQUALIZE_RATE = BUILDER.defineInRange("ambient_equalize_rate", 0.25, 0.001, 1.0);
+        AMBIENT_EQUALIZE_EPSILON = BUILDER.defineInRange("ambient_equalize_epsilon", 1.0e-4, 0.0, 1.0);
 
         BREATHING_MIN_PRESSURE_P = BUILDER.defineInRange("breathing_min_pressure_p", 0.0618, 0.0, 10.0);
         BREATHING_MOL_PER_TICK = BUILDER.defineInRange("breathing_mol_per_tick", 0.000875, 0.0, 1.0);
@@ -87,6 +89,7 @@ public class Config
 
         FLUID_BLOCK_COUPLING = BUILDER.defineInRange("fluid_block_coupling", 0.001, 0.0, 1.0);
         FLUID_COUPLING_PERIOD = BUILDER.defineInRange("fluid_coupling_period", 20, 1, 200);
+        FLUID_COUPLING_SAMPLES = BUILDER.defineInRange("fluid_coupling_samples", 4, 1, 64);
         VACUUM_BLOCK_TEMPERATURE_K = BUILDER.defineInRange("vacuum_block_temperature_k", 293.15, 0.1, 1000.0);
         BUILDER.pop();
         SPEC = BUILDER.build();
