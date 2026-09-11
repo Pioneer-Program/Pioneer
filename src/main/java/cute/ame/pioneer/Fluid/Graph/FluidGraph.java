@@ -10,6 +10,7 @@ import cute.ame.pioneer.Fluid.Block.PumpBlock;
 import cute.ame.pioneer.Fluid.Block.ValveBlock;
 import cute.ame.pioneer.Fluid.Block.VentBlock;
 import cute.ame.pioneer.Fluid.Physics.FluidSolver;
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -29,6 +30,7 @@ public final class FluidGraph
 
     public static final double SETTLED = 1.0;
     private final LongOpenHashSet vessels = new LongOpenHashSet();
+    private final Long2IntOpenHashMap pumpOutlet = new Long2IntOpenHashMap();
 
     private boolean dirty = true;
 
@@ -45,6 +47,11 @@ public final class FluidGraph
     private int[] calm = new int[0];
     private boolean[] asleep = new boolean[0];
     private int awake;
+
+    public FluidGraph()
+    {
+        pumpOutlet.defaultReturnValue(-1);
+    }
 
     public void track(BlockPos pos)
     {
@@ -190,6 +197,7 @@ public final class FluidGraph
         int maxNodeId = 0;
 
         edgeCount = 0;
+        pumpOutlet.clear();
         if (edgeA.length < capacity * 3) growEdges(capacity * 3);
 
         long[] scratchPos = new long[capacity];
@@ -249,7 +257,7 @@ public final class FluidGraph
 
             if (vessel instanceof PumpBlock)
             {
-                maxNodeId = Math.max(maxNodeId, addPumpEdges(level, store, pos, state, node, here, pumpBoost));
+                maxNodeId = Math.max(maxNodeId, addPumpEdges(level, store, pos, state, node, here, pumpBoost * powerAt(level, pos)));
                 continue;
             }
 
@@ -299,34 +307,55 @@ public final class FluidGraph
         Direction facing = state.getValue(PumpBlock.FACING);
         int max = node;
 
-        BlockPos front = pos.relative(facing);
-        int outlet = neighbourNode(level, store, front);
-        if (outlet != FluidNodeStore.INVALID && outlet != node)
-        {
-            addEdge(node, outlet, conductance, boost);
-            max = Math.max(max, outlet);
-        }
+        int outletEdge = edgeCount;
+        max = Math.max(max, linkPump(level, store, pos.relative(facing), node, conductance, boost, true));
+        if (edgeCount > outletEdge) pumpOutlet.put(pos.asLong(), outletEdge);
 
-        BlockPos back = pos.relative(facing.getOpposite());
-        int inlet = neighbourNode(level, store, back);
-        if (inlet != FluidNodeStore.INVALID && inlet != node)
-        {
-            addEdge(inlet, node, conductance, 0.0f);
-            max = Math.max(max, inlet);
-        }
-
+        max = Math.max(max, linkPump(level, store, pos.relative(facing.getOpposite()), node, conductance, 0.0f, false));
         return max;
     }
 
-    private int neighbourNode(ServerLevel level, FluidNodeStore store, BlockPos pos)
+    public boolean setPumpBoost(BlockPos pos, float boost)
     {
-        if (!vessels.contains(pos.asLong())) return FluidNodeStore.INVALID;
+        if (dirty) return false;
 
-        BlockState state = level.getBlockState(pos);
-        if (!(state.getBlock() instanceof FluidVesselBlock vessel)) return FluidNodeStore.INVALID;
-        if (conductanceOf(vessel, state) <= 0.0f) return FluidNodeStore.INVALID;
+        int edge = pumpOutlet.get(pos.asLong());
+        if (edge < 0 || edge >= edgeCount)
+        {
+            invalidate();
+            return false;
+        }
 
-        return nodeAt(level, pos, store);
+        if (edgeBoost[edge] == boost) return false;
+
+        edgeBoost[edge] = boost;
+        wakeNode(edgeA[edge]);
+        return true;
+    }
+
+    private static float powerAt(ServerLevel level, BlockPos pos)
+    {
+        return level.getBlockEntity(pos) instanceof FluidVesselBlockEntity vessel ? vessel.getPower() : 1.0f;
+    }
+
+    private int linkPump(ServerLevel level, FluidNodeStore store, BlockPos side, int node, float conductance, float boost, boolean outward)
+    {
+        if (!vessels.contains(side.asLong())) return node;
+
+        BlockState state = level.getBlockState(side);
+        if (!(state.getBlock() instanceof FluidVesselBlock vessel)) return node;
+
+        float there = conductanceOf(vessel, state);
+        if (there <= 0.0f) return node;
+
+        int other = nodeAt(level, side, store);
+        if (other == FluidNodeStore.INVALID || other == node) return node;
+
+        float shared = Math.min(conductance, there);
+        if (outward) addEdge(node, other, shared, boost);
+        else addEdge(other, node, shared, boost);
+
+        return other;
     }
 
     private void addEdge(int a, int b, float conductance, float boost)
@@ -369,6 +398,8 @@ public final class FluidGraph
     private static float conductanceOf(FluidVesselBlock vessel, BlockState state)
     {
         if (vessel instanceof ValveBlock && !ValveBlock.isOpen(state)) return 0.0f;
+
+        if (vessel instanceof PumpBlock && !PumpBlock.isActive(state)) return 0.0f;
 
         return vessel.getConductance();
     }

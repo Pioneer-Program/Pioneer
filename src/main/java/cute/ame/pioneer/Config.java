@@ -42,6 +42,7 @@ public class Config
 
     public static ModConfigSpec.DoubleValue FLUID_BLOCK_COUPLING;
     public static ModConfigSpec.IntValue FLUID_COUPLING_PERIOD;
+    public static ModConfigSpec.IntValue FLUID_COUPLING_SAMPLES;
     public static ModConfigSpec.DoubleValue VACUUM_BLOCK_TEMPERATURE_K;
 
     static final ModConfigSpec SPEC;
@@ -88,6 +89,7 @@ public class Config
 
         FLUID_BLOCK_COUPLING = BUILDER.defineInRange("fluid_block_coupling", 0.001, 0.0, 1.0);
         FLUID_COUPLING_PERIOD = BUILDER.defineInRange("fluid_coupling_period", 20, 1, 200);
+        FLUID_COUPLING_SAMPLES = BUILDER.defineInRange("fluid_coupling_samples", 4, 1, 64);
         VACUUM_BLOCK_TEMPERATURE_K = BUILDER.defineInRange("vacuum_block_temperature_k", 293.15, 0.1, 1000.0);
         BUILDER.pop();
         SPEC = BUILDER.build();
