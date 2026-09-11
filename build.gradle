@@ -12,6 +12,14 @@ group = mod_group_id
 repositories {
     mavenLocal()
 
+    maven {
+        name = 'GeckoLib'
+        url 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+        content {
+            includeGroup("software.bernie.geckolib")
+        }
+    }
+
     maven { url = "https://api.modrinth.com/maven/" }
 
     maven
@@ -123,6 +131,7 @@ dependencies {
     // GAMEPLAY STUFF
     implementation "dev.ryanhcode.sable:sable-neoforge-${minecraft_version}:${sable_version}"
     compileOnly "dev.ryanhcode.sable-companion:sable-companion-common-${minecraft_version}:${sable_companion_version}"
+    implementation "software.bernie.geckolib:geckolib-neoforge-${minecraft_version}:${geckolib_version}"
 
     // THINGS TO CHECK IF WE FUCKED UP
     runtimeOnly "maven.modrinth:l6YH9Als:v5qtqRQi" // SPARK TPS
