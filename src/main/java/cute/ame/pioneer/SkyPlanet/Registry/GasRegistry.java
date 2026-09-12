@@ -14,18 +14,18 @@ public final class GasRegistry
     private static volatile Map<String, GasDefinition> entries = Map.of();
 
     private static final Map<String, GasDefinition> BUILTIN = Map.ofEntries(
-        Map.entry("n2", new GasDefinition(28.014, 29800.0, false, true, 0.0f, 1.00f, 0.0f, 1040.0f)),
-        Map.entry("o2", new GasDefinition(31.998, 27200.0, true, true, 0.16f, 0.60f, 0.0f, 918.0f)),
-        Map.entry("co2", new GasDefinition(44.009, 44900.0, false, false, 0.0f, 0.05f, 1.0f, 844.0f)),
-        Map.entry("ar", new GasDefinition(39.948, 28100.0, false, true, 0.0f, 1.00f, 0.0f, 520.0f)),
-        Map.entry("h2", new GasDefinition(2.016, 13800.0, false, false, 0.0f, 0.04f, 0.0f, 14300.0f)),
-        Map.entry("he", new GasDefinition(4.003, 3500.0, false, false, 0.0f, 1.00f, 0.0f, 5193.0f)),
-        Map.entry("ch4", new GasDefinition(16.043, 44100.0, false, false, 0.0f, 0.05f, 25.0f, 2220.0f)),
-        Map.entry("h2o", new GasDefinition(18.015, 25600.0, false, true, 0.0f, 1.00f, 0.1f, 1996.0f)),
-        Map.entry("nh3", new GasDefinition(17.031, 37000.0, false, false, 0.0f, 0.0025f, 0.0f, 2190.0f)),
-        Map.entry("so2", new GasDefinition(64.066, 68600.0, false, false, 0.0f, 0.000002f, 0.0f, 640.0f)),
-        Map.entry("ne", new GasDefinition(20.180, 6700.0, false, true, 0.0f, 1.00f, 0.0f, 1030.0f)),
-        Map.entry("n2o", new GasDefinition(44.013, 51600.0, false, false, 0.0f, 0.001f, 298.0f, 880.0f))
+        Map.entry("n2", new GasDefinition(28.014, 29800.0, false, true, 0.0f, 1.00f, 0.0f, 1040.0f, 77.36f, 199_000.0f)),
+        Map.entry("o2", new GasDefinition(31.998, 27200.0, true, true, 0.16f, 0.60f, 0.0f, 918.0f, 90.19f, 213_000.0f)),
+        Map.entry("co2", new GasDefinition(44.009, 44900.0, false, false, 0.0f, 0.05f, 1.0f, 844.0f, 194.65f, 571_000.0f)),
+        Map.entry("ar", new GasDefinition(39.948, 28100.0, false, true, 0.0f, 1.00f, 0.0f, 520.0f, 87.30f, 161_000.0f)),
+        Map.entry("h2", new GasDefinition(2.016, 13800.0, false, false, 0.0f, 0.04f, 0.0f, 14300.0f, 20.28f, 449_000.0f)),
+        Map.entry("he", new GasDefinition(4.003, 3500.0, false, false, 0.0f, 1.00f, 0.0f, 5193.0f, 4.22f, 20_900.0f)),
+        Map.entry("ch4", new GasDefinition(16.043, 44100.0, false, false, 0.0f, 0.05f, 25.0f, 2220.0f, 111.65f, 510_000.0f)),
+        Map.entry("h2o", new GasDefinition(18.015, 25600.0, false, true, 0.0f, 1.00f, 0.1f, 1996.0f, 373.15f, 2_256_000.0f)),
+        Map.entry("nh3", new GasDefinition(17.031, 37000.0, false, false, 0.0f, 0.0025f, 0.0f, 2190.0f, 239.81f, 1_371_000.0f)),
+        Map.entry("so2", new GasDefinition(64.066, 68600.0, false, false, 0.0f, 0.000002f, 0.0f, 640.0f, 263.13f, 389_000.0f)),
+        Map.entry("ne", new GasDefinition(20.180, 6700.0, false, true, 0.0f, 1.00f, 0.0f, 1030.0f, 27.10f, 85_900.0f)),
+        Map.entry("n2o", new GasDefinition(44.013, 51600.0, false, false, 0.0f, 0.001f, 298.0f, 880.0f, 184.67f, 376_000.0f))
     );
 
     public static void replaceAll(Map<ResourceLocation, GasDefinition> loaded)

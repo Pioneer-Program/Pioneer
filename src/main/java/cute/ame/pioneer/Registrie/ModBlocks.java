@@ -1,6 +1,16 @@
 package cute.ame.pioneer.Registrie;
 
+import cute.ame.pioneer.Block.CeramicTiles;
 import cute.ame.pioneer.Pioneer;
+import cute.ame.pioneer.Fluid.Block.SensorBlock;
+import cute.ame.pioneer.Fluid.Block.BarometerBlock;
+import cute.ame.pioneer.Fluid.Block.MassSpectrometerBlock;
+import cute.ame.pioneer.Fluid.Block.PipeBlock;
+import cute.ame.pioneer.Fluid.Block.TankBlock;
+import cute.ame.pioneer.Fluid.Block.ThermometerBlock;
+import cute.ame.pioneer.Fluid.Block.PumpBlock;
+import cute.ame.pioneer.Fluid.Block.ValveBlock;
+import cute.ame.pioneer.Fluid.Block.VentBlock;
 import cute.ame.pioneer.Planet.Arid.Block.*;
 import cute.ame.pioneer.Spaceship.Block.ShipController;
 import cute.ame.pioneer.Spaceship.Block.ThrusterBlock;
@@ -11,9 +21,24 @@ public final class ModBlocks
 {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(Pioneer.MODID);
 
+    public static final DeferredBlock<TankBlock> VACCUM_TANK = BLOCKS.register("vaccum_tank", TankBlock::new);
+
+    public static final DeferredBlock<PumpBlock> VACCUM_PUMP = BLOCKS.register("vaccum_pump", PumpBlock::new);
+
+    public static final DeferredBlock<PipeBlock> VACCUM_PIPE = BLOCKS.register("vaccum_pipe", PipeBlock::new);
+
+    public static final DeferredBlock<ValveBlock> VALVE = BLOCKS.register("valve", ValveBlock::new);
+
+    public static final DeferredBlock<VentBlock> VENT = BLOCKS.register("vent", VentBlock::new);
+
     public static final DeferredBlock<AridDust> ARID_DUST = BLOCKS.register(
         "arid_dust",
         AridDust::new
+    );
+
+    public static final DeferredBlock<CeramicTiles> CERAMIC_TILES = BLOCKS.register(
+            "ceramic_tiles",
+            CeramicTiles::new
     );
 
     public static final DeferredBlock<AridRock> ARID_ROCK = BLOCKS.register(
@@ -69,6 +94,21 @@ public final class ModBlocks
     public static final DeferredBlock<AridGlyph> ARID_GLYPH = BLOCKS.register(
         "arid_glyph",
         AridGlyph::new
+    );
+
+    public static final DeferredBlock<BarometerBlock> BAROMETER = BLOCKS.register(
+        "barometer",
+        () -> new BarometerBlock()
+    );
+
+    public static final DeferredBlock<ThermometerBlock> THERMOMETER = BLOCKS.register(
+        "thermometer",
+        () -> new ThermometerBlock()
+    );
+
+    public static final DeferredBlock<MassSpectrometerBlock> MASS_SPECTROMETER = BLOCKS.register(
+        "mass_spectrometer",
+        () -> new MassSpectrometerBlock()
     );
 
     public static final DeferredBlock<ShipController> SHIP_CONTROLLER = BLOCKS.register(

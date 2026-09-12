@@ -1,5 +1,6 @@
 package cute.ame.pioneer.Spaceship.Entity;
 
+import cute.ame.pioneer.Fluid.Helper.VesselRelocation;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Registrie.ModAttachmentTypes;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
@@ -104,8 +105,16 @@ public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor 
         plot.newEmptyChunk(plot.getCenterChunk());
         final BlockPos plotAnchor = plot.getCenterBlock();
         final SubLevelAssemblyHelper.AssemblyTransform transform = new SubLevelAssemblyHelper.AssemblyTransform(anchor, plotAnchor, 0, Rotation.NONE, level);
-        SubLevelAssemblyHelper.moveOtherStuff(level, transform, blocks, bounds);
-        SubLevelAssemblyHelper.moveBlocks(level, transform, blocks);
+
+        final int dx = plotAnchor.getX() - anchor.getX();
+        final int dy = plotAnchor.getY() - anchor.getY();
+        final int dz = plotAnchor.getZ() - anchor.getZ();
+        final int expected = blocks instanceof Collection<?> collection ? collection.size() : 64;
+        try (VesselRelocation ignored = VesselRelocation.open(level, blocks, p -> p.offset(dx, dy, dz), expected)) {
+            SubLevelAssemblyHelper.moveOtherStuff(level, transform, blocks, bounds);
+            SubLevelAssemblyHelper.moveBlocks(level, transform, blocks);
+        }
+
         final Vector3dc centerOfMass = subLevel.getMassTracker().getCenterOfMass();
         Vec3 subLevelCenter = Vec3.atLowerCornerOf(anchor);
         if (centerOfMass != null) {
@@ -198,8 +207,15 @@ public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor 
             toPlace.add(new StoredBlock(targetPos, state, tag));
         }
         Vec3i offset = WorldHelper.nearestFreeSpaceOffset(level, toPlace);
-        toPlace.forEach(block -> block.place(level, offset));
-        container.removeSubLevel(subLevel, SubLevelRemovalReason.REMOVED);
+
+        final ServerLevel serverLevel = (ServerLevel) this.level;
+        final BlockPos delta = BlockPos.containing(anchorPos.subtract(controllerCoord)).offset(offset);
+        final int dx = delta.getX(), dy = delta.getY(), dz = delta.getZ();
+
+        try (VesselRelocation ignored = VesselRelocation.open(serverLevel, assembledBlocks, p -> p.offset(dx, dy, dz), assembledBlocks.size())) {
+            toPlace.forEach(block -> block.place(level, offset));
+            container.removeSubLevel(subLevel, SubLevelRemovalReason.REMOVED);
+        }
     }
 
     public SubLevel getSubLevel() {

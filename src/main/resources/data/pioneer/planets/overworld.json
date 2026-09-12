@@ -21,7 +21,7 @@
   "orbit": {
     "radius": 292183.36,
     "period_days": 365.029,
-    "start_angle": 695,
+    "start_angle": 895,
     "inclination": 0.0,
     "ascending_node": 0.0,
     "eccentricity": 0.017
@@ -40,7 +40,7 @@
       0.85
     ],
     "haze_optical_depth": 0.05,
-    "greenhouse_fraction": 0.1
+    "greenhouse_fraction": 0.17
   },
   "clouds": {
     "color": [

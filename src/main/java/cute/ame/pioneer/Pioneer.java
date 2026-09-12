@@ -29,6 +29,7 @@ public class Pioneer
     ModAttachmentTypes.ATTACHMENT_TYPES.register(modEventBus);
     ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
     modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
+    ModCreativeModeTabs.register(modEventBus);
 
     NeoForge.EVENT_BUS.addListener(Pioneer::onRegisterCommands);
   }

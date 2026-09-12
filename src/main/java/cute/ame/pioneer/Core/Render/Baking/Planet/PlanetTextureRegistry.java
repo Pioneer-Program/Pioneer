@@ -13,7 +13,7 @@ public final class PlanetTextureRegistry
     public static void register(ResourceLocation id, PlanetTextureBaker generator)
     {
         PlanetTextureBaker existing = GENERATORS.putIfAbsent(id, generator);
-        if (existing != null) Pioneer.LOGGER.warn("[Pioneer] Texture generator '{}' registered twice — keeping the first registration", id);
+        if (existing != null) Pioneer.LOGGER.warn("[Pioneer] Texture generator '{}' registered twice, keeping the first registration", id);
     }
 
     public static PlanetTextureBaker get(ResourceLocation id)

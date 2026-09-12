@@ -1,5 +1,7 @@
 package cute.ame.pioneer.Registrie;
 
+import cute.ame.pioneer.Fluid.BlockEntity.SensorBlockEntity;
+import cute.ame.pioneer.Fluid.BlockEntity.FluidVesselBlockEntity;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Spaceship.Entity.ShipEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -18,5 +20,15 @@ public final class ModBlockEntities
                     ShipEntity::new,
                     ModBlocks.SHIP_CONTROLLER.get()
             ).build(null)
+    );
+
+    public static final Supplier<BlockEntityType<FluidVesselBlockEntity>> FLUID_VESSEL = BLOCK_ENTITIES.register(
+        "fluid_vessel",
+        () -> BlockEntityType.Builder.of(FluidVesselBlockEntity::new, ModBlocks.VACCUM_TANK.get(), ModBlocks.VACCUM_PIPE.get(), ModBlocks.VACCUM_PUMP.get(), ModBlocks.VALVE.get(), ModBlocks.VENT.get()).build(null)
+    );
+
+    public static final Supplier<BlockEntityType<SensorBlockEntity>> SENSOR = BLOCK_ENTITIES.register(
+        "sensor",
+        () -> BlockEntityType.Builder.of(SensorBlockEntity::new, ModBlocks.BAROMETER.get(), ModBlocks.THERMOMETER.get(), ModBlocks.MASS_SPECTROMETER.get()).build(null)
     );
 }

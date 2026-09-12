@@ -1,0 +1,36 @@
+{
+  "block.pioneer.vaccum_tank": "Vaccum Tank",
+  "block.pioneer.vaccum_pipe": "Vaccum Pipe",
+  "block.pioneer.vaccum_pump": "Vaccum Pump",
+  "block.pioneer.valve": "Valve",
+  "block.pioneer.vent": "Vent",
+  "block.pioneer.barometer": "Barometer",
+  "block.pioneer.thermometer": "Thermometer",
+  "block.pioneer.mass_spectrometer": "Mass Spectrometer",
+
+  "death.attack.pioneer.asphyxiation": "%1$s ran out of air",
+  "death.attack.pioneer.asphyxiation.player": "%1$s ran out of air whilst fighting %2$s",
+
+  "valve.pioneer.opened": "Valve opened",
+  "valve.pioneer.closed": "Valve closed",
+
+  "gauge.pioneer.no_reading": "no reading",
+  "gauge.pioneer.pressure": "%s P",
+  "gauge.pioneer.temperature": "%s °C",
+  "gauge.pioneer.gas": "%s %%",
+  "gauge.pioneer.gas_of": "%s: %s",
+  "gauge.pioneer.labelled": "%s - %s",
+
+  "gas.pioneer.o2": "Oxygen",
+  "gas.pioneer.n2": "Nitrogen",
+  "gas.pioneer.co2": "Carbon Dioxide",
+  "gas.pioneer.h2o": "Water Vapour",
+  "gas.pioneer.h2": "Hydrogen",
+  "gas.pioneer.he": "Helium",
+  "gas.pioneer.ar": "Argon",
+  "gas.pioneer.ne": "Neon",
+  "gas.pioneer.ch4": "Methane",
+  "gas.pioneer.nh3": "Ammonia",
+  "gas.pioneer.so2": "Sulphur Dioxide",
+  "gas.pioneer.n2o": "Nitrous Oxide"
+}

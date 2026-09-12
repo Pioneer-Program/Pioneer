@@ -1,11 +1,12 @@
 package cute.ame.pioneer;
 
 import cute.ame.pioneer.Core.Render.Baking.LUT.BuiltinLUTs;
+import cute.ame.pioneer.Fluid.Rendering.SensorRenderer;
+import cute.ame.pioneer.Registrie.ModBlockEntities;
 import cute.ame.pioneer.Planet.Arid.Particle.AridGroundScatterParticle;
 import cute.ame.pioneer.Registrie.ModParticles;
 import cute.ame.pioneer.Registrie.ModVfxShaders;
 import cute.ame.pioneer.SkyPlanet.Dimension.SpaceDimensionEffect;
-import cute.ame.pioneer.SkyPlanet.Loader.SolarSystemLoader;
 import cute.ame.pioneer.SkyPlanet.Star.BuiltinStarTypes;
 import cute.ame.pioneer.Core.Render.Baking.Planet.BuiltinPlanetTextures;
 import cute.ame.pioneer.Core.Render.Cache.PlanetTextureManager;
@@ -36,6 +37,18 @@ public final class PioneerClient
   public static void onRegisterDimensionEffects(RegisterDimensionSpecialEffectsEvent event)
   {
     event.register(ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "space"), new SpaceDimensionEffect());
+  }
+
+  @SubscribeEvent
+  public static void onRegisterAdditionalModels(ModelEvent.RegisterAdditional event)
+  {
+    event.register(SensorRenderer.NEEDLE);
+  }
+
+  @SubscribeEvent
+  public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event)
+  {
+    event.registerBlockEntityRenderer(ModBlockEntities.SENSOR.get(), SensorRenderer::new);
   }
 
   @SubscribeEvent

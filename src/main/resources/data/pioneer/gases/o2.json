@@ -5,5 +5,7 @@
   "breathable": true,
   "required_fraction": 0.16,
   "hazard_fraction": 0.6,
-  "specific_heat": 918.0
+  "specific_heat": 918.0,
+  "boiling_point": 90.19,
+  "latent_heat": 213000
 }
