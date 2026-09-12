@@ -1,10 +1,10 @@
-name: Build
-
+name: Dev Build
 on:
   push:
     branches:
-      - main
-
+      - dev
+permissions:
+  contents: write
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -30,31 +30,28 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build --no-daemon --stacktrace
 
-      - name: Set up date-based tag
+      - name: Set up commit-based tag
         run: |
-          DATE_TAG="v$(date +'%Y%m%d.%H%M')"
-          echo "TAG_NAME=$DATE_TAG" >> $GITHUB_ENV
-          echo "{tag}=$DATE_TAG"
+          SHORT_SHA=$(git rev-parse --short=5 HEAD)
+          TAG_NAME="dev-$SHORT_SHA"
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          echo "tag=$TAG_NAME"
 
-      - name: Publish Fabric to CurseForge and Modrinth
+      - name: Publish prerelease to GitHub
         uses: Kir-Antipov/mc-publish@v3.3
         with:
-          curseforge-id: 1498848
-          curseforge-token: ${{ secrets.CURSEFORGE_TOKEN }}
-
-          modrinth-id: oxECedW5
-          modrinth-token: ${{ secrets.MODRINTH_TOKEN }}
-
-          version: auralith-pioneer-alpha-${{ env.TAG_NAME }}
-          version-type: release
-
+          github-token: ${{ secrets.GH_RELEASE }}
+          github-tag: ${{ env.TAG_NAME }}
+          github-generate-changelog: true
+          github-draft: false
+          github-prerelease: true
+          name: pioneer-${{ env.TAG_NAME }}
+          version: pioneer-${{ env.TAG_NAME }}
+          version-type: beta
           game-versions: 1.21.1
-
           loaders: |
             neoforge
-
           files: |
-            build/libs/auralithpioneerinitiative-*.jar
-
+            build/libs/pioneer-*.jar
           retry-attempts: 2
           retry-delay: 10000
