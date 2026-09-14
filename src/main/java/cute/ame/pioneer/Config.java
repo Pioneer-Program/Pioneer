@@ -45,6 +45,10 @@ public class Config
     public static ModConfigSpec.IntValue FLUID_COUPLING_SAMPLES;
     public static ModConfigSpec.DoubleValue VACUUM_BLOCK_TEMPERATURE_K;
 
+    public static ModConfigSpec.DoubleValue THERMAL_ATTACH_DELTA_K;
+    public static ModConfigSpec.DoubleValue THERMAL_DETACH_DELTA_K;
+    public static ModConfigSpec.IntValue THERMAL_MAX_ENTRIES;
+
     static final ModConfigSpec SPEC;
     static
     {
@@ -92,6 +96,13 @@ public class Config
         FLUID_COUPLING_SAMPLES = BUILDER.defineInRange("fluid_coupling_samples", 4, 1, 64);
         VACUUM_BLOCK_TEMPERATURE_K = BUILDER.defineInRange("vacuum_block_temperature_k", 293.15, 0.1, 1000.0);
         BUILDER.pop();
+
+        BUILDER.push("Thermal");
+        THERMAL_ATTACH_DELTA_K = BUILDER.defineInRange("thermal_attach_delta_k", 8.0, 0.1, 1000.0);
+        THERMAL_DETACH_DELTA_K = BUILDER.defineInRange("thermal_detach_delta_k", 2.0, 0.0, 1000.0);
+        THERMAL_MAX_ENTRIES = BUILDER.defineInRange("thermal_max_entries", 65_536, 256, 1_048_576);
+        BUILDER.pop();
+
         SPEC = BUILDER.build();
     }
 }

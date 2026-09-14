@@ -1,8 +1,10 @@
 package cute.ame.pioneer.Thermal.Event;
 
 import cute.ame.pioneer.Pioneer;
+import cute.ame.pioneer.Thermal.Level.ThermalLevelData;
 import cute.ame.pioneer.Thermal.Loader.ThermalMaterialLoader;
 import cute.ame.pioneer.Thermal.Registry.ThermalMaterials;
+import net.minecraft.server.MinecraftServer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.AddReloadListenerEvent;
@@ -28,6 +30,9 @@ public final class ThermalMaterialEvents
     public static void onDatapackReload(OnDatapackSyncEvent event)
     {
         if (event.getPlayer() != null) return;
-        ThermalMaterials.refresh(event.getPlayerList().getServer());
+
+        MinecraftServer server = event.getPlayerList().getServer();
+        ThermalMaterials.refresh(server);
+        ThermalLevelData.onMaterialsReloaded(server);
     }
 }
