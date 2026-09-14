@@ -1,0 +1,13 @@
+{
+  "blocks": [
+    "pioneer:arid_dust",
+    "pioneer:arid_rock",
+    "minecraft:sand",
+    "minecraft:red_sand",
+    "minecraft:gravel"
+  ],
+  "conductivity": 0.25,
+  "volumetric_heat": 1300000.0,
+  "emissivity": 0.95,
+  "priority": 10
+}
