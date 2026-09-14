@@ -1,6 +1,7 @@
 package cute.ame.pioneer.Spaceship.Entity;
 
 import cute.ame.pioneer.Fluid.Helper.VesselRelocation;
+import cute.ame.pioneer.Thermal.Helper.ThermalRelocation;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Registrie.ModAttachmentTypes;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
@@ -110,7 +111,7 @@ public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor 
         final int dy = plotAnchor.getY() - anchor.getY();
         final int dz = plotAnchor.getZ() - anchor.getZ();
         final int expected = blocks instanceof Collection<?> collection ? collection.size() : 64;
-        try (VesselRelocation ignored = VesselRelocation.open(level, blocks, p -> p.offset(dx, dy, dz), expected)) {
+        try (VesselRelocation ignored = VesselRelocation.open(level, blocks, p -> p.offset(dx, dy, dz), expected); ThermalRelocation ignoredHeat = ThermalRelocation.open(level, blocks, p -> p.offset(dx, dy, dz), expected)) {
             SubLevelAssemblyHelper.moveOtherStuff(level, transform, blocks, bounds);
             SubLevelAssemblyHelper.moveBlocks(level, transform, blocks);
         }
@@ -212,7 +213,7 @@ public class ShipEntity extends BlockEntity implements BlockEntitySubLevelActor 
         final BlockPos delta = BlockPos.containing(anchorPos.subtract(controllerCoord)).offset(offset);
         final int dx = delta.getX(), dy = delta.getY(), dz = delta.getZ();
 
-        try (VesselRelocation ignored = VesselRelocation.open(serverLevel, assembledBlocks, p -> p.offset(dx, dy, dz), assembledBlocks.size())) {
+        try (VesselRelocation ignored = VesselRelocation.open(serverLevel, assembledBlocks, p -> p.offset(dx, dy, dz), assembledBlocks.size()); ThermalRelocation ignoredHeat = ThermalRelocation.open(serverLevel, assembledBlocks, p -> p.offset(dx, dy, dz), assembledBlocks.size())) {
             toPlace.forEach(block -> block.place(level, offset));
             container.removeSubLevel(subLevel, SubLevelRemovalReason.REMOVED);
         }

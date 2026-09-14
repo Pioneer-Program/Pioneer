@@ -83,12 +83,12 @@ public final class ThermalLevelData extends SavedData
         return force(packed, kelvin);
     }
 
-    public boolean force(ServerLevel level, BlockPos pos, float kelvin)
+    public boolean force(BlockPos pos, float kelvin)
     {
         return force(pos.asLong(), kelvin);
     }
 
-    private boolean force(long pos, float kelvin)
+    public boolean force(long pos, float kelvin)
     {
         if (store.attach(pos, kelvin, limit()) == ThermalStore.INVALID) return false;
 
@@ -125,6 +125,22 @@ public final class ThermalLevelData extends SavedData
         int removed = store.flushDetached();
         if (removed > 0) setDirty();
         return removed;
+    }
+
+    public static double temperatureAt(ServerLevel level, BlockPos pos)
+    {
+        ThermalLevelData data = getIfPresent(level);
+        if (data == null || data.store.isEmpty()) return BlockTemperature.UNKNOWN;
+
+        return data.store.kelvinAt(pos.asLong());
+    }
+
+    public static void onBlockReplaced(ServerLevel level, BlockPos pos)
+    {
+        ThermalLevelData data = getIfPresent(level);
+        if (data == null || data.store.isEmpty()) return;
+
+        data.detach(pos);
     }
 
     public static void onMaterialsReloaded(MinecraftServer server)
