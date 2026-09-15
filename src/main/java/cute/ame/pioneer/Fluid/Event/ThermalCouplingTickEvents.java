@@ -47,8 +47,6 @@ public final class ThermalCouplingTickEvents
 
         for (int c = 0, components = partition.count(); c < components; c++)
         {
-            if (graph.isAsleep(c)) continue;
-
             for (int i = nodeOffsets[c], to = nodeOffsets[c + 1]; i < to; i++)
             {
                 int nodeId = nodeOrder[i];
@@ -62,7 +60,7 @@ public final class ThermalCouplingTickEvents
             }
         }
 
-        coupleRooms(level, data, store, graph, partition, perBlock, cursor);
+        coupleRooms(level, data, store, perBlock, cursor);
     }
 
     private static void couple(ServerLevel level, FluidLevelData data, FluidNodeStore store, long[] vessels, int from, int end, int nodeId, float perBlock, int maxSamples, BlockPos.MutableBlockPos cursor)
@@ -93,7 +91,7 @@ public final class ThermalCouplingTickEvents
         if (ThermalExchange.apply(store, nodeId, blockKelvin, rate)) data.touch(nodeId);
     }
 
-    private static void coupleRooms(ServerLevel level, FluidLevelData data, FluidNodeStore store, FluidGraph graph, ComponentPartition.Result partition, float perBlock, BlockPos.MutableBlockPos cursor)
+    private static void coupleRooms(ServerLevel level, FluidLevelData data, FluidNodeStore store, float perBlock, BlockPos.MutableBlockPos cursor)
     {
         RoomLevelData rooms = RoomLevelData.getIfPresent(level);
         if (rooms == null || rooms.roomCount() == 0) return;
@@ -102,8 +100,6 @@ public final class ThermalCouplingTickEvents
         {
             int nodeId = room.nodeId();
             if (!store.alive(nodeId)) continue;
-
-            if (graph.isAsleep(partition.componentOf(nodeId))) continue;
 
             long origin = room.origin();
             cursor.set(RoomScanner.unpackX(origin), RoomScanner.unpackY(origin), RoomScanner.unpackZ(origin));

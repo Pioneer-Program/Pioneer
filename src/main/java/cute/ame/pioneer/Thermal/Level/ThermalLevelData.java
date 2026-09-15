@@ -104,6 +104,16 @@ public final class ThermalLevelData extends SavedData
         return true;
     }
 
+    public int purge()
+    {
+        int removed = store.count();
+        if (removed == 0) return 0;
+
+        store.clear();
+        setDirty();
+        return removed;
+    }
+
     public int settle(ServerLevel level)
     {
         int n = store.count();
@@ -111,6 +121,8 @@ public final class ThermalLevelData extends SavedData
 
         float ambient = BlockTemperature.dimensionDefault(level);
         float detach = detachDelta();
+        int grace = Math.max(Config.THERMAL_SETTLE_GRACE.get(), 1);
+        int pass = store.pass();
 
         long[] positions = store.positionsRaw();
         float[] kelvin = store.kelvinRaw();
@@ -118,6 +130,7 @@ public final class ThermalLevelData extends SavedData
         for (int slot = 0; slot < n; slot++)
         {
             if (Math.abs(kelvin[slot] - ambient) > detach) continue;
+            if (pass - store.lastTouched(slot) <= grace) continue;
 
             store.markDetached(positions[slot]);
         }

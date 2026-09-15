@@ -48,6 +48,13 @@ public class Config
     public static ModConfigSpec.DoubleValue THERMAL_ATTACH_DELTA_K;
     public static ModConfigSpec.DoubleValue THERMAL_DETACH_DELTA_K;
     public static ModConfigSpec.IntValue THERMAL_MAX_ENTRIES;
+    public static ModConfigSpec.IntValue THERMAL_SETTLE_GRACE;
+
+    public static ModConfigSpec.IntValue THERMAL_PERIOD;
+    public static ModConfigSpec.IntValue THERMAL_UPDATES_PER_TICK;
+    public static ModConfigSpec.DoubleValue THERMAL_TIME_SCALE;
+    public static ModConfigSpec.DoubleValue THERMAL_MAX_STEP;
+    public static ModConfigSpec.DoubleValue THERMAL_EPSILON_K;
 
     static final ModConfigSpec SPEC;
     static
@@ -98,9 +105,16 @@ public class Config
         BUILDER.pop();
 
         BUILDER.push("Thermal");
-        THERMAL_ATTACH_DELTA_K = BUILDER.defineInRange("thermal_attach_delta_k", 8.0, 0.1, 1000.0);
-        THERMAL_DETACH_DELTA_K = BUILDER.defineInRange("thermal_detach_delta_k", 2.0, 0.0, 1000.0);
+        THERMAL_ATTACH_DELTA_K = BUILDER.defineInRange("thermal_attach_delta_k", 2.0, 0.01, 1000.0);
+        THERMAL_DETACH_DELTA_K = BUILDER.defineInRange("thermal_detach_delta_k", 0.05, 0.0, 1000.0);
         THERMAL_MAX_ENTRIES = BUILDER.defineInRange("thermal_max_entries", 65_536, 256, 1_048_576);
+        THERMAL_SETTLE_GRACE = BUILDER.defineInRange("thermal_settle_grace", 20, 1, 1000);
+
+        THERMAL_PERIOD = BUILDER.defineInRange("thermal_period", 4, 1, 200);
+        THERMAL_UPDATES_PER_TICK = BUILDER.defineInRange("thermal_updates_per_tick", 512, 16, 65_536);
+        THERMAL_TIME_SCALE = BUILDER.defineInRange("thermal_time_scale", 2000.0, 1.0, 1.0e6);
+        THERMAL_MAX_STEP = BUILDER.defineInRange("thermal_max_step", 1.0 / 6.0, 0.001, 0.5);
+        THERMAL_EPSILON_K = BUILDER.defineInRange("thermal_epsilon_k", 1.0e-4, 0.0, 1.0);
         BUILDER.pop();
 
         SPEC = BUILDER.build();

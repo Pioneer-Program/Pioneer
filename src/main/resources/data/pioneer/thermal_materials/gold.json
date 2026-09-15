@@ -1,0 +1,8 @@
+{
+  "blocks": ["minecraft:gold_block", "minecraft:raw_gold_block"],
+  "conductivity": 310.0,
+  "volumetric_heat": 2490000.0,
+  "breakdown_k": 1337.0,
+  "emissivity": 0.03,
+  "priority": 10
+}

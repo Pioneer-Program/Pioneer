@@ -1,0 +1,14 @@
+{
+  "blocks": [
+    "pioneer:ship_controller",
+    "pioneer:thruster",
+    "pioneer:barometer",
+    "pioneer:thermometer",
+    "pioneer:mass_spectrometer"
+  ],
+  "conductivity": 20.0,
+  "volumetric_heat": 3200000.0,
+  "breakdown_k": 1600.0,
+  "emissivity": 0.4,
+  "priority": 20
+}

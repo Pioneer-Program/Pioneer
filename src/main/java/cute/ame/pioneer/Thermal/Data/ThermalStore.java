@@ -22,7 +22,7 @@ public final class ThermalStore
     private int pass = 1;
     private long[] detached;
     private int detachedCount;
-    
+
     private int count;
     private int capacity;
     private int cursor;
@@ -225,6 +225,21 @@ public final class ThermalStore
         if (detachedCount == detached.length) detached = Arrays.copyOf(detached, detachedCount << 1);
 
         detached[detachedCount++] = pos;
+    }
+
+    public void keepAlive(int slot)
+    {
+        stamp[slot] = pass;
+    }
+
+    public int lastTouched(int slot)
+    {
+        return stamp[slot];
+    }
+
+    public int pass()
+    {
+        return pass;
     }
 
     public int pendingDetached()
