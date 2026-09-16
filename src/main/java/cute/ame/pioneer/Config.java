@@ -56,6 +56,9 @@ public class Config
     public static ModConfigSpec.DoubleValue THERMAL_MAX_STEP;
     public static ModConfigSpec.DoubleValue THERMAL_EPSILON_K;
 
+    public static ModConfigSpec.BooleanValue THERMAL_BREAKDOWN;
+    public static ModConfigSpec.IntValue THERMAL_BREAKDOWN_PER_PASS;
+
     static final ModConfigSpec SPEC;
     static
     {
@@ -115,6 +118,9 @@ public class Config
         THERMAL_TIME_SCALE = BUILDER.defineInRange("thermal_time_scale", 2000.0, 1.0, 1.0e6);
         THERMAL_MAX_STEP = BUILDER.defineInRange("thermal_max_step", 1.0 / 6.0, 0.001, 0.5);
         THERMAL_EPSILON_K = BUILDER.defineInRange("thermal_epsilon_k", 1.0e-4, 0.0, 1.0);
+
+        THERMAL_BREAKDOWN = BUILDER.define("thermal_breakdown", true);
+        THERMAL_BREAKDOWN_PER_PASS = BUILDER.defineInRange("thermal_breakdown_per_pass", 64, 1, 4096);
         BUILDER.pop();
 
         SPEC = BUILDER.build();

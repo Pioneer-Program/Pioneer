@@ -6,9 +6,11 @@ import cute.ame.pioneer.Fluid.Helper.FluidLevels;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Thermal.Data.MaterialTable;
 import cute.ame.pioneer.Thermal.Data.ThermalStore;
+import cute.ame.pioneer.Thermal.Helper.ThermalBreakdown;
 import cute.ame.pioneer.Thermal.Level.ThermalLevelData;
 import cute.ame.pioneer.Thermal.Physics.ThermalConduction;
 import cute.ame.pioneer.Thermal.Registry.ThermalMaterials;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -45,6 +47,7 @@ public final class ThermalTickEvents
         MaterialTable table = ThermalMaterials.table();
         float[] conductivity = table.conductivityRaw();
         float[] heat = table.volumetricHeatRaw();
+        float[] breakdown = table.breakdownRaw();
         int materials = conductivity.length;
         float ambient = BlockTemperature.dimensionDefault(level);
         float dt = (float) (period / 20.0 * Config.THERMAL_TIME_SCALE.get());
@@ -57,6 +60,10 @@ public final class ThermalTickEvents
 
         BlockPos.MutableBlockPos centre = new BlockPos.MutableBlockPos();
         BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos();
+
+        boolean breaks = Config.THERMAL_BREAKDOWN.get();
+        int breakBudget = Config.THERMAL_BREAKDOWN_PER_PASS.get();
+        LongArrayList failing = null;
         int visited = 0;
 
         for (int n = 0; n < budget; n++)
@@ -90,6 +97,12 @@ public final class ThermalTickEvents
             visited++;
 
             boolean canRecruit = Math.abs(ta - ambient) > attachDelta;
+            if (breaks && ThermalBreakdown.exceeded(ta, breakdown[ma]))
+            {
+                if (failing == null) failing = new LongArrayList(16);
+                if (failing.size() < breakBudget) failing.add(packed);
+            }
+
             for (Direction face : FACES)
             {
                 probe.setWithOffset(centre, face);
@@ -143,7 +156,9 @@ public final class ThermalTickEvents
         int grace = Math.max(Config.THERMAL_SETTLE_GRACE.get(), 1);
         if (store.pass() % grace == 0) removed = data.settle(level);
 
-        if (applied > 0 || removed > 0) data.setDirty();
+        int broken = failing == null ? 0 : ThermalBreakdown.apply(level, data, failing);
+        if (applied > 0 || removed > 0 || broken > 0) data.setDirty();
+
         return visited;
     }
 }
