@@ -4,12 +4,19 @@
   "block.pioneer.vaccum_pump": "Vaccum Pump",
   "block.pioneer.valve": "Valve",
   "block.pioneer.vent": "Vent",
+  "block.pioneer.heater": "Heater",
+  "block.pioneer.chiller": "Chiller",
   "block.pioneer.barometer": "Barometer",
   "block.pioneer.thermometer": "Thermometer",
   "block.pioneer.mass_spectrometer": "Mass Spectrometer",
 
   "death.attack.pioneer.asphyxiation": "%1$s ran out of air",
   "death.attack.pioneer.asphyxiation.player": "%1$s ran out of air whilst fighting %2$s",
+
+  "actuator.pioneer.started": "Running %s K at %s W",
+  "actuator.pioneer.stopped": "Stopped",
+  "actuator.pioneer.setpoint": "%s K",
+  "actuator.pioneer.undefined": "No thermal_devices entry for this block",
 
   "valve.pioneer.opened": "Valve opened",
   "valve.pioneer.closed": "Valve closed",

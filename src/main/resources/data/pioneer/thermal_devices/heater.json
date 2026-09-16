@@ -1,0 +1,8 @@
+{
+  "blocks": ["pioneer:heater"],
+  "cooling": false,
+  "watts": 20000.0,
+  "min_setpoint_k": 293.15,
+  "max_setpoint_k": 1273.15,
+  "default_setpoint_k": 373.15
+}

@@ -29,6 +29,10 @@ public final class ModItems
 
   public static final DeferredItem<BlockItem> VACCUM_PIPE = ITEMS.register("vaccum_pipe", () -> new BlockItem(ModBlocks.VACCUM_PIPE.get(), new Properties()));
 
+  public static final DeferredItem<BlockItem> HEATER = ITEMS.register("heater", () -> new BlockItem(ModBlocks.HEATER.get(), new Properties()));
+
+  public static final DeferredItem<BlockItem> CHILLER = ITEMS.register("chiller", () -> new BlockItem(ModBlocks.CHILLER.get(), new Properties()));
+
   public static final DeferredItem<BlockItem> ARID_DUST = ITEMS.register("arid_dust", () -> new BlockItem(ModBlocks.ARID_DUST.get(), new Properties()));
 
   public static final DeferredItem<BlockItem> CERAMIC_TILES = ITEMS.register("ceramic_tiles", () -> new BlockItem(ModBlocks.CERAMIC_TILES.get(), new Properties()));

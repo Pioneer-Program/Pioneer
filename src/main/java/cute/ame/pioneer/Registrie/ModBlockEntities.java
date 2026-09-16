@@ -4,6 +4,7 @@ import cute.ame.pioneer.Fluid.BlockEntity.SensorBlockEntity;
 import cute.ame.pioneer.Fluid.BlockEntity.FluidVesselBlockEntity;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Spaceship.Entity.ShipEntity;
+import cute.ame.pioneer.Thermal.BlockEntity.ThermalActuatorBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import net.minecraft.core.registries.Registries;
@@ -30,5 +31,10 @@ public final class ModBlockEntities
     public static final Supplier<BlockEntityType<SensorBlockEntity>> SENSOR = BLOCK_ENTITIES.register(
         "sensor",
         () -> BlockEntityType.Builder.of(SensorBlockEntity::new, ModBlocks.BAROMETER.get(), ModBlocks.THERMOMETER.get(), ModBlocks.MASS_SPECTROMETER.get()).build(null)
+    );
+
+    public static final Supplier<BlockEntityType<ThermalActuatorBlockEntity>> THERMAL_ACTUATOR = BLOCK_ENTITIES.register(
+        "thermal_actuator",
+        () -> BlockEntityType.Builder.of(ThermalActuatorBlockEntity::new, ModBlocks.HEATER.get(), ModBlocks.CHILLER.get()).build(null)
     );
 }

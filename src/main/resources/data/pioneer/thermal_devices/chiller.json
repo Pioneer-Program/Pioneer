@@ -1,0 +1,8 @@
+{
+  "blocks": ["pioneer:chiller"],
+  "cooling": true,
+  "watts": 20000.0,
+  "min_setpoint_k": 77.0,
+  "max_setpoint_k": 293.15,
+  "default_setpoint_k": 273.15
+}

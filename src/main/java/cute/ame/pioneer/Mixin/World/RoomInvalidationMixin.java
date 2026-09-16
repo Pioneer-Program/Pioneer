@@ -11,6 +11,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+@Deprecated(since = "Replaced with BlockChangeMixin", forRemoval = true)
 @Mixin(LevelChunk.class)
 public abstract class RoomInvalidationMixin
 {

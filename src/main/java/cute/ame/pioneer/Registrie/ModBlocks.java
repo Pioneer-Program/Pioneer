@@ -14,6 +14,7 @@ import cute.ame.pioneer.Fluid.Block.VentBlock;
 import cute.ame.pioneer.Planet.Arid.Block.*;
 import cute.ame.pioneer.Spaceship.Block.ShipController;
 import cute.ame.pioneer.Spaceship.Block.ThrusterBlock;
+import cute.ame.pioneer.Thermal.Block.ThermalActuatorBlock;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -30,6 +31,10 @@ public final class ModBlocks
     public static final DeferredBlock<ValveBlock> VALVE = BLOCKS.register("valve", ValveBlock::new);
 
     public static final DeferredBlock<VentBlock> VENT = BLOCKS.register("vent", VentBlock::new);
+
+    public static final DeferredBlock<ThermalActuatorBlock> HEATER = BLOCKS.register("heater", ThermalActuatorBlock::new);
+
+    public static final DeferredBlock<ThermalActuatorBlock> CHILLER = BLOCKS.register("chiller", ThermalActuatorBlock::new);
 
     public static final DeferredBlock<AridDust> ARID_DUST = BLOCKS.register(
         "arid_dust",

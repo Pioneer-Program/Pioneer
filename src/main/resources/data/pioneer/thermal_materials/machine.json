@@ -4,7 +4,9 @@
     "pioneer:thruster",
     "pioneer:barometer",
     "pioneer:thermometer",
-    "pioneer:mass_spectrometer"
+    "pioneer:mass_spectrometer",
+    "pioneer:heater",
+    "pioneer:chiller"
   ],
   "conductivity": 20.0,
   "volumetric_heat": 3200000.0,
