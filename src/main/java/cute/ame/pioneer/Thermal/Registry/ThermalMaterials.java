@@ -24,6 +24,33 @@ import java.util.Optional;
 
 public final class ThermalMaterials
 {
+    private static final class Columns
+    {
+        private final String[] keys;
+        private final float[] conductivity;
+        private final float[] volumetricHeat;
+        private final float[] breakdownK;
+        private final float[] emissivity;
+        private final float[] areaFactor;
+        private final BlockState[] into;
+
+        private Columns(int count)
+        {
+            keys = new String[count];
+            conductivity = new float[count];
+            volumetricHeat = new float[count];
+            breakdownK = new float[count];
+            emissivity = new float[count];
+            areaFactor = new float[count];
+            into = new BlockState[count];
+        }
+
+        private MaterialTable toTable()
+        {
+            return new MaterialTable(keys, conductivity, volumetricHeat, breakdownK, emissivity, areaFactor);
+        }
+    }
+
     public static final ResourceLocation DEFAULT_ID = ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "default");
 
     private static final Comparator<Map.Entry<ResourceLocation, ThermalMaterial>> ORDER = Comparator.<Map.Entry<ResourceLocation, ThermalMaterial>>comparingInt(e -> e.getValue().priority()).thenComparing(Map.Entry::getKey);
@@ -70,19 +97,14 @@ public final class ThermalMaterials
         ordered.sort(ORDER);
 
         int count = ordered.size() + 1;
-        String[] keys = new String[count];
-        float[] conductivity = new float[count];
-        float[] volumetricHeat = new float[count];
-        float[] breakdownK = new float[count];
-        float[] emissivity = new float[count];
-        BlockState[] into = new BlockState[count];
+        Columns columns = new Columns(count);
 
         Reference2IntOpenHashMap<Block> index = new Reference2IntOpenHashMap<>(Math.max(raw.size() << 3, 64));
         index.defaultReturnValue(MaterialTable.DEFAULT);
 
         ThermalMaterial fallback = raw.getOrDefault(DEFAULT_ID, ThermalMaterial.FALLBACK);
-        keys[MaterialTable.DEFAULT] = DEFAULT_ID.toString();
-        write(MaterialTable.DEFAULT, fallback, blocks, conductivity, volumetricHeat, breakdownK, emissivity, into);
+        columns.keys[MaterialTable.DEFAULT] = DEFAULT_ID.toString();
+        write(MaterialTable.DEFAULT, fallback, blocks, columns);
         bindAll(index, MaterialTable.DEFAULT, fallback, blocks, DEFAULT_ID);
 
         for (int i = 0; i < ordered.size(); i++)
@@ -91,27 +113,28 @@ public final class ThermalMaterials
             ThermalMaterial material = entry.getValue();
             int slot = i + 1;
 
-            keys[slot] = entry.getKey().toString();
-            write(slot, material, blocks, conductivity, volumetricHeat, breakdownK, emissivity, into);
+            columns.keys[slot] = entry.getKey().toString();
+            write(slot, material, blocks, columns);
             bindAll(index, slot, material, blocks, entry.getKey());
         }
 
         index.trim();
 
-        table = new MaterialTable(keys, conductivity, volumetricHeat, breakdownK, emissivity);
-        breakdownInto = into;
+        table = columns.toTable();
+        breakdownInto = columns.into;
         byBlock = index;
 
         Pioneer.LOGGER.info("[Pioneer] Thermal material table: {} material(s) over {} block(s)", count, index.size());
     }
 
-    private static void write(int slot, ThermalMaterial material, HolderLookup.RegistryLookup<Block> blocks, float[] conductivity, float[] volumetricHeat, float[] breakdownK, float[] emissivity, BlockState[] into)
+    private static void write(int slot, ThermalMaterial material, HolderLookup.RegistryLookup<Block> blocks, Columns columns)
     {
-        conductivity[slot] = material.conductivity();
-        volumetricHeat[slot] = material.volumetricHeat();
-        breakdownK[slot] = material.breakdown();
-        emissivity[slot] = material.emissivity();
-        into[slot] = resolveState(material.breakdownResult(), blocks);
+        columns.conductivity[slot] = material.conductivity();
+        columns.volumetricHeat[slot] = material.volumetricHeat();
+        columns.breakdownK[slot] = material.breakdown();
+        columns.emissivity[slot] = material.emissivity();
+        columns.areaFactor[slot] = material.areaFactor();
+        columns.into[slot] = resolveState(material.breakdownResult(), blocks);
     }
 
     private static BlockState resolveState(Optional<String> id, HolderLookup.RegistryLookup<Block> blocks)

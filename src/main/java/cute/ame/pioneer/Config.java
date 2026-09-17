@@ -59,6 +59,10 @@ public class Config
     public static ModConfigSpec.BooleanValue THERMAL_BREAKDOWN;
     public static ModConfigSpec.IntValue THERMAL_BREAKDOWN_PER_PASS;
 
+    public static ModConfigSpec.BooleanValue THERMAL_RADIATION;
+    public static ModConfigSpec.DoubleValue THERMAL_SPACE_SINK_K;
+
+
     static final ModConfigSpec SPEC;
     static
     {
@@ -121,6 +125,9 @@ public class Config
 
         THERMAL_BREAKDOWN = BUILDER.define("thermal_breakdown", true);
         THERMAL_BREAKDOWN_PER_PASS = BUILDER.defineInRange("thermal_breakdown_per_pass", 64, 1, 4096);
+
+        THERMAL_RADIATION = BUILDER.define("thermal_radiation", true);
+        THERMAL_SPACE_SINK_K = BUILDER.defineInRange("thermal_space_sink_k", 2.7, 0.0, 400.0);
         BUILDER.pop();
 
         SPEC = BUILDER.build();

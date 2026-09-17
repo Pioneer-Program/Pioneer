@@ -2,6 +2,7 @@ package cute.ame.pioneer.Thermal.Event;
 
 import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Core.Thermal.BlockTemperature;
+import cute.ame.pioneer.Fluid.Helper.AmbientResolver;
 import cute.ame.pioneer.Fluid.Helper.FluidLevels;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Thermal.Data.MaterialTable;
@@ -9,6 +10,7 @@ import cute.ame.pioneer.Thermal.Data.ThermalStore;
 import cute.ame.pioneer.Thermal.Helper.ThermalBreakdown;
 import cute.ame.pioneer.Thermal.Level.ThermalLevelData;
 import cute.ame.pioneer.Thermal.Physics.ThermalConduction;
+import cute.ame.pioneer.Thermal.Physics.ThermalRadiation;
 import cute.ame.pioneer.Thermal.Registry.ThermalMaterials;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import net.minecraft.core.BlockPos;
@@ -61,6 +63,11 @@ public final class ThermalTickEvents
         BlockPos.MutableBlockPos centre = new BlockPos.MutableBlockPos();
         BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos();
 
+        float[] emissivity = table.emissivityRaw();
+        float[] area = table.areaFactorRaw();
+        boolean radiates = Config.THERMAL_RADIATION.get();
+        float sink = AmbientResolver.of(level.dimension()).vacuum() ? Config.THERMAL_SPACE_SINK_K.get().floatValue() : ambient;
+
         boolean breaks = Config.THERMAL_BREAKDOWN.get();
         int breakBudget = Config.THERMAL_BREAKDOWN_PER_PASS.get();
         LongArrayList failing = null;
@@ -103,6 +110,8 @@ public final class ThermalTickEvents
                 if (failing.size() < breakBudget) failing.add(packed);
             }
 
+            int exposed = 0;
+
             for (Direction face : FACES)
             {
                 probe.setWithOffset(centre, face);
@@ -126,7 +135,11 @@ public final class ThermalTickEvents
 
                     BlockState neighbour = level.getBlockState(probe);
                     mb = ThermalMaterials.indexOf(neighbour);
-                    recruit = canRecruit && !neighbour.isAir();
+
+                    boolean open = neighbour.isAir();
+                    if (open) exposed++;
+
+                    recruit = canRecruit && !open;
                 }
 
                 if (mb >= materials) mb = MaterialTable.DEFAULT;
@@ -147,6 +160,13 @@ public final class ThermalTickEvents
                 store.setMaterial(created, mb);
                 store.keepAlive(created);
             }
+
+            if (!radiates || exposed == 0) continue;
+
+            float radiated = ThermalRadiation.delta(emissivity[ma], area[ma], exposed, ca, ta, sink, dt, maxStep);
+            if (radiated > -epsilon && radiated < epsilon) continue;
+
+            store.addDelta(slot, radiated);
         }
 
         int applied = store.applyDeltas();

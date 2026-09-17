@@ -6,6 +6,8 @@
   "block.pioneer.vent": "Vent",
   "block.pioneer.heater": "Heater",
   "block.pioneer.chiller": "Chiller",
+  "block.pioneer.heat_pipe": "Heat Pipe",
+  "block.pioneer.radiator": "Radiator",
   "block.pioneer.barometer": "Barometer",
   "block.pioneer.thermometer": "Thermometer",
   "block.pioneer.mass_spectrometer": "Mass Spectrometer",

@@ -26,6 +26,8 @@ public class ModCreativeModeTabs {
                             output.accept(ModBlocks.VENT);
                             output.accept(ModBlocks.HEATER);
                             output.accept(ModBlocks.CHILLER);
+                            output.accept(ModBlocks.HEAT_PIPE);
+                            output.accept(ModBlocks.RADIATOR);
                             output.accept(ModBlocks.THERMOMETER);
                             output.accept(ModBlocks.BAROMETER);
                             output.accept(ModBlocks.MASS_SPECTROMETER);

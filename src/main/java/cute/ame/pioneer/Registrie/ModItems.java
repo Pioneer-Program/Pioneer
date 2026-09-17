@@ -33,6 +33,10 @@ public final class ModItems
 
   public static final DeferredItem<BlockItem> CHILLER = ITEMS.register("chiller", () -> new BlockItem(ModBlocks.CHILLER.get(), new Properties()));
 
+  public static final DeferredItem<BlockItem> HEAT_PIPE = ITEMS.register("heat_pipe", () -> new BlockItem(ModBlocks.HEAT_PIPE.get(), new Properties()));
+
+  public static final DeferredItem<BlockItem> RADIATOR = ITEMS.register("radiator", () -> new BlockItem(ModBlocks.RADIATOR.get(), new Properties()));
+
   public static final DeferredItem<BlockItem> ARID_DUST = ITEMS.register("arid_dust", () -> new BlockItem(ModBlocks.ARID_DUST.get(), new Properties()));
 
   public static final DeferredItem<BlockItem> CERAMIC_TILES = ITEMS.register("ceramic_tiles", () -> new BlockItem(ModBlocks.CERAMIC_TILES.get(), new Properties()));

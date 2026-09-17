@@ -15,11 +15,12 @@ public record ThermalMaterial
     Optional<Float> breakdownK,
     Optional<String> breakdownResult,
     float emissivity,
+    float areaFactor,
     int priority
 )
 {
     public static final float NEVER_BREAKS = Float.MAX_VALUE;
-    public static final ThermalMaterial FALLBACK = new ThermalMaterial(List.of(), 1.0f, 2.0e6f, Optional.empty(), Optional.empty(), 0.90f, Integer.MIN_VALUE);
+    public static final ThermalMaterial FALLBACK = new ThermalMaterial(List.of(), 1.0f, 2.0e6f, Optional.empty(), Optional.empty(), 0.90f, 1.0f, Integer.MIN_VALUE);
 
     public static final Codec<ThermalMaterial> CODEC = RecordCodecBuilder.<ThermalMaterial>create(i -> i.group(
         Codec.STRING.listOf().optionalFieldOf("blocks", List.of()).forGetter(ThermalMaterial::blocks),
@@ -28,6 +29,7 @@ public record ThermalMaterial
         Codec.FLOAT.optionalFieldOf("breakdown_k").forGetter(ThermalMaterial::breakdownK),
         Codec.STRING.optionalFieldOf("breakdown_result").forGetter(ThermalMaterial::breakdownResult),
         Codec.FLOAT.optionalFieldOf("emissivity", 0.90f).forGetter(ThermalMaterial::emissivity),
+        Codec.FLOAT.optionalFieldOf("area_factor", 1.0f).forGetter(ThermalMaterial::areaFactor),
         Codec.INT.optionalFieldOf("priority", 0).forGetter(ThermalMaterial::priority)
     ).apply(i, ThermalMaterial::new)).flatXmap(ThermalMaterial::validate, DataResult::success);
 
@@ -46,6 +48,9 @@ public record ThermalMaterial
 
         if (m.emissivity < 0.0f || m.emissivity > 1.0f)
             return DataResult.error(() -> "emissivity must be within [0, 1], got " + m.emissivity);
+
+        if (!Float.isFinite(m.areaFactor) || m.areaFactor < 0.0f)
+            return DataResult.error(() -> "area_factor must be finite and >= 0, got " + m.areaFactor);
 
         if (m.breakdownK.isPresent() && !(m.breakdownK.get() > 0.0f))
             return DataResult.error(() -> "breakdown_k must be > 0, got " + m.breakdownK.get());

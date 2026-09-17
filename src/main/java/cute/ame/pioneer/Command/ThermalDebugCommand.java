@@ -7,6 +7,8 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Core.Thermal.BlockTemperature;
+import cute.ame.pioneer.Fluid.Helper.AmbientResolver;
+import cute.ame.pioneer.Thermal.Physics.ThermalRadiation;
 import cute.ame.pioneer.Thermal.Data.MaterialTable;
 import cute.ame.pioneer.Thermal.Data.ThermalMaterial;
 import cute.ame.pioneer.Thermal.Data.ThermalStore;
@@ -19,6 +21,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -68,6 +71,20 @@ public final class ThermalDebugCommand
 
         source.sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "%s " + ChatFormatting.DARK_GRAY + "%s " + ChatFormatting.GRAY + "| " + ChatFormatting.GREEN + "%.2f K " + ChatFormatting.DARK_GRAY + "(%s)", pos.toShortString(), BuiltInRegistries.BLOCK.getKey(state.getBlock()), effective, tracked ? "tracked" : "ambient")), false);
         source.sendSuccess(() -> Component.literal(String.format("  " + ChatFormatting.YELLOW + "%-24s " + ChatFormatting.GRAY + "k = " + ChatFormatting.AQUA + "%.3f W/m/K " + ChatFormatting.GRAY + "C = " + ChatFormatting.AQUA + "%.3e J/K " + ChatFormatting.GRAY + "eps = " + ChatFormatting.AQUA + "%.2f " + ChatFormatting.GRAY + "breaks at " + ChatFormatting.RED + "%s", table.key(material), table.conductivity(material), table.volumetricHeat(material), table.emissivity(material), breakdown >= ThermalMaterial.NEVER_BREAKS ? "never" : String.format("%.0f K", breakdown))), false);
+        int exposed = 0;
+        BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos();
+        for (Direction face : Direction.values())
+        {
+            probe.setWithOffset(pos, face);
+            if (level.getBlockState(probe).isAir()) exposed++;
+        }
+
+        float sink = AmbientResolver.of(level.dimension()).vacuum() ? Config.THERMAL_SPACE_SINK_K.get().floatValue() : BlockTemperature.dimensionDefault(level);
+        float watts = ThermalRadiation.watts(table.emissivity(material), table.areaFactor(material), exposed, effective, sink);
+
+        final int faces = exposed;
+        source.sendSuccess(() -> Component.literal(String.format("  " + ChatFormatting.GRAY + "radiating " + ChatFormatting.AQUA + "%.0f W " + ChatFormatting.GRAY + "over " + ChatFormatting.AQUA + "%d " + ChatFormatting.GRAY + "open face(s), area x" + ChatFormatting.AQUA + "%.1f " + ChatFormatting.GRAY + "into " + ChatFormatting.GREEN + "%.1f K", watts, faces, table.areaFactor(material), sink)), false);
+
         return tracked ? 1 : 0;
     }
 
