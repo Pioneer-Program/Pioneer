@@ -29,8 +29,11 @@ public class FluidVesselBlockEntity extends BlockEntity implements ComputerPerip
     private static final String K_NODE = "node";
     private static final String K_BURST = "burst";
     private static final String K_POWER = "power";
+    private static final String K_THROTTLE = "throttle";
 
     private long node = -1L;
+
+    private float throttle = 1.0f;
     private float burst;
     private float power = 1.0f;
 
@@ -39,7 +42,32 @@ public class FluidVesselBlockEntity extends BlockEntity implements ComputerPerip
         super(ModBlockEntities.FLUID_VESSEL.get(), pos, state);
     }
 
-    public long getNodeHandle() { return node; }
+    public long getNodeHandle()
+    {
+        return node;
+    }
+
+    public float getThrottle()
+    {
+        return throttle;
+    }
+
+    public boolean setThrottle(float value)
+    {
+        float clamped = !Float.isFinite(value) ? 1.0f : Math.clamp(value, 0.0f, 1.0f);
+        if (clamped == throttle) return false;
+
+        throttle = clamped;
+        setChanged();
+
+        if (level instanceof ServerLevel serverLevel)
+        {
+            FluidLevelData data = FluidLevelData.getIfPresent(serverLevel);
+            if (data != null) data.graph().invalidate();
+        }
+
+        return true;
+    }
 
     @Override
     public String getLabel() { return label; }
@@ -60,6 +88,8 @@ public class FluidVesselBlockEntity extends BlockEntity implements ComputerPerip
 
         if (state.getBlock() instanceof ValveBlock)
         {
+            if (ValveBlock.CHANNEL_THROTTLE.equalsIgnoreCase(channel)) return setThrottle((float) value);
+
             if (!matches(channel, ValveBlock.CHANNEL_OPEN)) return false;
 
             ValveBlock.setOpen(level, worldPosition, state, value >= 0.5);
@@ -181,6 +211,7 @@ public class FluidVesselBlockEntity extends BlockEntity implements ComputerPerip
         label = tag.getString(K_LABEL);
         burst = tag.getFloat(K_BURST);
         power = tag.contains(K_POWER) ? tag.getFloat(K_POWER) : 1.0f;
+        throttle = tag.contains(K_THROTTLE) ? tag.getFloat(K_THROTTLE) : 1.0f;
     }
 
     @Override
@@ -192,5 +223,6 @@ public class FluidVesselBlockEntity extends BlockEntity implements ComputerPerip
         tag.putFloat(K_BURST, burst);
 
         if (power != 1.0f) tag.putFloat(K_POWER, power);
+        if (throttle != 1.0f) tag.putFloat(K_THROTTLE, throttle);
     }
 }

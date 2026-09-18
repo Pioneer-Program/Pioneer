@@ -20,6 +20,7 @@
   "actuator.pioneer.setpoint": "%s K",
   "actuator.pioneer.undefined": "No thermal_devices entry for this block",
 
+  "valve.pioneer.throttle": "Throttle %s%%",
   "valve.pioneer.opened": "Valve opened",
   "valve.pioneer.closed": "Valve closed",
 
