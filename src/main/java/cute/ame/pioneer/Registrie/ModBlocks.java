@@ -23,11 +23,11 @@ public final class ModBlocks
 {
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(Pioneer.MODID);
 
-    public static final DeferredBlock<TankBlock> VACCUM_TANK = BLOCKS.register("vaccum_tank", TankBlock::new);
+    public static final DeferredBlock<TankBlock> VACCUM_TANK = BLOCKS.register("vacuum_tank", TankBlock::new);
 
-    public static final DeferredBlock<PumpBlock> VACCUM_PUMP = BLOCKS.register("vaccum_pump", PumpBlock::new);
+    public static final DeferredBlock<PumpBlock> VACCUM_PUMP = BLOCKS.register("vacuum_pump", PumpBlock::new);
 
-    public static final DeferredBlock<PipeBlock> VACCUM_PIPE = BLOCKS.register("vaccum_pipe", PipeBlock::new);
+    public static final DeferredBlock<PipeBlock> VACCUM_PIPE = BLOCKS.register("vacuum_pipe", PipeBlock::new);
 
     public static final DeferredBlock<ValveBlock> VALVE = BLOCKS.register("valve", ValveBlock::new);
 

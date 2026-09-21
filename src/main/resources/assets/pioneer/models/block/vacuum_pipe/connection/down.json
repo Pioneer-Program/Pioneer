@@ -1,0 +1,23 @@
+{
+	"format_version": "1.9.0",
+	"credit": "Made with Blockbench",
+	"parent": "block/block",
+	"texture_size": [32, 32],
+	"textures": {
+		"0": "pioneer:block/vacuum_pipe/vacuum_pipe",
+		"particle": "pioneer:block/vacuum_pipe/vacuum_pipe"
+	},
+	"elements": [
+		{
+			"from": [5, 0, 5],
+			"to": [11, 5, 11],
+			"rotation": {"angle": 0, "axis": "x", "origin": [8, 8, 8]},
+			"faces": {
+				"north": {"uv": [9, 11, 15, 16], "texture": "#0"},
+				"east": {"uv": [9, 11, 15, 16], "texture": "#0"},
+				"south": {"uv": [9, 11, 15, 16], "texture": "#0"},
+				"west": {"uv": [9, 11, 15, 16], "rotation": 180, "texture": "#0"}
+			}
+		}
+	]
+}
