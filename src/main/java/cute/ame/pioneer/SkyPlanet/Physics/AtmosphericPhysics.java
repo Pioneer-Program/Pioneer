@@ -10,6 +10,7 @@ public final class AtmosphericPhysics
 {
     private static final double R_GAS = 8.314462618;
     private static final double LAMBDA_R = 680.0, LAMBDA_G = 550.0, LAMBDA_B = 440.0;
+    private static final double[] OZONE_DEPTH_EARTH = { 0.011, 0.028, 0.0016 };
 
     public static GasDefinition gas(String name)
     {
@@ -95,13 +96,25 @@ public final class AtmosphericPhysics
         };
     }
 
-    public static float[] skyColorRgb(Map<String, Float> composition, double surfacePressureBar, double gravityMs2, float[] hazeColor, double hazeOpticalDepth)
+    public static double[] scatteringDepthRgb(Map<String, Float> composition, double surfacePressureBar, double gravityMs2)
     {
         double[] tau = rayleighOpticalDepth(composition, surfacePressureBar, gravityMs2);
 
         double ch4 = methaneFraction(composition);
         tau[0] *= (1.0 - 0.85 * ch4);
         tau[1] *= (1.0 - 0.25 * ch4);
+        return tau;
+    }
+
+    public static double[] ozoneDepthRgb(double ozoneStrength)
+    {
+        double k = Math.max(ozoneStrength, 0.0);
+        return new double[] { OZONE_DEPTH_EARTH[0] * k, OZONE_DEPTH_EARTH[1] * k, OZONE_DEPTH_EARTH[2] * k };
+    }
+
+    public static float[] skyColorRgb(Map<String, Float> composition, double surfacePressureBar, double gravityMs2, float[] hazeColor, double hazeOpticalDepth)
+    {
+        double[] tau = scatteringDepthRgb(composition, surfacePressureBar, gravityMs2);
 
         double max = Math.max(tau[0], Math.max(tau[1], tau[2]));
         float[] rayleigh = (max < 1e-30) ? new float[] { 0.4f, 0.6f, 1.0f } : new float[] { (float) (tau[0] / max), (float) (tau[1] / max), (float) (tau[2] / max) };
