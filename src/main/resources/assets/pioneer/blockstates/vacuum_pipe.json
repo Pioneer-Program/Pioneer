@@ -1,0 +1,33 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core_z"
+      }
+    },
+    {
+      "when": { "north": "true" },
+      "apply": { "model": "pioneer:block/vacuum_pipe/connection/north" }
+    },
+    {
+      "when": { "south": "true" },
+      "apply": { "model": "pioneer:block/vacuum_pipe/connection/south" }
+    },
+    {
+      "when": { "east": "true" },
+      "apply": { "model": "pioneer:block/vacuum_pipe/connection/east" }
+    },
+    {
+      "when": { "west": "true" },
+      "apply": { "model": "pioneer:block/vacuum_pipe/connection/west" }
+    },
+    {
+      "when": { "up": "true" },
+      "apply": { "model": "pioneer:block/vacuum_pipe/connection/up" }
+    },
+    {
+      "when": { "down": "true" },
+      "apply": { "model": "pioneer:block/vacuum_pipe/connection/down" }
+    }
+  ]
+}
