@@ -18,9 +18,6 @@ uniform float uTerminator;
 uniform float uCurvature;
 uniform float uSunAngRad;
 uniform int uDebug;
-uniform float uScatterWidth;
-uniform float uScatterStrength;
-uniform vec3 uScatterColor;
 
 uniform float uRingInner;
 uniform float uRingOuter;
@@ -218,8 +215,5 @@ void main()
     float shade = uNightFloor + (1.0 - uNightFloor) * lit;
     shade += dot(ringshine, vec3(0.333));
 
-    float band = exp(-pow(ndots / max(uScatterWidth, 1e-3), 2.0));
-    vec3 scatter = uScatterColor * (band * uScatterStrength);
-
-    fragColor = vec4(tex.rgb * (shade + scatter) + tex.rgb * ringshine * 0.5, tex.a * uAlpha);
+    fragColor = vec4(tex.rgb * shade + tex.rgb * ringshine * 0.5, tex.a * uAlpha);
 }

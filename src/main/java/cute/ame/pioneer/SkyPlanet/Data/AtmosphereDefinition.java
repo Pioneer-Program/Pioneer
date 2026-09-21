@@ -21,6 +21,9 @@ public record AtmosphereDefinition
 )
 {
     public static final Map<String, Float> EARTH_LIKE = Map.of("n2", 0.78f, "o2", 0.21f, "ar", 0.01f);
+    public static final float SHELL_SCALE_HEIGHTS = 12.0f;
+    public static final float MIE_TO_RAYLEIGH_HEIGHT = 0.15f;
+    private static final double MAX_SHELL = 0.6;
 
     public static final Codec<AtmosphereDefinition> CODEC = RecordCodecBuilder.create(instance ->
         instance.group(
@@ -70,21 +73,26 @@ public record AtmosphereDefinition
         return (float) Math.min(1.5, AtmosphericPhysics.ozoneFraction(composition) / 0.21);
     }
 
+    public double scaleHeightRadii(double temperatureK, double gravityMs2, double radiusKm)
+    {
+        double h = AtmosphericPhysics.scaleHeightMetres(meanMolarMass(), temperatureK, gravityMs2);
+        double frac = h / (Math.max(radiusKm, 1e-3) * 1000.0) * Math.max(atmosphereExaggeration(), 1e-3);
+        return Math.min(frac, MAX_SHELL / SHELL_SCALE_HEIGHTS);
+    }
+
     public float rayleighScaleHeightFrac(double temperatureK, double gravityMs2, double radiusKm)
     {
-        return 0.35f;
+        return 1.0f / SHELL_SCALE_HEIGHTS;
     }
 
     public float mieScaleHeightFrac(double temperatureK, double gravityMs2, double radiusKm)
     {
-        return 0.12f;
+        return MIE_TO_RAYLEIGH_HEIGHT / SHELL_SCALE_HEIGHTS;
     }
 
     public float shellScale(double temperatureK, double gravityMs2, double radiusKm)
     {
-        double h = AtmosphericPhysics.scaleHeightMetres(meanMolarMass(), temperatureK, gravityMs2);
-        double frac = h / (Math.max(radiusKm, 1e-3) * 1000.0);
-        return 1.0f + (float) Math.min(0.6, frac * 12.0 * atmosphereExaggeration());
+        return 1.0f + (float) (SHELL_SCALE_HEIGHTS * scaleHeightRadii(temperatureK, gravityMs2, radiusKm));
     }
 
     public float[] hazeRgb()

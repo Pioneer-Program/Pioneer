@@ -2,37 +2,48 @@
 
 in vec3 vObjPos;
 
-uniform vec3 uColor;
-uniform float uFresnelPower;
-uniform float uOpacity;
-
 uniform vec3 uCamDir;
 uniform vec3 uSunDir;
 uniform float uCamDist;
 
 uniform float uPlanetHalfExtent;
 uniform float uShellThickness;
-uniform float uAtmoBoundRadius;
+uniform vec3 uSphereCenter;
+uniform float uGeoBlend;
+uniform float uShadeCurvature;
+uniform float uTerrainGround;
+uniform vec3 uGroundColor;
+uniform vec3 uRayOrigin;
+uniform float uRayleighH;
+uniform float uMieH;
+uniform float uInvRayleighH;
+uniform float uInvMieH;
+uniform vec3 uBetaRayleigh;
+uniform vec3 uExtRayleigh;
+uniform float uBetaMie;
+uniform vec3 uMieAlbedo;
 
-uniform float uRayleighScaleHeight;
-uniform float uMieScaleHeight;
 uniform float uMieG;
-uniform float uMieStrength;
 uniform float uSunIntensity;
-uniform float uOzoneStrength;
 uniform float uMultiScatterStrength;
 
 out vec4 fragColor;
 
-const int NUM_VIEW_STEPS  = 12;
-const int NUM_SUN_STEPS   = 6;
+const int NUM_VIEW_STEPS = 16;
+const float INV_VIEW_STEPS = 1.0 / float(NUM_VIEW_STEPS);
 const float PI = 3.14159265359;
-
-const float RAYLEIGH_STRENGTH = 19.0;
-const float MIE_STRENGTH_BASE = 4.0;
-
-float clamp01(float v) { return clamp(v, 0.0, 1.0); }
-float luminance(vec3 c) { return dot(c, vec3(0.299, 0.587, 0.114)); }
+const float HALF_PI = 1.57079632679;
+const float SQRT_PI = 1.77245385091;
+const float INV_4PI = 0.07957747155;
+const float ERFCX_A = 2.9110;
+const float MISS = 1e30;
+const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
+const float TONEMAP_INV_WHITE_SQ = 1.0 / 36.0;
+const vec3 THIRD = vec3(1.0 / 3.0);
+const float FIT_B1 = 0.2;
+const float FIT_B2 = 0.7;
+const float FIT_LIN_B1 = 0.03310;
+const float FIT_LIN_B2 = 0.44799;
 
 float sdBox(vec3 p, float halfExtent)
 {
@@ -40,144 +51,193 @@ float sdBox(vec3 p, float halfExtent)
     return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
 
-vec2 raySphere(vec3 origin, vec3 dir, float radius)
+vec3 boxNormal(vec3 p, float halfExtent)
 {
-    float b = dot(origin, dir);
-    float c = dot(origin, origin) - radius * radius;
-    float disc = b * b - c;
-    if (disc < 0.0) return vec2(1.0, -1.0);
-    float s = sqrt(disc);
-    return vec2(-b - s, -b + s);
+    vec3 o = max(abs(p) - vec3(halfExtent), 0.0);
+    float l2 = dot(o, o);
+    if (l2 > 1e-14) return sign(p) * o * inversesqrt(l2);
+    vec3 a = abs(p);
+    return (a.x >= a.y && a.x >= a.z) ? vec3(sign(p.x), 0.0, 0.0) : (a.y >= a.z ? vec3(0.0, sign(p.y), 0.0) : vec3(0.0, 0.0, sign(p.z)));
 }
 
-vec2 rayBox(vec3 origin, vec3 dir, float halfExtent)
+vec3 safeInverse(vec3 d)
 {
-    vec3 safeDir = vec3(abs(dir.x) < 1e-6 ? 1e-6 : dir.x, abs(dir.y) < 1e-6 ? 1e-6 : dir.y, abs(dir.z) < 1e-6 ? 1e-6 : dir.z);
-    vec3 invDir = 1.0 / safeDir;
+    return 1.0 / vec3(abs(d.x) < 1e-6 ? 1e-6 : d.x, abs(d.y) < 1e-6 ? 1e-6 : d.y, abs(d.z) < 1e-6 ? 1e-6 : d.z);
+}
+
+vec2 rayBox(vec3 origin, vec3 invDir, float halfExtent)
+{
     vec3 t0 = (-vec3(halfExtent) - origin) * invDir;
     vec3 t1 = ( vec3(halfExtent) - origin) * invDir;
     vec3 tmin = min(t0, t1);
     vec3 tmax = max(t0, t1);
-    float tNear = max(max(tmin.x, tmin.y), tmin.z);
-    float tFar  = min(min(tmax.x, tmax.y), tmax.z);
-    return vec2(tNear, tFar);
+    return vec2(max(max(tmin.x, tmin.y), tmin.z), min(min(tmax.x, tmax.y), tmax.z));
 }
 
-float densityAt(float altitude, float shellThickness, float scaleHeightFrac)
+vec2 raySphere(vec3 rel, vec3 dir, float radius)
 {
-    float h = max(altitude, 0.0) / max(shellThickness, 1e-5);
-    float scaleHeight = max(scaleHeightFrac, 1e-3);
-    return exp(-h / scaleHeight);
+    float b = dot(rel, dir);
+    float disc = b * b - (dot(rel, rel) - radius * radius);
+    if (disc < 0.0) return vec2(MISS, -MISS);
+    float s = sqrt(disc);
+    return vec2(-b - s, -b + s);
 }
 
-vec3 ozoneAbsorption(float altitude, float shellThickness)
+float geometry(vec3 p, float planetHalf, out vec3 n, out bool onSphere)
 {
-    float h = clamp01(altitude / max(shellThickness, 1e-5));
-    float band = clamp01(1.0 - abs(h - 0.55) / 0.35);
-    band = band * band;
-    return vec3(0.65, 0.9, 0.15) * band;
+    float altB = sdBox(p, planetHalf);
+    vec3 nB = normalize(mix(boxNormal(p, planetHalf), normalize(p), uShadeCurvature));
+    onSphere = false;
+    if (uGeoBlend >= 1.0) { n = nB; return altB; }
+
+    vec3 rel = p - uSphereCenter;
+    float r = length(rel);
+    float altS = r - planetHalf;
+    onSphere = altS >= altB;
+    float altC = onSphere ? altS : altB;
+    vec3 nC = onSphere ? rel / r : nB;
+    if (uGeoBlend <= 0.0) { n = nC; return altC; }
+
+    n = normalize(mix(nC, nB, uGeoBlend));
+    return mix(altC, altB, uGeoBlend);
 }
 
-vec3 sunOpticalDepth(vec3 origin, vec3 sunDir, float planetHalf, float atmoBoundR, float shellThickness, float rayleighSH, float mieSH)
+float sunlit(vec3 p, float planetHalf, bool onSphere)
 {
-    vec2 boxHit = rayBox(origin, sunDir, planetHalf);
-    bool sunBlocked = boxHit.x < boxHit.y && boxHit.x > 1e-4;
-    if (sunBlocked) return vec3(1e6);
+    if (!onSphere) return 1.0;
+    vec3 rel = p - uSphereCenter;
+    float b = dot(rel, uSunDir);
+    float disc = b * b - (dot(rel, rel) - planetHalf * planetHalf);
+    float litS = (disc > 0.0 && -b - sqrt(disc) > 0.0) ? 0.0 : 1.0;
+    return mix(litS, 1.0, uGeoBlend);
+}
 
-    vec2 hit = raySphere(origin, sunDir, atmoBoundR);
-    float sunRayLen = max(hit.y, 0.0);
+float chapmanUpper(float x, float cosZ)
+{
+    float y = sqrt(0.5 * x) * cosZ;
+    return sqrt(HALF_PI * x) * ERFCX_A / ((ERFCX_A - 1.0) * SQRT_PI * y + sqrt(PI * y * y + ERFCX_A * ERFCX_A));
+}
 
-    float stepSize = sunRayLen / float(NUM_SUN_STEPS);
-    vec3 depth = vec3(0.0);
-    for (int i = 0; i < NUM_SUN_STEPS; i++)
-    {
-        vec3 samplePos = origin + sunDir * (stepSize * (float(i) + 0.5));
-        float altitude = sdBox(samplePos, planetHalf);
-        depth.x += densityAt(altitude, shellThickness, rayleighSH) * stepSize;
-        depth.y += densityAt(altitude, shellThickness, mieSH) * stepSize;
-        depth.z += ozoneAbsorption(altitude, shellThickness).g * stepSize;
-    }
-    return depth;
+float sunOpticalDepth(float scaleH, float invScaleH, float planetR, float h, float cosZ)
+{
+    float x = (planetR + h) * invScaleH;
+    float hs = h * invScaleH;
+    if (cosZ >= 0.0) return scaleH * exp(-hs) * chapmanUpper(x, cosZ);
+
+    float s = sqrt(max(1.0 - cosZ * cosZ, 0.0));
+    if ((planetR + h) * s < planetR) return 1e4;
+    return max(scaleH * (2.0 * sqrt(HALF_PI * x * s) * exp(min(x * (1.0 - s) - hs, 80.0)) - exp(-hs) * chapmanUpper(x, -cosZ)), 0.0);
+}
+
+float stepWarp(float u, float mode)
+{
+    if (mode < 0.5) return u * u;
+    if (mode < 1.5) { float v = 1.0 - u; return 1.0 - v * v; }
+    return u;
+}
+
+vec3 linearToSrgb(vec3 c)
+{
+    c = clamp(c, 0.0, 1.0);
+    return mix(c * 12.92, 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055, step(vec3(0.0031308), c));
 }
 
 void main()
 {
+    float planetHalf = uPlanetHalfExtent;
+    float outerHalf = planetHalf + uShellThickness;
     vec3 camPos = uCamDir * uCamDist;
     vec3 rayDir = normalize(vObjPos - camPos);
+    vec3 origin = uRayOrigin;
+    vec3 invRay = safeInverse(rayDir);
 
-    float planetHalf = uPlanetHalfExtent;
-    float shellThickness = max(uShellThickness, 1e-4);
-    float atmoBoundR = uAtmoBoundRadius;
+    vec2 groundHit = rayBox(origin, invRay, planetHalf);
+    bool overGround = groundHit.x > 0.0 && groundHit.x < groundHit.y;
+    float ground = overGround ? groundHit.x : MISS;
+    vec2 shellBox = rayBox(origin, invRay, outerHalf);
+    float entry = shellBox.x < shellBox.y ? shellBox.x : MISS;
+    float tExit = shellBox.x < shellBox.y ? shellBox.y : -MISS;
+    if (uGeoBlend < 1.0)
+    {
+        vec2 shellSphere = raySphere(origin - uSphereCenter, rayDir, outerHalf);
+        entry = min(entry, shellSphere.x);
+        tExit = uGeoBlend <= 0.0 ? (overGround ? max(shellSphere.y, ground) : shellSphere.y) : max(tExit, shellSphere.y);
+    }
 
-    vec2 atmoHit = raySphere(camPos, rayDir, atmoBoundR);
-    if (atmoHit.y <= atmoHit.x || atmoHit.y <= 0.0) { discard; }
+    float tStart = max(entry, 0.0);
+    float tEnd = min(tExit, ground);
+    if (tEnd <= tStart) discard;
 
-    float tStart = max(atmoHit.x, 0.0);
-    float tEnd = atmoHit.y;
+    bool inside = entry <= 0.0;
+    float mode = inside ? 0.0 : (overGround ? 1.0 : 2.0);
+    float len = tEnd - tStart;
 
-    vec2 groundHit = rayBox(camPos, rayDir, planetHalf);
-    bool hitsGround = groundHit.x < groundHit.y && groundHit.x > 0.0;
-    if (hitsGround) tEnd = min(tEnd, groundHit.x);
-
-    if (tEnd <= tStart) { discard; }
-
-    float segmentLen = tEnd - tStart;
-    float stepSize = segmentLen / float(NUM_VIEW_STEPS);
-
-    vec3 viewDepth = vec3(0.0);
-    vec3 inScatterRayleigh = vec3(0.0);
-    vec3 inScatterMie = vec3(0.0);
-    vec3 ozoneTint = vec3(0.0);
-
-    vec3 rayleighCoeff = max(uColor, vec3(0.02)) * RAYLEIGH_STRENGTH;
-    vec3 mieCoeff = vec3(MIE_STRENGTH_BASE * max(uMieStrength, 0.0));
-
-    float cosTheta = dot(rayDir, uSunDir);
-    float rayleighPhase = 3.0 / (16.0 * PI) * (1.0 + cosTheta * cosTheta);
-
-    float g = clamp(uMieG, -0.99, 0.99);
-    float g2 = g * g;
-    float miePhase = (1.0 - g2) / (4.0 * PI * pow(max(1e-4, 1.0 + g2 - 2.0 * g * cosTheta), 1.5));
+    vec2 viewDepth = vec2(0.0);
+    vec3 sumR = vec3(0.0);
+    vec3 sumM = vec3(0.0);
 
     for (int i = 0; i < NUM_VIEW_STEPS; i++)
     {
-        float t = tStart + stepSize * (float(i) + 0.5);
-        vec3 samplePos = camPos + rayDir * t;
-        float altitude = sdBox(samplePos, planetHalf);
+        float u0 = float(i) * INV_VIEW_STEPS;
+        float u1 = u0 + INV_VIEW_STEPS;
+        float us = u0 + 0.5 * INV_VIEW_STEPS;
+        float f0 = stepWarp(u0, mode), f1 = stepWarp(u1, mode);
+        float t = tStart + len * stepWarp(us, mode);
+        float dt = len * (f1 - f0);
+        float into = (stepWarp(us, mode) - f0) / max(f1 - f0, 1e-7);
 
-        float densR = densityAt(altitude, shellThickness, uRayleighScaleHeight);
-        float densM = densityAt(altitude, shellThickness, uMieScaleHeight);
-        vec3 ozone = ozoneAbsorption(altitude, shellThickness) * uOzoneStrength;
+        vec3 p = origin + rayDir * t;
+        vec3 n;
+        bool onSphere;
+        float h = max(geometry(p, planetHalf, n, onSphere), 0.0);
+        vec2 d = vec2(exp(-h * uInvRayleighH), exp(-h * uInvMieH));
+        vec2 toSample = viewDepth + d * (into * dt);
+        viewDepth += d * dt;
 
-        viewDepth.x += densR * stepSize;
-        viewDepth.y += densM * stepSize;
-        viewDepth.z += ozone.g * stepSize;
-        vec3 sunDepth = sunOpticalDepth(samplePos, uSunDir, planetHalf, atmoBoundR, shellThickness, uRayleighScaleHeight, uMieScaleHeight);
-
-        vec3 totalRayleighDepth = (viewDepth.x + sunDepth.x) * rayleighCoeff;
-        vec3 totalMieDepth = vec3((viewDepth.y + sunDepth.y) * mieCoeff.x * 1.1);
-        vec3 totalOzoneDepth = (viewDepth.z + sunDepth.z) * ozone * 6.0;
-        vec3 transmittance = exp(-(totalRayleighDepth + totalMieDepth + totalOzoneDepth));
-
-        inScatterRayleigh += densR * transmittance * stepSize;
-        inScatterMie += densM * transmittance * stepSize;
-        ozoneTint += ozone * transmittance * stepSize;
+        float lit = sunlit(p, planetHalf, onSphere);
+        if (lit > 0.0)
+        {
+            float cosZ = dot(n, uSunDir);
+            vec2 sunDepth = vec2(sunOpticalDepth(uRayleighH, uInvRayleighH, planetHalf, h, cosZ), sunOpticalDepth(uMieH, uInvMieH, planetHalf, h, cosZ));
+            vec2 total = toSample + sunDepth;
+            vec3 tr = exp(-(uExtRayleigh * total.x + vec3(uBetaMie * total.y))) * (lit * dt);
+            sumR += d.x * tr;
+            sumM += d.y * tr;
+        }
     }
 
-    vec3 single = uSunIntensity * (rayleighCoeff * rayleighPhase * inScatterRayleigh + mieCoeff * miePhase * inScatterMie);
-    vec3 multi = uMultiScatterStrength * uSunIntensity * rayleighCoeff * (inScatterRayleigh + inScatterMie) * (1.0 / (4.0 * PI));
+    float cosTheta = dot(rayDir, uSunDir);
+    float rayleighPhase = 3.0 / (16.0 * PI) * (1.0 + cosTheta * cosTheta);
+    float g = clamp(uMieG, -0.99, 0.99);
+    float g2 = g * g;
+    float miePhase = (1.0 - g2) * INV_4PI / pow(max(1e-4, 1.0 + g2 - 2.0 * g * cosTheta), 1.5);
 
-    vec3 col = single + multi;
-    col -= ozoneTint * 0.4;
+    float iso = uMultiScatterStrength * INV_4PI;
+    vec3 radiance = uSunIntensity * (uBetaRayleigh * sumR * (rayleighPhase + iso) + (uBetaMie * uMieAlbedo) * sumM * (miePhase + iso));
+    float lum = dot(radiance, LUMA);
+    vec3 lt = clamp(radiance * ((1.0 + lum * TONEMAP_INV_WHITE_SQ) / (1.0 + lum)), 0.0, 1.0);
+    vec3 transmittance = exp(-(uExtRayleigh * viewDepth.x + vec3(uBetaMie * viewDepth.y)));
 
-    float ndotv = 1.0 - clamp01(dot(normalize(vObjPos), uCamDir));
-    col += uColor * pow(ndotv, max(uFresnelPower, 0.5)) * 0.15;
+    vec3 col;
+    float alpha;
+    if (uTerrainGround > 0.5 && overGround)
+    {
+        col = linearToSrgb(lt + transmittance * uGroundColor);
+        alpha = 1.0;
+    }
+    else if (overGround)
+    {
+        vec3 y1 = linearToSrgb(lt + transmittance * FIT_LIN_B1);
+        vec3 y2 = linearToSrgb(lt + transmittance * FIT_LIN_B2);
+        float k = dot(y2 - y1, THIRD) / (FIT_B2 - FIT_B1);
+        col = max(y1 - k * FIT_B1, 0.0);
+        alpha = 1.0 - k;
+    }
+    else
+    {
+        col = linearToSrgb(lt);
+        alpha = 1.0 - dot(linearToSrgb(lt + transmittance) - col, THIRD);
+    }
 
-    col *= uOpacity;
-
-    float extinction = 1.0 - exp(-(viewDepth.x * 2.2 + viewDepth.y * 1.4));
-    float alpha = clamp01(extinction * uOpacity + luminance(col) * 0.05);
-
-    vec3 tonemapped = col / (1.0 + col * 0.6);
-    fragColor = vec4(clamp(tonemapped, 0.0, 1.0), alpha);
+    fragColor = vec4(col, alpha);
 }
