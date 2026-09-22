@@ -3,8 +3,7 @@ package cute.ame.pioneer.SkyPlanet.Rendering;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import cute.ame.pioneer.Core.API.PioneerAPI;
-import cute.ame.pioneer.Config;
-import cute.ame.pioneer.Core.Observer.LocalFrame;
+import cute.ame.pioneer.Core.Observer.HorizonFrame;
 import cute.ame.pioneer.Core.Observer.ObserverState;
 import cute.ame.pioneer.Core.Observer.ObserverStates;
 import cute.ame.pioneer.Core.Observer.PlanetCube;
@@ -122,7 +121,7 @@ public final class SolarSystemRenderer
             float sl = (float) Math.sqrt(sp[0]*sp[0] + sp[1]*sp[1] + sp[2]*sp[2]);
             Vector3f worldSun = sl > 1e-6f ? new Vector3f((float)-sp[0]/sl, (float)-sp[1]/sl, (float)-sp[2]/sl) : new Vector3f(0f, 0f, 1f);
 
-            horizon = LocalFrame.horizon(obs, tick, partialTick);
+            horizon = HorizonFrame.horizon(obs, tick, partialTick);
             starVis = SkyBrightness.starVisibility(horizon.transform(new Vector3f(worldSun)).y, self);
         }
 
