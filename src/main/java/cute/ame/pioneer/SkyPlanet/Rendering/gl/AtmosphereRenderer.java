@@ -80,7 +80,7 @@ public final class AtmosphereRenderer
         return c;
     }
 
-    public static void render(PoseStack poseStack, AtmosphereDefinition atmo, PlanetEnvironment env, float radiusKm, float camDirX, float camDirY, float camDirZ, float sunDirX, float sunDirY, float sunDirZ, float camDistObj, boolean terrainGround)
+    public static void render(PoseStack poseStack, AtmosphereDefinition atmo, PlanetEnvironment env, float radiusKm, float camDirX, float camDirY, float camDirZ, float sunDirX, float sunDirY, float sunDirZ, float camDistObj, boolean terrainGround, float terrainCutoff)
     {
         final Coeffs c = coeffs(atmo, env, radiusKm);
         final float clampedCamDist = Math.min(camDistObj, MAX_CAM_DIST_OBJ);
@@ -110,7 +110,8 @@ public final class AtmosphereRenderer
         final float proxyHalf = blend < 1.0f ? Math.max(Math.abs(cx), Math.max(Math.abs(cy), Math.abs(cz))) + outerHalf : outerHalf;
         final Matrix4f planetModel = new Matrix4f(poseStack.last().pose());
 
-        final float[] fog = RenderSystem.getShaderFogColor();
+        final float[] fogColor = RenderSystem.getShaderFogColor();
+        final float[] fog = { fogColor[0], fogColor[1], fogColor[2] };
         final float groundR = srgbToLinear(fog[0]), groundG = srgbToLinear(fog[1]), groundB = srgbToLinear(fog[2]);
 
         if (blend < 1.0f) publishProbe(c, sunIntensity, atmo.mieG(), ox, oy, oz, sunDirX, sunDirY, sunDirZ, cx, cy, cz, blend, planetHalf, planetModel);
@@ -129,6 +130,9 @@ public final class AtmosphereRenderer
             set(shader, "uTerrainGround", terrainGround ? 1.0f : 0.0f);
             set(shader, "uRayOrigin", ox, oy, oz);
             set(shader, "uGroundColor", groundR, groundG, groundB);
+            set(shader, "uGroundColorDisplay", fog[0], fog[1], fog[2]);
+            set(shader, "uTerrainCutoff", terrainGround ? terrainCutoff : 0.0f);
+            set(shader, "uSqrtMieRatio", (float) Math.sqrt(c.hR() / c.hM()));
             set(shader, "uRayleighH", c.hR());
             set(shader, "uMieH", c.hM());
             set(shader, "uInvRayleighH", 1.0f / c.hR());

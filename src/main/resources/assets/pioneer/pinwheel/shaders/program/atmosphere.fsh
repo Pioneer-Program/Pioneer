@@ -12,12 +12,15 @@ uniform vec3 uSphereCenter;
 uniform float uGeoBlend;
 uniform float uShadeCurvature;
 uniform float uTerrainGround;
+uniform float uTerrainCutoff;
 uniform vec3 uGroundColor;
+uniform vec3 uGroundColorDisplay;
 uniform vec3 uRayOrigin;
 uniform float uRayleighH;
 uniform float uMieH;
 uniform float uInvRayleighH;
 uniform float uInvMieH;
+uniform float uSqrtMieRatio;
 uniform vec3 uBetaRayleigh;
 uniform vec3 uExtRayleigh;
 uniform float uBetaMie;
@@ -34,9 +37,15 @@ const float INV_VIEW_STEPS = 1.0 / float(NUM_VIEW_STEPS);
 const float PI = 3.14159265359;
 const float HALF_PI = 1.57079632679;
 const float SQRT_PI = 1.77245385091;
+const float SQRT_HALF = 0.70710678119;
+const float SQRT_HALF_PI = 1.25331413732;
 const float INV_4PI = 0.07957747155;
 const float ERFCX_A = 2.9110;
+const float ERFCX_A2 = ERFCX_A * ERFCX_A;
+const float ERFCX_K = (ERFCX_A - 1.0) * SQRT_PI;
 const float MISS = 1e30;
+const float OCCULTED = 1e4;
+const float OPAQUE_DEPTH = 7.0;
 const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
 const float TONEMAP_INV_WHITE_SQ = 1.0 / 36.0;
 const vec3 THIRD = vec3(1.0 / 3.0);
@@ -51,13 +60,18 @@ float sdBox(vec3 p, float halfExtent)
     return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
 
-vec3 boxNormal(vec3 p, float halfExtent)
+vec3 curvedBoxNormal(vec3 p, float halfExtent)
 {
     vec3 o = max(abs(p) - vec3(halfExtent), 0.0);
     float l2 = dot(o, o);
-    if (l2 > 1e-14) return sign(p) * o * inversesqrt(l2);
-    vec3 a = abs(p);
-    return (a.x >= a.y && a.x >= a.z) ? vec3(sign(p.x), 0.0, 0.0) : (a.y >= a.z ? vec3(0.0, sign(p.y), 0.0) : vec3(0.0, 0.0, sign(p.z)));
+    vec3 n;
+    if (l2 > 1e-14) n = sign(p) * o * inversesqrt(l2);
+    else
+    {
+        vec3 a = abs(p);
+        n = (a.x >= a.y && a.x >= a.z) ? vec3(sign(p.x), 0.0, 0.0) : (a.y >= a.z ? vec3(0.0, sign(p.y), 0.0) : vec3(0.0, 0.0, sign(p.z)));
+    }
+    return normalize(mix(n, p * inversesqrt(dot(p, p)), uShadeCurvature));
 }
 
 vec3 safeInverse(vec3 d)
@@ -83,57 +97,51 @@ vec2 raySphere(vec3 rel, vec3 dir, float radius)
     return vec2(-b - s, -b + s);
 }
 
-float geometry(vec3 p, float planetHalf, out vec3 n, out bool onSphere)
+float geometry(vec3 p, float planetHalf, out float cosZ)
 {
     float altB = sdBox(p, planetHalf);
-    vec3 nB = normalize(mix(boxNormal(p, planetHalf), normalize(p), uShadeCurvature));
-    onSphere = false;
-    if (uGeoBlend >= 1.0) { n = nB; return altB; }
+    if (uGeoBlend >= 1.0)
+    {
+        cosZ = dot(curvedBoxNormal(p, planetHalf), uSunDir);
+        return altB;
+    }
 
     vec3 rel = p - uSphereCenter;
     float r = length(rel);
     float altS = r - planetHalf;
-    onSphere = altS >= altB;
-    float altC = onSphere ? altS : altB;
-    vec3 nC = onSphere ? rel / r : nB;
-    if (uGeoBlend <= 0.0) { n = nC; return altC; }
+    bool onSphere = altS >= altB;
+    float altC = max(altS, altB);
+    if (uGeoBlend <= 0.0)
+    {
+        cosZ = onSphere ? dot(rel, uSunDir) / r : dot(curvedBoxNormal(p, planetHalf), uSunDir);
+        return altC;
+    }
 
-    n = normalize(mix(nC, nB, uGeoBlend));
+    vec3 nB = curvedBoxNormal(p, planetHalf);
+    vec3 nC = onSphere ? rel / r : nB;
+    cosZ = dot(normalize(mix(nC, nB, uGeoBlend)), uSunDir);
     return mix(altC, altB, uGeoBlend);
 }
 
-float sunlit(vec3 p, float planetHalf, bool onSphere)
+vec2 chapmanUpper(vec2 sqrtX, float cosZ)
 {
-    if (!onSphere) return 1.0;
-    vec3 rel = p - uSphereCenter;
-    float b = dot(rel, uSunDir);
-    float disc = b * b - (dot(rel, rel) - planetHalf * planetHalf);
-    float litS = (disc > 0.0 && -b - sqrt(disc) > 0.0) ? 0.0 : 1.0;
-    return mix(litS, 1.0, uGeoBlend);
+    vec2 y = SQRT_HALF * sqrtX * cosZ;
+    return SQRT_HALF_PI * sqrtX * ERFCX_A / (ERFCX_K * y + sqrt(PI * y * y + ERFCX_A2));
 }
 
-float chapmanUpper(float x, float cosZ)
+vec2 sunOpticalDepth(float planetR, float h, float cosZ, vec2 dens)
 {
-    float y = sqrt(0.5 * x) * cosZ;
-    return sqrt(HALF_PI * x) * ERFCX_A / ((ERFCX_A - 1.0) * SQRT_PI * y + sqrt(PI * y * y + ERFCX_A * ERFCX_A));
-}
-
-float sunOpticalDepth(float scaleH, float invScaleH, float planetR, float h, float cosZ)
-{
-    float x = (planetR + h) * invScaleH;
-    float hs = h * invScaleH;
-    if (cosZ >= 0.0) return scaleH * exp(-hs) * chapmanUpper(x, cosZ);
+    float r = planetR + h;
+    float sx = sqrt(r * uInvRayleighH);
+    vec2 sqrtX = vec2(sx, sx * uSqrtMieRatio);
+    vec2 scaleH = vec2(uRayleighH, uMieH);
+    if (cosZ >= 0.0) return scaleH * dens * chapmanUpper(sqrtX, cosZ);
 
     float s = sqrt(max(1.0 - cosZ * cosZ, 0.0));
-    if ((planetR + h) * s < planetR) return 1e4;
-    return max(scaleH * (2.0 * sqrt(HALF_PI * x * s) * exp(min(x * (1.0 - s) - hs, 80.0)) - exp(-hs) * chapmanUpper(x, -cosZ)), 0.0);
-}
-
-float stepWarp(float u, float mode)
-{
-    if (mode < 0.5) return u * u;
-    if (mode < 1.5) { float v = 1.0 - u; return 1.0 - v * v; }
-    return u;
+    if (r * s < planetR) return vec2(OCCULTED);
+    vec2 x = sqrtX * sqrtX;
+    vec2 hs = h * vec2(uInvRayleighH, uInvMieH);
+    return max(scaleH * (2.0 * sqrt(HALF_PI * s * x) * exp(min(x * (1.0 - s) - hs, vec2(80.0))) - dens * chapmanUpper(sqrtX, -cosZ)), 0.0);
 }
 
 vec3 linearToSrgb(vec3 c)
@@ -146,14 +154,21 @@ void main()
 {
     float planetHalf = uPlanetHalfExtent;
     float outerHalf = planetHalf + uShellThickness;
-    vec3 camPos = uCamDir * uCamDist;
-    vec3 rayDir = normalize(vObjPos - camPos);
+    vec3 rayDir = normalize(vObjPos - uCamDir * uCamDist);
     vec3 origin = uRayOrigin;
     vec3 invRay = safeInverse(rayDir);
 
     vec2 groundHit = rayBox(origin, invRay, planetHalf);
     bool overGround = groundHit.x > 0.0 && groundHit.x < groundHit.y;
     float ground = overGround ? groundHit.x : MISS;
+
+    bool terrain = uTerrainGround > 0.5;
+    if (terrain && ground < uTerrainCutoff)
+    {
+        fragColor = vec4(uGroundColorDisplay, 1.0);
+        return;
+    }
+
     vec2 shellBox = rayBox(origin, invRay, outerHalf);
     float entry = shellBox.x < shellBox.y ? shellBox.x : MISS;
     float tExit = shellBox.x < shellBox.y ? shellBox.y : -MISS;
@@ -169,48 +184,51 @@ void main()
     if (tEnd <= tStart) discard;
 
     bool inside = entry <= 0.0;
-    float mode = inside ? 0.0 : (overGround ? 1.0 : 2.0);
+    float warpA = inside ? 1.0 : (overGround ? -1.0 : 0.0);
+    float warpB = inside ? 0.0 : (overGround ? 2.0 : 1.0);
     float len = tEnd - tStart;
+    vec2 invH = vec2(uInvRayleighH, uInvMieH);
+    float minExt = min(min(uExtRayleigh.x, uExtRayleigh.y), uExtRayleigh.z);
 
     vec2 viewDepth = vec2(0.0);
     vec3 sumR = vec3(0.0);
     vec3 sumM = vec3(0.0);
-
+    float f0 = 0.0;
     for (int i = 0; i < NUM_VIEW_STEPS; i++)
     {
-        float u0 = float(i) * INV_VIEW_STEPS;
-        float u1 = u0 + INV_VIEW_STEPS;
-        float us = u0 + 0.5 * INV_VIEW_STEPS;
-        float f0 = stepWarp(u0, mode), f1 = stepWarp(u1, mode);
-        float t = tStart + len * stepWarp(us, mode);
-        float dt = len * (f1 - f0);
-        float into = (stepWarp(us, mode) - f0) / max(f1 - f0, 1e-7);
+        float u1 = float(i + 1) * INV_VIEW_STEPS;
+        float um = u1 - 0.5 * INV_VIEW_STEPS;
+        float f1 = (warpA * u1 + warpB) * u1;
+        float fm = (warpA * um + warpB) * um;
+        float df = f1 - f0;
+        float dt = len * df;
 
-        vec3 p = origin + rayDir * t;
-        vec3 n;
-        bool onSphere;
-        float h = max(geometry(p, planetHalf, n, onSphere), 0.0);
-        vec2 d = vec2(exp(-h * uInvRayleighH), exp(-h * uInvMieH));
-        vec2 toSample = viewDepth + d * (into * dt);
+        vec3 p = origin + rayDir * (tStart + len * fm);
+        float cosZ;
+        float h = max(geometry(p, planetHalf, cosZ), 0.0);
+        vec2 d = exp(-h * invH);
+        vec2 toSample = viewDepth + d * (dt * (fm - f0) / max(df, 1e-7));
         viewDepth += d * dt;
 
-        float lit = sunlit(p, planetHalf, onSphere);
-        if (lit > 0.0)
+        vec2 sunDepth = sunOpticalDepth(planetHalf, h, cosZ, d);
+        if (sunDepth.x < OCCULTED)
         {
-            float cosZ = dot(n, uSunDir);
-            vec2 sunDepth = vec2(sunOpticalDepth(uRayleighH, uInvRayleighH, planetHalf, h, cosZ), sunOpticalDepth(uMieH, uInvMieH, planetHalf, h, cosZ));
             vec2 total = toSample + sunDepth;
-            vec3 tr = exp(-(uExtRayleigh * total.x + vec3(uBetaMie * total.y))) * (lit * dt);
+            vec3 tr = exp(-(uExtRayleigh * total.x + vec3(uBetaMie * total.y))) * dt;
             sumR += d.x * tr;
             sumM += d.y * tr;
         }
+
+        if (minExt * viewDepth.x + uBetaMie * viewDepth.y > OPAQUE_DEPTH) break;
+        f0 = f1;
     }
 
     float cosTheta = dot(rayDir, uSunDir);
     float rayleighPhase = 3.0 / (16.0 * PI) * (1.0 + cosTheta * cosTheta);
     float g = clamp(uMieG, -0.99, 0.99);
     float g2 = g * g;
-    float miePhase = (1.0 - g2) * INV_4PI / pow(max(1e-4, 1.0 + g2 - 2.0 * g * cosTheta), 1.5);
+    float denom = max(1e-4, 1.0 + g2 - 2.0 * g * cosTheta);
+    float miePhase = (1.0 - g2) * INV_4PI / (denom * sqrt(denom));
 
     float iso = uMultiScatterStrength * INV_4PI;
     vec3 radiance = uSunIntensity * (uBetaRayleigh * sumR * (rayleighPhase + iso) + (uBetaMie * uMieAlbedo) * sumM * (miePhase + iso));
@@ -220,7 +238,7 @@ void main()
 
     vec3 col;
     float alpha;
-    if (uTerrainGround > 0.5 && overGround)
+    if (terrain && overGround)
     {
         col = linearToSrgb(lt + transmittance * uGroundColor);
         alpha = 1.0;
