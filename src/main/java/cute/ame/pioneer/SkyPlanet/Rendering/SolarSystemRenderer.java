@@ -299,13 +299,14 @@ public final class SolarSystemRenderer
             ps.popPose();
         }
 
+        final float terrainCutoff = isSelf ? (float) (Minecraft.getInstance().gameRenderer.getRenderDistance() / PlanetCube.halfSide(planet)) : 0.0f;
         planet.atmosphere().ifPresent(atmo ->
         {
             ps.pushPose();
             ps.scale(apparentSize, apparentSize, apparentSize);
 
             GPUProfiler.begin("planet.volumetric.atmosphere");
-            AtmosphereRenderer.render(ps, atmo, env, planet.size(), -camLX, -camLY, -camLZ, sunLX, sunLY, sunLZ, camDistObj, isSelf && alpha <= 0.0f);
+            AtmosphereRenderer.render(ps, atmo, env, planet.size(), -camLX, -camLY, -camLZ, sunLX, sunLY, sunLZ, camDistObj, isSelf && alpha <= 0.0f, terrainCutoff);
             GPUProfiler.end();
 
             ps.popPose();
