@@ -1,0 +1,13 @@
+{
+  "blocks": [
+    "#minecraft:copper_ores",
+    "minecraft:copper_block",
+    "minecraft:copper_grate",
+    "minecraft:lightning_rod"
+  ],
+  "conductivity": 400.0,
+  "volumetric_heat": 3450000.0,
+  "breakdown_k": 1358.0,
+  "emissivity": 0.05,
+  "priority": 10
+}

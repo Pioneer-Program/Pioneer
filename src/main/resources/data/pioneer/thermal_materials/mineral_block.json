@@ -1,0 +1,15 @@
+{
+  "blocks": [
+    "#minecraft:beacon_base_blocks",
+    "minecraft:lapis_block",
+    "minecraft:redstone_block",
+    "minecraft:amethyst_block",
+    "minecraft:quartz_block",
+    "minecraft:coal_block"
+  ],
+  "conductivity": 8.0,
+  "volumetric_heat": 2400000.0,
+  "breakdown_k": 1800.0,
+  "emissivity": 0.6,
+  "priority": 5
+}

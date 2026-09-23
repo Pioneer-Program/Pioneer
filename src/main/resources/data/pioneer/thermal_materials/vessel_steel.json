@@ -1,0 +1,14 @@
+{
+  "blocks": [
+    "pioneer:vaccum_tank",
+    "pioneer:vaccum_pipe",
+    "pioneer:vaccum_pump",
+    "pioneer:valve",
+    "pioneer:vent"
+  ],
+  "conductivity": 16.0,
+  "volumetric_heat": 3900000.0,
+  "breakdown_k": 1700.0,
+  "emissivity": 0.3,
+  "priority": 20
+}

@@ -1,0 +1,11 @@
+{
+  "blocks": [
+    "minecraft:obsidian",
+    "minecraft:crying_obsidian"
+  ],
+  "conductivity": 1.4,
+  "volumetric_heat": 2600000.0,
+  "breakdown_k": 1900.0,
+  "emissivity": 0.9,
+  "priority": 10
+}

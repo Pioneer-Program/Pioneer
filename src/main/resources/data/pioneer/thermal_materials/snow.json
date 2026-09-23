@@ -1,0 +1,8 @@
+{
+  "blocks": ["#minecraft:snow", "minecraft:powder_snow"],
+  "conductivity": 0.3,
+  "volumetric_heat": 210000.0,
+  "breakdown_k": 273.15,
+  "emissivity": 0.98,
+  "priority": 10
+}

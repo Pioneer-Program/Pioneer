@@ -235,7 +235,7 @@ public final class FluidGraph
                 if (node > maxNodeId) maxNodeId = node;
             }
 
-            float here = conductanceOf(vessel, state);
+            float here = conductanceOf(level, pos, vessel, state);
             if (here <= 0.0f) continue;
 
             if (vessel instanceof VentBlock)
@@ -273,7 +273,7 @@ public final class FluidGraph
                 int other = nodeAt(level, cursor, store);
                 if (other == FluidNodeStore.INVALID || other == node) continue;
 
-                float there = conductanceOf(neighbourVessel, neighbourState);
+                float there = conductanceOf(level, cursor, neighbourVessel, neighbourState);
                 if (there <= 0.0f) continue;
 
                 addEdge(node, other, Math.min(here, there), FluidSolver.UNDIRECTED);
@@ -345,7 +345,7 @@ public final class FluidGraph
         BlockState state = level.getBlockState(side);
         if (!(state.getBlock() instanceof FluidVesselBlock vessel)) return node;
 
-        float there = conductanceOf(vessel, state);
+        float there = conductanceOf(level, side, vessel, state);
         if (there <= 0.0f) return node;
 
         int other = nodeAt(level, side, store);
@@ -395,9 +395,14 @@ public final class FluidGraph
         return store.resolve(vessel.getNodeHandle());
     }
 
-    private static float conductanceOf(FluidVesselBlock vessel, BlockState state)
+    private static float conductanceOf(ServerLevel level, BlockPos pos, FluidVesselBlock vessel, BlockState state)
     {
-        if (vessel instanceof ValveBlock && !ValveBlock.isOpen(state)) return 0.0f;
+        if (vessel instanceof ValveBlock)
+        {
+            if (!ValveBlock.isOpen(state)) return 0.0f;
+
+            return vessel.getConductance() * ValveBlock.throttleAt(level, pos);
+        }
 
         if (vessel instanceof PumpBlock && !PumpBlock.isActive(state)) return 0.0f;
 

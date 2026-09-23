@@ -1,6 +1,7 @@
 package cute.ame.pioneer.Fluid.Event;
 
 import cute.ame.pioneer.Config;
+import cute.ame.pioneer.Core.Thermal.BlockHeatSink;
 import cute.ame.pioneer.Core.Thermal.BlockTemperature;
 import cute.ame.pioneer.Fluid.Data.FluidNodeStore;
 import cute.ame.pioneer.Fluid.Graph.FluidGraph;
@@ -10,6 +11,7 @@ import cute.ame.pioneer.Fluid.Level.RoomLevelData;
 import cute.ame.pioneer.Fluid.Physics.ComponentPartition;
 import cute.ame.pioneer.Fluid.Physics.RoomScanner;
 import cute.ame.pioneer.Fluid.Physics.ThermalExchange;
+import cute.ame.pioneer.Fluid.Registry.FluidSpecies;
 import cute.ame.pioneer.Pioneer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -45,10 +47,13 @@ public final class ThermalCouplingTickEvents
         int[] nodeOffsets = partition.nodeOffsets();
         BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
 
+        float[] molarHeat = FluidSpecies.active().molarHeatRaw();
+
+        long[] sampled = new long[maxSamples];
+        double[] capacities = new double[maxSamples];
+
         for (int c = 0, components = partition.count(); c < components; c++)
         {
-            if (graph.isAsleep(c)) continue;
-
             for (int i = nodeOffsets[c], to = nodeOffsets[c + 1]; i < to; i++)
             {
                 int nodeId = nodeOrder[i];
@@ -58,20 +63,22 @@ public final class ThermalCouplingTickEvents
                 int end = graph.vesselEnd(nodeId);
                 if (from >= end) continue;
 
-                couple(level, data, store, vessels, from, end, nodeId, perBlock, maxSamples, cursor);
+                couple(level, data, store, vessels, from, end, nodeId, perBlock, maxSamples, cursor, molarHeat, sampled, capacities);
             }
         }
 
-        coupleRooms(level, data, store, graph, partition, perBlock, cursor);
+        coupleRooms(level, data, store, perBlock, cursor, molarHeat);
     }
 
-    private static void couple(ServerLevel level, FluidLevelData data, FluidNodeStore store, long[] vessels, int from, int end, int nodeId, float perBlock, int maxSamples, BlockPos.MutableBlockPos cursor)
+    private static void couple(ServerLevel level, FluidLevelData data, FluidNodeStore store, long[] vessels, int from, int end, int nodeId, float perBlock, int maxSamples, BlockPos.MutableBlockPos cursor, float[] molarHeat, long[] sampled, double[] capacities)
     {
         int blocks = end - from;
         int samples = Math.min(blocks, maxSamples);
         int stride = blocks / samples;
 
         double sum = 0.0;
+        double capacitySum = 0.0;
+        boolean bounded = true;
         int taken = 0;
 
         for (int k = 0; k < samples; k++)
@@ -82,6 +89,13 @@ public final class ThermalCouplingTickEvents
             if (!FluidLevels.isLoaded(level, cursor)) continue;
 
             sum += BlockTemperature.of(level, cursor);
+
+            double capacity = BlockHeatSink.capacityAt(level, cursor);
+            if (Double.isNaN(capacity)) bounded = false;
+            else capacitySum += capacity;
+
+            sampled[taken] = packed;
+            capacities[taken] = capacity;
             taken++;
         }
 
@@ -90,10 +104,23 @@ public final class ThermalCouplingTickEvents
         float blockKelvin = (float) (sum / taken);
         float rate = Math.min(1.0f, blocks * perBlock);
 
-        if (ThermalExchange.apply(store, nodeId, blockKelvin, rate)) data.touch(nodeId);
+        double joules = ThermalExchange.apply(store, nodeId, blockKelvin, bounded ? capacitySum : BlockHeatSink.UNKNOWN, molarHeat, rate);
+        if (joules == 0.0) return;
+
+        data.touch(nodeId);
+
+        if (!bounded || capacitySum <= 0.0) return;
+
+        for (int k = 0; k < taken; k++)
+        {
+            long packed = sampled[k];
+            cursor.set(BlockPos.getX(packed), BlockPos.getY(packed), BlockPos.getZ(packed));
+
+            BlockHeatSink.inject(level, cursor, -joules * (capacities[k] / capacitySum));
+        }
     }
 
-    private static void coupleRooms(ServerLevel level, FluidLevelData data, FluidNodeStore store, FluidGraph graph, ComponentPartition.Result partition, float perBlock, BlockPos.MutableBlockPos cursor)
+    private static void coupleRooms(ServerLevel level, FluidLevelData data, FluidNodeStore store, float perBlock, BlockPos.MutableBlockPos cursor, float[] molarHeat)
     {
         RoomLevelData rooms = RoomLevelData.getIfPresent(level);
         if (rooms == null || rooms.roomCount() == 0) return;
@@ -103,14 +130,12 @@ public final class ThermalCouplingTickEvents
             int nodeId = room.nodeId();
             if (!store.alive(nodeId)) continue;
 
-            if (graph.isAsleep(partition.componentOf(nodeId))) continue;
-
             long origin = room.origin();
             cursor.set(RoomScanner.unpackX(origin), RoomScanner.unpackY(origin), RoomScanner.unpackZ(origin));
             if (!FluidLevels.isLoaded(level, cursor)) continue;
 
             float blockKelvin = BlockTemperature.of(level, cursor);
-            if (ThermalExchange.apply(store, nodeId, blockKelvin, perBlock)) data.touch(nodeId);
+            if (ThermalExchange.apply(store, nodeId, blockKelvin, BlockHeatSink.UNKNOWN, molarHeat, perBlock) != 0.0) data.touch(nodeId);
         }
     }
 }

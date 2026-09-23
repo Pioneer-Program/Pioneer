@@ -1,0 +1,11 @@
+{
+  "blocks": [
+    "#minecraft:wool",
+    "#minecraft:wool_carpets"
+  ],
+  "conductivity": 0.04,
+  "volumetric_heat": 39000.0,
+  "breakdown_k": 600.0,
+  "emissivity": 0.9,
+  "priority": 10
+}

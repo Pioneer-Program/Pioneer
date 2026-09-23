@@ -1,0 +1,27 @@
+{
+  "blocks": [
+    "#minecraft:base_stone_overworld",
+    "#minecraft:base_stone_nether",
+    "#minecraft:stone_bricks",
+    "#minecraft:stairs",
+    "#minecraft:slabs",
+    "#minecraft:walls",
+    "#c:stones",
+    "#c:cobblestones",
+    "minecraft:cobblestone",
+    "minecraft:deepslate",
+    "minecraft:cobbled_deepslate",
+    "minecraft:sandstone",
+    "minecraft:chiseled_sandstone",
+    "minecraft:cut_sandstone",
+    "minecraft:smooth_sandstone",
+    "minecraft:red_sandstone",
+    "minecraft:chiseled_red_sandstone",
+    "minecraft:cut_red_sandstone",
+    "minecraft:smooth_red_sandstone"
+  ],
+  "conductivity": 2.5,
+  "volumetric_heat": 2200000.0,
+  "breakdown_k": 1500.0,
+  "emissivity": 0.9
+}

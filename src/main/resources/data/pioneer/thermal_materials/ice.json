@@ -1,0 +1,11 @@
+{
+  "blocks": [
+    "#minecraft:ice"
+  ],
+  "conductivity": 2.2,
+  "volumetric_heat": 1900000.0,
+  "breakdown_k": 273.15,
+  "breakdown_result": "minecraft:water",
+  "emissivity": 0.97,
+  "priority": 10
+}

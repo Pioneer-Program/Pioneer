@@ -180,6 +180,9 @@ public final class FluidDebugCommand
             return 1;
         }
 
+        double heatCapacity = FluidHeat.capacity(store, id, table.molarHeatRaw());
+        source.sendSuccess(() -> Component.literal(String.format("  " + ChatFormatting.GRAY + "heat capacity " + ChatFormatting.AQUA + "%.1f J/K", heatCapacity)), false);
+
         for (int s = 0; s < store.getStride(); s++)
         {
             float mol = store.amount(id, s);

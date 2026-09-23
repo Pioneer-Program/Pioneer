@@ -1,0 +1,8 @@
+{
+  "blocks": ["pioneer:heat_pipe"],
+  "conductivity": 50000.0,
+  "volumetric_heat": 2000000.0,
+  "breakdown_k": 1200.0,
+  "emissivity": 0.15,
+  "priority": 20
+}

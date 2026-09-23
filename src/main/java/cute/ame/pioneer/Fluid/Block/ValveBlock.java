@@ -1,5 +1,6 @@
 package cute.ame.pioneer.Fluid.Block;
 
+import cute.ame.pioneer.Fluid.BlockEntity.FluidVesselBlockEntity;
 import cute.ame.pioneer.Fluid.Level.FluidLevelData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -9,6 +10,7 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -23,6 +25,9 @@ public class ValveBlock extends FluidVesselBlock
 {
     public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
     public static final String CHANNEL_OPEN = "open";
+    public static final String CHANNEL_THROTTLE = "throttle";
+
+    private static final float NUDGE = 0.25f;
 
     public ValveBlock()
     {
@@ -52,6 +57,16 @@ public class ValveBlock extends FluidVesselBlock
     {
         if (level.isClientSide) return InteractionResult.SUCCESS;
 
+        if (player.isSecondaryUseActive())
+        {
+            float next = throttleAt(level, pos) + NUDGE;
+            if (next > 1.0f) next = NUDGE;
+
+            setThrottle(level, pos, next);
+            player.displayClientMessage(Component.translatable("valve.pioneer.throttle", Math.round(next * 100.0f)), true);
+            return InteractionResult.CONSUME;
+        }
+
         setOpen(level, pos, state, !isOpen(state));
         player.displayClientMessage(Component.translatable(isOpen(level.getBlockState(pos)) ? "valve.pioneer.opened" : "valve.pioneer.closed"), true);
         return InteractionResult.CONSUME;
@@ -72,6 +87,18 @@ public class ValveBlock extends FluidVesselBlock
         }
 
         return true;
+    }
+
+    public static float throttleAt(BlockGetter level, BlockPos pos)
+    {
+        return level.getBlockEntity(pos) instanceof FluidVesselBlockEntity vessel ? vessel.getThrottle() : 1.0f;
+    }
+
+    public static boolean setThrottle(Level level, BlockPos pos, float throttle)
+    {
+        if (!(level.getBlockEntity(pos) instanceof FluidVesselBlockEntity vessel)) return false;
+
+        return vessel.setThrottle(throttle);
     }
 
     @Override

@@ -6,8 +6,7 @@ import cute.ame.pioneer.Fluid.Helper.AmbientResolver;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
 
 public final class BlockTemperature
 {
@@ -19,18 +18,23 @@ public final class BlockTemperature
         double temperatureAt(ServerLevel level, BlockPos pos);
     }
 
-    private static final List<Source> SOURCES = new ArrayList<>(2);
+    private static volatile Source[] SOURCES = new Source[0];
 
-    public static void register(Source source)
+    public static synchronized void register(Source source)
     {
-        if (source != null) SOURCES.add(source);
+        if (source == null) return;
+
+        Source[] next = Arrays.copyOf(SOURCES, SOURCES.length + 1);
+        next[next.length - 1] = source;
+        SOURCES = next;
     }
 
     public static float of(ServerLevel level, BlockPos pos)
     {
-        for (int i = 0; i < SOURCES.size(); i++)
+        Source[] sources = SOURCES;
+        for (int i = 0; i < sources.length; i++)
         {
-            double answer = SOURCES.get(i).temperatureAt(level, pos);
+            double answer = sources[i].temperatureAt(level, pos);
             if (!Double.isNaN(answer)) return (float) answer;
         }
 

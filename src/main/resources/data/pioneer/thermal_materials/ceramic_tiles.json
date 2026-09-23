@@ -1,0 +1,10 @@
+{
+  "blocks": [
+    "pioneer:ceramic_tiles"
+  ],
+  "conductivity": 0.8,
+  "volumetric_heat": 1400000.0,
+  "breakdown_k": 1900.0,
+  "emissivity": 0.9,
+  "priority": 20
+}

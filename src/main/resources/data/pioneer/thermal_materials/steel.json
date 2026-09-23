@@ -1,0 +1,15 @@
+{
+  "blocks": [
+    "minecraft:iron_block",
+    "minecraft:iron_bars",
+    "minecraft:iron_door",
+    "minecraft:iron_trapdoor",
+    "minecraft:anvil",
+    "minecraft:chain"
+  ],
+  "conductivity": 45.0,
+  "volumetric_heat": 3860000.0,
+  "breakdown_k": 1811.0,
+  "emissivity": 0.35,
+  "priority": 10
+}

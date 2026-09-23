@@ -1,0 +1,23 @@
+{
+  "blocks": [
+    "pioneer:arid_dust",
+    "pioneer:arid_rock",
+    "minecraft:sand",
+    "minecraft:red_sand",
+    "minecraft:gravel",
+    "pioneer:arid_rock_cracked",
+    "pioneer:arid_rock_polished",
+    "pioneer:arid_strata_red",
+    "pioneer:arid_strata_orange",
+    "pioneer:arid_strata_white",
+    "pioneer:arid_strata_maroon",
+    "pioneer:arid_crystal_small",
+    "pioneer:arid_crystal_medium",
+    "pioneer:arid_crystal_large",
+    "pioneer:arid_glyph"
+  ],
+  "conductivity": 0.25,
+  "volumetric_heat": 1300000.0,
+  "emissivity": 0.95,
+  "priority": 10
+}
