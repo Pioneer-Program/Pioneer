@@ -1,8 +1,0 @@
-{
-  "blocks": ["minecraft:netherite_block", "minecraft:ancient_debris"],
-  "conductivity": 30.0,
-  "volumetric_heat": 4000000.0,
-  "breakdown_k": 2500.0,
-  "emissivity": 0.4,
-  "priority": 10
-}

@@ -3,7 +3,6 @@ package cute.ame.pioneer.Fluid.Block;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.mojang.serialization.MapCodec;
-import cute.ame.pioneer.Fluid.Data.FluidConstants;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -22,8 +21,9 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
+import cute.ame.celsius.Fluid.Data.FluidConstants;
 
-public class PipeBlock extends FluidVesselBlock
+public class PipeBlock extends PioneerVesselBlock
 {
     public static final MapCodec<PipeBlock> CODEC = MapCodec.unit(PipeBlock::new);
 

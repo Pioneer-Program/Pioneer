@@ -1,8 +1,0 @@
-{
-  "blocks": ["#minecraft:leaves", "minecraft:hay_block", "#minecraft:wool_carpets"],
-  "conductivity": 0.1,
-  "volumetric_heat": 300000.0,
-  "breakdown_k": 523.0,
-  "emissivity": 0.95,
-  "priority": 10
-}

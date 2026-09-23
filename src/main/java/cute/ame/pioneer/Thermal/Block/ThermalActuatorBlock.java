@@ -1,8 +1,8 @@
 package cute.ame.pioneer.Thermal.Block;
 
 import cute.ame.pioneer.Thermal.BlockEntity.ThermalActuatorBlockEntity;
-import cute.ame.pioneer.Thermal.Data.ThermalDevice;
-import cute.ame.pioneer.Thermal.Registry.ThermalDevices;
+import cute.ame.celsius.Thermal.Data.ThermalDevice;
+import cute.ame.celsius.Thermal.Registry.ThermalDevices;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;

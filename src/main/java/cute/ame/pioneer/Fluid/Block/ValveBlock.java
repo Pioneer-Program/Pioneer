@@ -1,7 +1,7 @@
 package cute.ame.pioneer.Fluid.Block;
 
-import cute.ame.pioneer.Fluid.BlockEntity.FluidVesselBlockEntity;
-import cute.ame.pioneer.Fluid.Level.FluidLevelData;
+import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
+import cute.ame.celsius.Fluid.Level.FluidLevelData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -21,7 +21,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class ValveBlock extends FluidVesselBlock
+public class ValveBlock extends PioneerVesselBlock
 {
     public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
     public static final String CHANNEL_OPEN = "open";
@@ -91,14 +91,20 @@ public class ValveBlock extends FluidVesselBlock
 
     public static float throttleAt(BlockGetter level, BlockPos pos)
     {
-        return level.getBlockEntity(pos) instanceof FluidVesselBlockEntity vessel ? vessel.getThrottle() : 1.0f;
+        return level.getBlockEntity(pos) instanceof PioneerVesselBlockEntity vessel ? vessel.getThrottle() : 1.0f;
     }
 
     public static boolean setThrottle(Level level, BlockPos pos, float throttle)
     {
-        if (!(level.getBlockEntity(pos) instanceof FluidVesselBlockEntity vessel)) return false;
+        if (!(level.getBlockEntity(pos) instanceof PioneerVesselBlockEntity vessel)) return false;
 
         return vessel.setThrottle(throttle);
+    }
+
+    @Override
+    public float conductance(Level level, BlockPos pos, BlockState state)
+    {
+        return isOpen(state) ? getConductance() * throttleAt(level, pos) : 0.0f;
     }
 
     @Override

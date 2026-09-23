@@ -3,12 +3,12 @@ package cute.ame.pioneer.Fluid.BlockEntity;
 import cute.ame.pioneer.Fluid.Block.MassSpectrometerBlock;
 
 import cute.ame.pioneer.Fluid.Block.SensorBlock;
-import cute.ame.pioneer.Fluid.Helper.SensorReadings;
+import cute.ame.celsius.Fluid.Helper.SensorReadings;
 
 import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Core.Computer.ComputerPeripheral;
-import cute.ame.pioneer.Fluid.Registry.FluidSpecies;
-import cute.ame.pioneer.Fluid.Data.SpeciesTable;
+import cute.ame.celsius.Fluid.Registry.FluidSpecies;
+import cute.ame.celsius.Fluid.Data.SpeciesTable;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;

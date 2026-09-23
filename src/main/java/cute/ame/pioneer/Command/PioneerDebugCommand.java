@@ -14,8 +14,6 @@ public final class PioneerDebugCommand
             .then(ShadingDebugCommand.build())
             .then(ObserverDebugCommand.build())
             .then(TimeDebugCommand.build())
-            .then(FluidDebugCommand.build())
-            .then(ThermalDebugCommand.build())
         );
     }
 }

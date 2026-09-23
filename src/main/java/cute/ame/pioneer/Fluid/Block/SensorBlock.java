@@ -5,7 +5,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.resources.ResourceLocation;
 
 import cute.ame.pioneer.Fluid.BlockEntity.SensorBlockEntity;
-import cute.ame.pioneer.Fluid.Helper.SensorReadings;
+import cute.ame.celsius.Fluid.Helper.SensorReadings;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;

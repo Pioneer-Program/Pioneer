@@ -1,8 +1,8 @@
 package cute.ame.pioneer.Fluid.Block;
 
-import cute.ame.pioneer.Fluid.Data.FluidConstants;
+import cute.ame.celsius.Fluid.Data.FluidConstants;
 
-public class TankBlock extends FluidVesselBlock
+public class TankBlock extends PioneerVesselBlock
 {
     public TankBlock()
     {
