@@ -1,5 +1,6 @@
 package cute.ame.pioneer.Fluid.Helper;
 
+import cute.ame.celsius.Core.Thermal.ChunkResidency;
 import dev.ryanhcode.sable.Sable;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.BoundingBox3d;
@@ -13,6 +14,21 @@ import org.jetbrains.annotations.Nullable;
 
 public final class FluidLevels
 {
+    public static final ChunkResidency RESIDENCY = new ChunkResidency()
+    {
+        @Override
+        public boolean isLoaded(ServerLevel level, BlockPos pos)
+        {
+            return FluidLevels.isLoaded(level, pos);
+        }
+
+        @Override
+        public BlockPos locate(ServerLevel level, Vec3 point)
+        {
+            return FluidLevels.resolve(level, point).pos();
+        }
+    };
+
     public record Located(ServerLevel level, BlockPos pos, @Nullable SubLevel subLevel)
     {
         public boolean onSubLevel() { return subLevel != null; }

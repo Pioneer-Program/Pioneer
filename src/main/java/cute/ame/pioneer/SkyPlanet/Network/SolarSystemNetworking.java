@@ -1,7 +1,8 @@
 package cute.ame.pioneer.SkyPlanet.Network;
 
 import cute.ame.pioneer.Pioneer;
-import cute.ame.pioneer.SkyPlanet.Network.client.GasClientPayloadHandler;
+import cute.ame.pioneer.Gas.Network.GasSyncPayload;
+import cute.ame.pioneer.Gas.Network.client.GasClientPayloadHandler;
 import cute.ame.pioneer.SkyPlanet.Network.client.SolarSystemClientPayloadHandler;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;

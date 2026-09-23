@@ -29,6 +29,11 @@ repositories {
     }
 
     maven {
+        name = "JitPack"
+        url = "https://jitpack.io"
+    }
+
+    maven {
         name = 'BlameJared Maven (CrT / Bookshelf)'
         url = 'https://maven.blamejared.com'
     }
@@ -120,6 +125,9 @@ dependencies {
     }
     runMods "curse.maven:iris-veil-compat-1541252:8280410"
 
+    // ENGINE
+    implementation "com.github.Pioneer-Program:Celsius:${celsius_version}"
+
     // GAMEPLAY STUFF
     implementation "dev.ryanhcode.sable:sable-neoforge-${minecraft_version}:${sable_version}"
     compileOnly "dev.ryanhcode.sable-companion:sable-companion-common-${minecraft_version}:${sable_companion_version}"
@@ -151,7 +159,7 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
          sable_version_range: sable_version_range,
          veil_version_range: veil_version_range,
          iris_version_range: iris_version_range,
-         irisveil_version_range: irisveil_version_range
+         irisveil_version_range: irisveil_version_range,
     ]
     inputs.properties replaceProperties
     expand replaceProperties

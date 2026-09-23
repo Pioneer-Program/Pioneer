@@ -2,22 +2,14 @@ package cute.ame.pioneer.Thermal.BlockEntity;
 
 import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Core.Computer.ComputerPeripheral;
-import cute.ame.pioneer.Core.Thermal.BlockHeatSink;
-import cute.ame.pioneer.Core.Thermal.BlockTemperature;
-import cute.ame.pioneer.Fluid.BlockEntity.FluidVesselBlockEntity;
-import cute.ame.pioneer.Fluid.Data.FluidNodeStore;
-import cute.ame.pioneer.Fluid.Level.FluidLevelData;
-import cute.ame.pioneer.Fluid.Physics.FluidHeat;
-import cute.ame.pioneer.Fluid.Registry.FluidSpecies;
+import cute.ame.celsius.Core.Thermal.BlockTemperature;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
 import cute.ame.pioneer.Thermal.Block.ThermalActuatorBlock;
-import cute.ame.pioneer.Thermal.Data.MaterialTable;
-import cute.ame.pioneer.Thermal.Data.ThermalDevice;
-import cute.ame.pioneer.Thermal.Level.ThermalLevelData;
-import cute.ame.pioneer.Thermal.Registry.ThermalDevices;
-import cute.ame.pioneer.Thermal.Registry.ThermalMaterials;
+import cute.ame.celsius.Thermal.Data.ThermalDevice;
+import cute.ame.celsius.Thermal.Helper.ThermalActuator;
+import cute.ame.celsius.Thermal.Level.ThermalLevelData;
+import cute.ame.celsius.Thermal.Registry.ThermalDevices;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -59,7 +51,7 @@ public class ThermalActuatorBlockEntity extends BlockEntity implements ComputerP
     {
         if (!(level instanceof ServerLevel server)) return;
 
-        int period = Math.max(Config.THERMAL_PERIOD.get(), 1);
+        int period = Math.max(cute.ame.celsius.Config.THERMAL_PERIOD.get(), 1);
         if (server.getGameTime() % period != 0) return;
 
         BlockState state = getBlockState();
@@ -68,80 +60,11 @@ public class ThermalActuatorBlockEntity extends BlockEntity implements ComputerP
         ThermalDevice device = ThermalDevices.of(state);
         if (device == null) return;
 
-        float dt = (float) (period / 20.0 * Config.THERMAL_TIME_SCALE.get());
+        float dt = (float) (period / 20.0 * cute.ame.celsius.Config.THERMAL_TIME_SCALE.get());
         float budget = device.watts() * dt;
 
-        if (device.cooling()) pump(server, device, budget);
-        else heat(server, state, device, budget);
-    }
-
-    private void heat(ServerLevel server, BlockState state, ThermalDevice device, float budget)
-    {
-        float capacity = capacityOf(state);
-        if (capacity <= 0.0f) return;
-
-        ThermalLevelData data = ThermalLevelData.get(server);
-
-        float current = data.kelvinAt(worldPosition);
-        if (Float.isNaN(current)) current = BlockTemperature.dimensionDefault(server);
-
-        float owed = (getSetpoint() - current) * capacity;
-        if (owed <= 0.0f) return;
-
-        float change = Math.min(owed, budget) / capacity;
-        if (change < Config.THERMAL_EPSILON_K.get()) return;
-
-        data.force(worldPosition, current + change);
-    }
-
-    private void pump(ServerLevel server, ThermalDevice device, float budget)
-    {
-        FluidLevelData fluids = FluidLevelData.getIfPresent(server);
-        if (fluids == null) return;
-
-        FluidNodeStore store = fluids.store();
-        int node = adjacentNode(server, store);
-        if (node == FluidNodeStore.INVALID) return;
-
-        float[] molarHeat = FluidSpecies.active().molarHeatRaw();
-        double fluidCapacity = FluidHeat.capacity(store, node, molarHeat);
-        if (fluidCapacity <= 0.0) return;
-
-        double owed = (getSetpoint() - store.temperature(node)) * fluidCapacity;
-        if (owed >= 0.0) return;
-
-        double joules = Math.max(owed, -budget);
-
-        float moved = FluidHeat.addJoules(store, node, joules, molarHeat);
-        if (moved == 0.0f) return;
-
-        fluids.touch(node);
-
-        double removed = -moved * fluidCapacity;
-        if (removed <= 0.0) return;
-
-        BlockHeatSink.inject(server, worldPosition, removed);
-    }
-
-    private int adjacentNode(ServerLevel server, FluidNodeStore store)
-    {
-        for (Direction face : Direction.values())
-        {
-            if (!(server.getBlockEntity(worldPosition.relative(face)) instanceof FluidVesselBlockEntity vessel)) continue;
-
-            int node = store.resolve(vessel.getNodeHandle());
-            if (node != FluidNodeStore.INVALID && store.moles(node) > 0.0f) return node;
-        }
-
-        return FluidNodeStore.INVALID;
-    }
-
-    private static float capacityOf(BlockState state)
-    {
-        MaterialTable table = ThermalMaterials.table();
-        int material = ThermalMaterials.indexOf(state);
-
-        return table.isValid(material) ? table.volumetricHeat(material) : 0.0f;
+        if (device.cooling()) ThermalActuator.pump(server, worldPosition, ThermalActuator.adjacentNode(server, worldPosition), getSetpoint(), budget);
+        else ThermalActuator.heat(server, worldPosition, state, getSetpoint(), budget);
     }
 
     @Override

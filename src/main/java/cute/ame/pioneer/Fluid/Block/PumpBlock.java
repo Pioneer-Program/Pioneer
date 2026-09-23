@@ -1,8 +1,9 @@
 package cute.ame.pioneer.Fluid.Block;
 
-import cute.ame.pioneer.Fluid.BlockEntity.FluidVesselBlockEntity;
-import cute.ame.pioneer.Fluid.Data.FluidConstants;
-import cute.ame.pioneer.Fluid.Level.FluidLevelData;
+import cute.ame.pioneer.Config;
+import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
+import cute.ame.celsius.Fluid.Data.FluidConstants;
+import cute.ame.celsius.Fluid.Level.FluidLevelData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -29,7 +30,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class PumpBlock extends FluidVesselBlock
+public class PumpBlock extends PioneerVesselBlock
 {
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
     public static final BooleanProperty ACTIVE = BlockStateProperties.LIT;
@@ -96,7 +97,7 @@ public class PumpBlock extends FluidVesselBlock
 
     public static float powerAt(BlockGetter level, BlockPos pos)
     {
-        return level.getBlockEntity(pos) instanceof FluidVesselBlockEntity vessel ? vessel.getPower() : 1.0f;
+        return level.getBlockEntity(pos) instanceof PioneerVesselBlockEntity vessel ? vessel.getPower() : 1.0f;
     }
 
     public static boolean isActive(BlockState state)
@@ -172,6 +173,24 @@ public class PumpBlock extends FluidVesselBlock
             case DOWN -> Block.box(box[0], box[2], 16.0 - box[4], box[3], box[5], 16.0 - box[1]);
             case UP -> Block.box(box[0], 16.0 - box[5], box[1], box[3], 16.0 - box[2], box[4]);
         };
+    }
+
+    @Override
+    public float conductance(Level level, BlockPos pos, BlockState state)
+    {
+        return isActive(state) ? getConductance() : 0.0f;
+    }
+
+    @Override
+    public @NotNull Direction outlet(BlockState state)
+    {
+        return state.getValue(FACING);
+    }
+
+    @Override
+    public float boost(Level level, BlockPos pos, BlockState state)
+    {
+        return Config.PUMP_BOOST_P.get().floatValue() * powerAt(level, pos);
     }
 
     @Override

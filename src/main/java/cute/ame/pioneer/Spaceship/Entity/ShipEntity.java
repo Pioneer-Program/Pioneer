@@ -1,7 +1,7 @@
 package cute.ame.pioneer.Spaceship.Entity;
 
-import cute.ame.pioneer.Fluid.Helper.VesselRelocation;
-import cute.ame.pioneer.Thermal.Helper.ThermalRelocation;
+import cute.ame.celsius.Fluid.Helper.VesselRelocation;
+import cute.ame.celsius.Thermal.Helper.ThermalRelocation;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Registrie.ModAttachmentTypes;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
