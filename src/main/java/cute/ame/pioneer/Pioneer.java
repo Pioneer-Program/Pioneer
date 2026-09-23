@@ -2,11 +2,11 @@ package cute.ame.pioneer;
 
 import com.mojang.logging.LogUtils;
 import cute.ame.pioneer.Command.PioneerDebugCommand;
-import cute.ame.pioneer.Core.Thermal.BlockHeatSink;
-import cute.ame.pioneer.Core.Thermal.BlockTemperature;
+import cute.ame.celsius.Core.Thermal.Ambient;
+import cute.ame.celsius.Core.Thermal.Residency;
+import cute.ame.pioneer.Fluid.Helper.AmbientResolver;
+import cute.ame.pioneer.Fluid.Helper.FluidLevels;
 import cute.ame.pioneer.Registrie.*;
-import cute.ame.pioneer.Thermal.Helper.ThermalBlockSink;
-import cute.ame.pioneer.Thermal.Level.ThermalLevelData;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -34,8 +34,8 @@ public class Pioneer
     ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
     modContainer.registerConfig(ModConfig.Type.SERVER, Config.SPEC);
     ModCreativeModeTabs.register(modEventBus);
-    BlockTemperature.register(ThermalLevelData::temperatureAt);
-    BlockHeatSink.register(ThermalBlockSink.INSTANCE);
+    Ambient.register(AmbientResolver.PROVIDER);
+    Residency.install(FluidLevels.RESIDENCY);
 
     NeoForge.EVENT_BUS.addListener(Pioneer::onRegisterCommands);
   }

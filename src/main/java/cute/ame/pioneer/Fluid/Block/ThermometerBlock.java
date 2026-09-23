@@ -2,7 +2,7 @@ package cute.ame.pioneer.Fluid.Block;
 
 import com.mojang.serialization.MapCodec;
 import cute.ame.pioneer.Core.Computer.ComputerPeripheral;
-import cute.ame.pioneer.Fluid.Helper.SensorReadings;
+import cute.ame.celsius.Fluid.Helper.SensorReadings;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;

@@ -1,7 +1,0 @@
-{
-  "blocks": ["minecraft:air", "minecraft:cave_air", "minecraft:void_air"],
-  "conductivity": 0.026,
-  "volumetric_heat": 1200.0,
-  "emissivity": 0.0,
-  "priority": 30
-}

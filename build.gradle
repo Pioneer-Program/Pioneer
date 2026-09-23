@@ -121,6 +121,7 @@ dependencies {
     runMods "curse.maven:iris-veil-compat-1541252:8280410"
 
     // GAMEPLAY STUFF
+    implementation "celsius:Celsius:1.2.0-dev"
     implementation "dev.ryanhcode.sable:sable-neoforge-${minecraft_version}:${sable_version}"
     compileOnly "dev.ryanhcode.sable-companion:sable-companion-common-${minecraft_version}:${sable_companion_version}"
 

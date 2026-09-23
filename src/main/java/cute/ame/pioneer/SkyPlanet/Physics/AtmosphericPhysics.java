@@ -1,7 +1,9 @@
 package cute.ame.pioneer.SkyPlanet.Physics;
 
-import cute.ame.pioneer.SkyPlanet.Data.GasDefinition;
-import cute.ame.pioneer.SkyPlanet.Registry.GasRegistry;
+import cute.ame.celsius.Fluid.Data.SpeciesDefinition;
+import cute.ame.celsius.Fluid.Registry.SpeciesRegistry;
+import cute.ame.pioneer.Gas.Data.GasProperties;
+import cute.ame.pioneer.Gas.Registry.GasRegistry;
 
 import java.util.Map;
 import java.util.function.ToDoubleFunction;
@@ -11,9 +13,14 @@ public final class AtmosphericPhysics
     private static final double R_GAS = 8.314462618;
     private static final double LAMBDA_R = 680.0, LAMBDA_G = 550.0, LAMBDA_B = 440.0;
 
-    public static GasDefinition gas(String name)
+    public static GasProperties gas(String name)
     {
         return GasRegistry.get(name);
+    }
+
+    public static SpeciesDefinition species(String name)
+    {
+        return SpeciesRegistry.get(name);
     }
 
     public static boolean isKnownGas(String name)
@@ -21,7 +28,7 @@ public final class AtmosphericPhysics
         return GasRegistry.isKnown(name);
     }
 
-    private static double weightedMean(Map<String, Float> composition, ToDoubleFunction<GasDefinition> property, double fallback)
+    private static double weightedMean(Map<String, Float> composition, ToDoubleFunction<GasProperties> property, double fallback)
     {
         double total = 0.0, sum = 0.0;
         for (Map.Entry<String, Float> e : composition.entrySet())
@@ -33,14 +40,26 @@ public final class AtmosphericPhysics
         return (total > 1e-9) ? sum / total : fallback;
     }
 
+    private static double weightedSpeciesMean(Map<String, Float> composition, ToDoubleFunction<SpeciesDefinition> property, double fallback)
+    {
+        double total = 0.0, sum = 0.0;
+        for (Map.Entry<String, Float> e : composition.entrySet())
+        {
+            double f = Math.max(e.getValue(), 0.0);
+            total += f;
+            sum += f * property.applyAsDouble(species(e.getKey()));
+        }
+        return (total > 1e-9) ? sum / total : fallback;
+    }
+
     public static double meanMolarMass(Map<String, Float> composition)
     {
-        return weightedMean(composition, GasDefinition::molarMassGPerMol, 28.97);
+        return weightedSpeciesMean(composition, SpeciesDefinition::molarMassGPerMol, 28.97);
     }
 
     public static double meanRefractivity(Map<String, Float> composition)
     {
-        return weightedMean(composition, GasDefinition::refractivity1e8, 29000.0);
+        return weightedMean(composition, GasProperties::refractivity1e8, 29000.0);
     }
 
     public static double ozoneFraction(Map<String, Float> composition)
@@ -62,7 +81,7 @@ public final class AtmosphericPhysics
 
     public static double greenhouseFraction(Map<String, Float> composition)
     {
-        return Math.min(1.0, weightedMean(composition, GasDefinition::greenhousePotency, 0.0));
+        return Math.min(1.0, weightedMean(composition, GasProperties::greenhousePotency, 0.0));
     }
 
     public static double meanSpecificHeat(Map<String, Float> composition)
@@ -71,10 +90,10 @@ public final class AtmosphericPhysics
         for (Map.Entry<String, Float> e : composition.entrySet())
         {
             double f = Math.max(e.getValue(), 0.0);
-            GasDefinition g = gas(e.getKey());
-            double m = f * g.molarMassGPerMol();
+            SpeciesDefinition s = species(e.getKey());
+            double m = f * s.molarMassGPerMol();
             massTotal += m;
-            sum += m * g.specificHeat();
+            sum += m * s.specificHeat();
         }
         return (massTotal > 1e-9) ? sum / massTotal : 1005.0;
     }

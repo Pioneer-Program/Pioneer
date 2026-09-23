@@ -1,8 +1,4 @@
 {
-  "molar_mass": 17.031,
   "refractivity": 37000.0,
-  "hazard_fraction": 0.0025,
-  "specific_heat": 2190.0,
-  "boiling_point": 239.81,
-  "latent_heat": 1371000
+  "hazard_fraction": 0.0025
 }

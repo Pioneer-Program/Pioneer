@@ -1,15 +1,17 @@
 package cute.ame.pioneer.Fluid.Helper;
 
-import cute.ame.pioneer.Fluid.Data.AmbientState;
+import cute.ame.celsius.Core.Thermal.AmbientProvider;
+import cute.ame.celsius.Fluid.Data.AmbientState;
 import cute.ame.pioneer.Core.API.PioneerAPI;
-import cute.ame.pioneer.Fluid.Registry.FluidSpecies;
-import cute.ame.pioneer.Fluid.Data.SpeciesTable;
+import cute.ame.celsius.Fluid.Registry.FluidSpecies;
+import cute.ame.celsius.Fluid.Data.SpeciesTable;
 import cute.ame.pioneer.SkyPlanet.Data.AtmosphereDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
 import cute.ame.pioneer.SkyPlanet.Physics.PlanetEnvironment;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 
 import java.util.HashMap;
@@ -22,6 +24,21 @@ public final class AmbientResolver
     private static final float DEFAULT_TEMPERATURE_K = 288.15f;
 
     private static final Map<ResourceLocation, AmbientState> CACHE = new HashMap<>();
+
+    public static final AmbientProvider PROVIDER = new AmbientProvider()
+    {
+        @Override
+        public AmbientState of(ServerLevel level)
+        {
+            return AmbientResolver.of(level.dimension());
+        }
+
+        @Override
+        public void invalidate()
+        {
+            AmbientResolver.invalidate();
+        }
+    };
 
     public static AmbientState of(ResourceKey<Level> dimension)
     {
