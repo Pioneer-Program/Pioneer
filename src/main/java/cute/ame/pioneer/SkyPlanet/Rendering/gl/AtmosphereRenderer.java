@@ -33,7 +33,7 @@ public final class AtmosphereRenderer
     private static final double SKY_EXPOSURE = 28.0;
     private static final double SPACE_EXPOSURE = Math.PI;
     private static final int CACHE_LIMIT = 64;
-    private static final float BLEND_START_SHELLS = 0.5f, BLEND_END_SHELLS = 1.0f;
+    private static final float BLEND_START_SHELLS = 0.05f, BLEND_END_SHELLS = 0.2f;
     private static final double MIN_ORIGIN_ALTITUDE_M = 2.0;
     private static final long PROBE_STALE_NANOS = 250_000_000L;
     private static long skyFrameNanos = Long.MIN_VALUE;
@@ -105,7 +105,7 @@ public final class AtmosphereRenderer
         final float lift = Math.max(minAlt - camAlt, 0.0f);
         final float ox = px + nx * lift, oy = py + ny * lift, oz = pz + nz * lift;
         final float blend = smoothstep(BLEND_START_SHELLS * c.shell(), BLEND_END_SHELLS * c.shell(), camAlt);
-        final double adapt = smoothstep(0.0f, c.shell(), camAlt);
+        final double adapt = blend;
         final float sunIntensity = (float) (Math.exp(Math.log(SKY_EXPOSURE) + (Math.log(SPACE_EXPOSURE) - Math.log(SKY_EXPOSURE)) * adapt) * c.irradiance());
         final float proxyHalf = blend < 1.0f ? Math.max(Math.abs(cx), Math.max(Math.abs(cy), Math.abs(cz))) + outerHalf : outerHalf;
         final Matrix4f planetModel = new Matrix4f(poseStack.last().pose());
