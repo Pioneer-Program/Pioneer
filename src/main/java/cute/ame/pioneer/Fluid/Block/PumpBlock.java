@@ -182,6 +182,13 @@ public class PumpBlock extends PioneerVesselBlock
     }
 
     @Override
+    public int ports(BlockState state)
+    {
+        Direction facing = state.getValue(FACING);
+        return port(facing) | port(facing.getOpposite());
+    }
+
+    @Override
     public @NotNull Direction outlet(BlockState state)
     {
         return state.getValue(FACING);
