@@ -98,6 +98,12 @@ public class VentBlock extends PioneerVesselBlock
     }
 
     @Override
+    public int ports(BlockState state)
+    {
+        return ALL_PORTS & ~port(opening(state));
+    }
+
+    @Override
     public @NotNull BlockPos roomMouth(BlockPos pos, BlockState state)
     {
         return mouth(pos, state);
