@@ -16,6 +16,6 @@ public abstract class DebugSpectatorFlightSpeedMixin
         Player self = (Player)(Object) this;
         if(!PioneerAPI.isSpaceDimension(self.level().dimension())) return;
 
-        if (self.isSpectator()) cir.setReturnValue(50000 / 20.f);
+        if (self.isSpectator()) cir.setReturnValue(250 / 20.f);
     }
 }
