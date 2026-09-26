@@ -4,6 +4,7 @@ import cute.ame.celsius.Fluid.BlockEntity.FluidVesselBlockEntity;
 import cute.ame.pioneer.Core.Computer.ComputerPeripheral;
 import cute.ame.celsius.Fluid.Block.FluidVesselBlock;
 import cute.ame.pioneer.Fluid.Block.PumpBlock;
+import cute.ame.pioneer.Fluid.Block.ScrubberBlock;
 import cute.ame.pioneer.Fluid.Block.ValveBlock;
 import cute.ame.celsius.Fluid.Level.FluidLevelData;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
@@ -22,10 +23,12 @@ public class PioneerVesselBlockEntity extends FluidVesselBlockEntity implements 
     private static final String K_LABEL = "label";
     private static final String K_POWER = "power";
     private static final String K_THROTTLE = "throttle";
+    private static final String K_FILTER = "filter";
 
     private String label = "";
     private float throttle = 1.0f;
     private float power = 1.0f;
+    private String filter = "";
 
     public PioneerVesselBlockEntity(BlockPos pos, BlockState state)
     {
@@ -83,6 +86,26 @@ public class PioneerVesselBlockEntity extends FluidVesselBlockEntity implements 
         }
 
         return true;
+    }
+
+    public String getFilter()
+    {
+        return filter.isEmpty() ? ScrubberBlock.DEFAULT_FILTER : filter;
+    }
+
+    public void setFilter(String key)
+    {
+        String next = key == null ? "" : key;
+        if (next.equals(filter)) return;
+
+        filter = next;
+        setChanged();
+
+        if (level instanceof ServerLevel serverLevel)
+        {
+            FluidLevelData data = FluidLevelData.getIfPresent(serverLevel);
+            if (data != null) data.graph().setFilterSpecies(worldPosition, getFilter());
+        }
     }
 
     @Override
@@ -153,6 +176,7 @@ public class PioneerVesselBlockEntity extends FluidVesselBlockEntity implements 
         label = tag.getString(K_LABEL);
         power = tag.contains(K_POWER) ? tag.getFloat(K_POWER) : 1.0f;
         throttle = tag.contains(K_THROTTLE) ? tag.getFloat(K_THROTTLE) : 1.0f;
+        filter = tag.getString(K_FILTER);
     }
 
     @Override
@@ -163,5 +187,6 @@ public class PioneerVesselBlockEntity extends FluidVesselBlockEntity implements 
         if (!label.isEmpty()) tag.putString(K_LABEL, label);
         if (power != 1.0f) tag.putFloat(K_POWER, power);
         if (throttle != 1.0f) tag.putFloat(K_THROTTLE, throttle);
+        if (!filter.isEmpty()) tag.putString(K_FILTER, filter);
     }
 }

@@ -72,4 +72,6 @@ public final class ModItems
   public static final DeferredItem<BlockItem> SHIP_CONTROLLER = ITEMS.register("ship_controller",  () -> new BlockItem(ModBlocks.SHIP_CONTROLLER.get(), new Properties()));
 
   public static final DeferredItem<BlockItem> THRUSTER = ITEMS.register("thruster", () -> new BlockItem(ModBlocks.THRUSTER.get(), new Properties()));
+
+  public static final DeferredItem<BlockItem> SCRUBBER = ITEMS.register("scrubber", () -> new BlockItem(ModBlocks.SCRUBBER.get(), new Properties()));
 }

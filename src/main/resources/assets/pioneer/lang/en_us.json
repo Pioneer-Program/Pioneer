@@ -11,6 +11,7 @@
   "block.pioneer.barometer": "Barometer",
   "block.pioneer.thermometer": "Thermometer",
   "block.pioneer.mass_spectrometer": "Mass Spectrometer",
+  "block.pioneer.scrubber": "Scrubber",
 
   "death.attack.pioneer.asphyxiation": "%1$s ran out of air",
   "death.attack.pioneer.asphyxiation.player": "%1$s ran out of air whilst fighting %2$s",
@@ -23,6 +24,8 @@
   "valve.pioneer.throttle": "Throttle %s%%",
   "valve.pioneer.opened": "Valve opened",
   "valve.pioneer.closed": "Valve closed",
+
+  "scrubber.pioneer.filter": "Filtering %s",
 
   "gauge.pioneer.no_reading": "no reading",
   "gauge.pioneer.pressure": "%s P",
