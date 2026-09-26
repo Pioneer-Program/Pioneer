@@ -9,6 +9,7 @@ import cute.ame.pioneer.Fluid.Block.PipeBlock;
 import cute.ame.pioneer.Fluid.Block.TankBlock;
 import cute.ame.pioneer.Fluid.Block.ThermometerBlock;
 import cute.ame.pioneer.Fluid.Block.PumpBlock;
+import cute.ame.pioneer.Fluid.Block.ScrubberBlock;
 import cute.ame.pioneer.Fluid.Block.ValveBlock;
 import cute.ame.pioneer.Fluid.Block.VentBlock;
 import cute.ame.pioneer.Planet.Arid.Block.*;
@@ -47,8 +48,8 @@ public final class ModBlocks
     );
 
     public static final DeferredBlock<CeramicTiles> CERAMIC_TILES = BLOCKS.register(
-            "ceramic_tiles",
-            CeramicTiles::new
+        "ceramic_tiles",
+        CeramicTiles::new
     );
 
     public static final DeferredBlock<AridRock> ARID_ROCK = BLOCKS.register(
@@ -108,26 +109,31 @@ public final class ModBlocks
 
     public static final DeferredBlock<BarometerBlock> BAROMETER = BLOCKS.register(
         "barometer",
-        () -> new BarometerBlock()
+        BarometerBlock::new
     );
 
     public static final DeferredBlock<ThermometerBlock> THERMOMETER = BLOCKS.register(
         "thermometer",
-        () -> new ThermometerBlock()
+        ThermometerBlock::new
     );
 
     public static final DeferredBlock<MassSpectrometerBlock> MASS_SPECTROMETER = BLOCKS.register(
         "mass_spectrometer",
-        () -> new MassSpectrometerBlock()
+        MassSpectrometerBlock::new
     );
 
     public static final DeferredBlock<ShipController> SHIP_CONTROLLER = BLOCKS.register(
-            "ship_controller",
-            ShipController::new
+        "ship_controller",
+        ShipController::new
     );
 
     public static final DeferredBlock<ThrusterBlock> THRUSTER = BLOCKS.register(
-            "thruster",
-            ThrusterBlock::new
+        "thruster",
+        ThrusterBlock::new
+    );
+
+    public static final DeferredBlock<ScrubberBlock> SCRUBBER = BLOCKS.register(
+        "scrubber",
+        ScrubberBlock::new
     );
 }

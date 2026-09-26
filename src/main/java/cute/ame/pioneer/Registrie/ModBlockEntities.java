@@ -25,7 +25,7 @@ public final class ModBlockEntities
 
     public static final Supplier<BlockEntityType<PioneerVesselBlockEntity>> FLUID_VESSEL = BLOCK_ENTITIES.register(
         "fluid_vessel",
-        () -> BlockEntityType.Builder.of(PioneerVesselBlockEntity::new, ModBlocks.VACCUM_TANK.get(), ModBlocks.VACCUM_PIPE.get(), ModBlocks.VACCUM_PUMP.get(), ModBlocks.VALVE.get(), ModBlocks.VENT.get()).build(null)
+        () -> BlockEntityType.Builder.of(PioneerVesselBlockEntity::new, ModBlocks.VACCUM_TANK.get(), ModBlocks.VACCUM_PIPE.get(), ModBlocks.VACCUM_PUMP.get(), ModBlocks.VALVE.get(), ModBlocks.VENT.get(), ModBlocks.SCRUBBER.get()).build(null)
     );
 
     public static final Supplier<BlockEntityType<SensorBlockEntity>> SENSOR = BLOCK_ENTITIES.register(

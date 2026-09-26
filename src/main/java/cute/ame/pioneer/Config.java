@@ -20,6 +20,8 @@ public class Config
 
     public static ModConfigSpec.IntValue SENSOR_PERIOD_TICKS;
 
+    public static ModConfigSpec.DoubleValue SCRUBBER_RATE;
+
     static final ModConfigSpec SPEC;
     static
     {
@@ -44,6 +46,8 @@ public class Config
         PUMP_BOOST_P = BUILDER.defineInRange("pump_boost_p", 4.0, 0.0, 100.0);
 
         SENSOR_PERIOD_TICKS = BUILDER.defineInRange("sensor_period_ticks", 5, 1, 200);
+
+        SCRUBBER_RATE = BUILDER.defineInRange("scrubber_rate", 0.05, 0.0, 1.0);
 
         BUILDER.pop();
 
