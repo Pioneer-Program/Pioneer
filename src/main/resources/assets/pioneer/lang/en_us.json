@@ -1,7 +1,7 @@
 {
-  "block.pioneer.vaccum_tank": "Vaccum Tank",
-  "block.pioneer.vaccum_pipe": "Vaccum Pipe",
-  "block.pioneer.vaccum_pump": "Vaccum Pump",
+  "block.pioneer.vacuum_tank": "Vacuum Tank",
+  "block.pioneer.vacuum_pipe": "Vacuum Pipe",
+  "block.pioneer.vacuum_pump": "Vacuum Pump",
   "block.pioneer.valve": "Valve",
   "block.pioneer.vent": "Vent",
   "block.pioneer.heater": "Heater",
