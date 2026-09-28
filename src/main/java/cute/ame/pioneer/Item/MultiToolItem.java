@@ -5,7 +5,7 @@ import cute.ame.pioneer.Fluid.Block.MassSpectrometerBlock;
 import cute.ame.pioneer.Fluid.Block.PipeBlock;
 import cute.ame.pioneer.Fluid.Block.ScrubberBlock;
 import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
-import cute.ame.pioneer.Fluid.BlockEntity.SensorBlockEntity;
+import cute.ame.pioneer.Fluid.BlockEntity.MassSpectrometerBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -77,7 +77,7 @@ public class MultiToolItem extends Item
 
     private static @Nullable Component spectrometer(Level level, BlockPos pos, boolean back)
     {
-        if (!(level.getBlockEntity(pos) instanceof SensorBlockEntity sensor)) return null;
+        if (!(level.getBlockEntity(pos) instanceof MassSpectrometerBlockEntity sensor)) return null;
 
         String next = cycle(sensor.getGas(), back);
         if (next == null) return null;

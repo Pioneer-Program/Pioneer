@@ -14,6 +14,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,6 +36,11 @@ public class PioneerVesselBlockEntity extends FluidVesselBlockEntity implements 
     public PioneerVesselBlockEntity(BlockPos pos, BlockState state)
     {
         super(ModBlockEntities.FLUID_VESSEL.get(), pos, state);
+    }
+
+    public PioneerVesselBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state)
+    {
+        super(type, pos, state);
     }
 
     public float getThrottle()
