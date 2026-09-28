@@ -1,14 +1,10 @@
 package cute.ame.pioneer.Fluid.Block;
 
 import cute.ame.celsius.Fluid.Data.FluidConstants;
-import cute.ame.celsius.Fluid.Registry.FluidSpecies;
 import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.chat.Component;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -18,7 +14,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
-import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -69,33 +64,6 @@ public class ScrubberBlock extends PioneerVesselBlock
     public float filterRate(Level level, BlockPos pos, BlockState state)
     {
         return Config.SCRUBBER_RATE.get().floatValue();
-    }
-
-    @Override
-    protected @NotNull InteractionResult useWithoutItem(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull Player player, @NotNull BlockHitResult hit)
-    {
-        if (level.isClientSide) return InteractionResult.SUCCESS;
-        if (!(level.getBlockEntity(pos) instanceof PioneerVesselBlockEntity vessel)) return InteractionResult.PASS;
-
-        String[] keys = FluidSpecies.active().keys();
-        if (keys.length == 0) return InteractionResult.PASS;
-
-        int current = indexOf(keys, vessel.getFilter());
-        int step = player.isSecondaryUseActive() ? keys.length - 1 : 1;
-        String next = keys[(current + step) % keys.length];
-
-        vessel.setFilter(next);
-        player.displayClientMessage(Component.translatable("scrubber.pioneer.filter", Component.translatable("gas.pioneer." + next)), true);
-        return InteractionResult.CONSUME;
-    }
-
-    private static int indexOf(String[] keys, String key)
-    {
-        for (int i = 0; i < keys.length; i++)
-        {
-            if (keys[i].equals(key)) return i;
-        }
-        return 0;
     }
 
     private static int[] buildFilters()

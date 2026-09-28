@@ -24,11 +24,13 @@ public class PioneerVesselBlockEntity extends FluidVesselBlockEntity implements 
     private static final String K_POWER = "power";
     private static final String K_THROTTLE = "throttle";
     private static final String K_FILTER = "filter";
+    private static final String K_SEALED = "sealed";
 
     private String label = "";
     private float throttle = 1.0f;
     private float power = 1.0f;
     private String filter = "";
+    private int sealed;
 
     public PioneerVesselBlockEntity(BlockPos pos, BlockState state)
     {
@@ -86,6 +88,20 @@ public class PioneerVesselBlockEntity extends FluidVesselBlockEntity implements 
         }
 
         return true;
+    }
+
+    public int getSealed()
+    {
+        return sealed;
+    }
+
+    public void setSealed(int mask)
+    {
+        int next = mask & FluidVesselBlock.ALL_PORTS;
+        if (next == sealed) return;
+
+        sealed = next;
+        setChanged();
     }
 
     public String getFilter()
@@ -177,6 +193,7 @@ public class PioneerVesselBlockEntity extends FluidVesselBlockEntity implements 
         power = tag.contains(K_POWER) ? tag.getFloat(K_POWER) : 1.0f;
         throttle = tag.contains(K_THROTTLE) ? tag.getFloat(K_THROTTLE) : 1.0f;
         filter = tag.getString(K_FILTER);
+        sealed = tag.getInt(K_SEALED) & FluidVesselBlock.ALL_PORTS;
     }
 
     @Override
@@ -188,5 +205,6 @@ public class PioneerVesselBlockEntity extends FluidVesselBlockEntity implements 
         if (power != 1.0f) tag.putFloat(K_POWER, power);
         if (throttle != 1.0f) tag.putFloat(K_THROTTLE, throttle);
         if (!filter.isEmpty()) tag.putString(K_FILTER, filter);
+        if (sealed != 0) tag.putInt(K_SEALED, sealed);
     }
 }

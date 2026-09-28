@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.mojang.serialization.MapCodec;
 import cute.ame.celsius.Fluid.Block.FluidVesselBlock;
 import cute.ame.celsius.Fluid.Data.FluidConstants;
+import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
@@ -76,6 +77,12 @@ public class PipeBlock extends PioneerVesselBlock
         EAST
     };
 
+    public static final int TOGGLE_NONE = -1;
+    public static final int TOGGLE_CUT = 0;
+    public static final int TOGGLE_LINKED = 1;
+
+    public static final double CORE_HALF = 3.0 / 16.0;
+
     private static final VoxelShape[] SHAPES = buildShapes();
 
     private final Reference2IntOpenHashMap<BlockState> masks = new Reference2IntOpenHashMap<>();
@@ -138,7 +145,7 @@ public class PipeBlock extends PioneerVesselBlock
             BlockState neighbour = level.getBlockState(cursor);
             Direction face = direction.getOpposite();
 
-            boolean link = (direction == target || !precise) && accepts(neighbour, face);
+            boolean link = (direction == target || !precise) && accepts(neighbour, face) && !sealed(level, cursor, face);
             if (link) state = state.setValue(arm(direction), getConnectionType(neighbour, face));
         }
 
@@ -152,10 +159,42 @@ public class PipeBlock extends PioneerVesselBlock
         PipeConnection linked = state.getValue(arm);
         Direction face = direction.getOpposite();
 
-        boolean next = neighbour.getBlock() instanceof PipeBlock pipe ? (pipe.ports(neighbour) & port(face)) != 0 : accepts(neighbour, face);
+        boolean next;
+        if (sealed(level, pos, direction)) next = false;
+        else if (neighbour.getBlock() instanceof PipeBlock pipe) next = (pipe.ports(neighbour) & port(face)) != 0;
+        else next = accepts(neighbour, face);
         PipeConnection connection = next ? getConnectionType(neighbour, face) : PipeConnection.NONE;
 
         return connection == linked ? state : state.setValue(arm, connection);
+    }
+
+    public static int toggle(Level level, BlockPos pos, BlockState state, Direction direction)
+    {
+        if (!(level.getBlockEntity(pos) instanceof PioneerVesselBlockEntity vessel)) return TOGGLE_NONE;
+
+        EnumProperty<PipeConnection> arm = arm(direction);
+        if (state.getValue(arm).isConnected())
+        {
+            vessel.setSealed(vessel.getSealed() | port(direction));
+            level.setBlock(pos, state.setValue(arm, PipeConnection.NONE), Block.UPDATE_ALL);
+            return TOGGLE_CUT;
+        }
+
+        BlockPos side = pos.relative(direction);
+        BlockState neighbour = level.getBlockState(side);
+        Direction face = direction.getOpposite();
+        if (!accepts(neighbour, face)) return TOGGLE_NONE;
+
+        vessel.setSealed(vessel.getSealed() & ~port(direction));
+        if (neighbour.getBlock() instanceof PipeBlock && level.getBlockEntity(side) instanceof PioneerVesselBlockEntity other) other.setSealed(other.getSealed() & ~port(face));
+
+        level.setBlock(pos, state.setValue(arm, getConnectionType(neighbour, face)), Block.UPDATE_ALL);
+        return TOGGLE_LINKED;
+    }
+
+    private static boolean sealed(BlockGetter level, BlockPos pos, Direction face)
+    {
+        return level.getBlockEntity(pos) instanceof PioneerVesselBlockEntity vessel && (vessel.getSealed() & port(face)) != 0;
     }
 
     private static boolean accepts(BlockState neighbour, Direction face)
