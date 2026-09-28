@@ -14,7 +14,7 @@ import org.joml.Matrix3d;
  */
 public class HillEquations
 {
-    public class RelativeState
+    public static class RelativeState
     {
         public Vector3d r;
         public Vector3d v;
@@ -32,7 +32,7 @@ public class HillEquations
      * @param mainOrbit - orbital elements of the main body
      * @param dt - propagation time
      */
-    public void HillEOM(RelativeState state, OrbitalElements mainOrbit, double dt)
+    public static void HillEOM(RelativeState state, OrbitalElements mainOrbit, double dt)
     {
         /* precalculate constants for speed */
         double n = mainOrbit.meanMotion(); // aka angular velocity
@@ -62,7 +62,7 @@ public class HillEquations
      * @param cos - cos of nt
      * @return 3x3 phi matrix
      */
-    public Matrix3d phiRR(double nt, double sin, double cos)
+    public static Matrix3d phiRR(double nt, double sin, double cos)
     {
         return new Matrix3d(
             4 - (3 * cos), 0, 0,
@@ -80,7 +80,7 @@ public class HillEquations
      * @param invn - inverse of mean motion
      * @return 3x3 phi matrix
      */
-    public Matrix3d phiRV(double nt, double sin, double cos, double invn)
+    public static Matrix3d phiRV(double nt, double sin, double cos, double invn)
     {
         return new Matrix3d(
             invn * sin,             2 * invn * (1 - cos), 0,
@@ -98,7 +98,7 @@ public class HillEquations
      * @param n - mean motion
      * @return 3x3 phi matrix
      */
-    public Matrix3d phiVR(double nt, double sin, double cos, double n)
+    public static Matrix3d phiVR(double nt, double sin, double cos, double n)
     {
         return new Matrix3d(
             3 * n * sin, 0, 0,
@@ -115,7 +115,7 @@ public class HillEquations
      * @param cos - cos of nt
      * @return 3x3 phi matrix
      */
-    public Matrix3d phiVV(double nt, double sin, double cos)
+    public static Matrix3d phiVV(double nt, double sin, double cos)
     {
         return new Matrix3d(
             cos,        2 * sin, 0,
