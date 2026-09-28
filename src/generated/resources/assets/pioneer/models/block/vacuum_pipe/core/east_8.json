@@ -1,0 +1,31 @@
+{
+  "elements": [
+    {
+      "faces": {
+        "east": {
+          "texture": "#0",
+          "uv": [
+            3.5,
+            4.5,
+            0.5,
+            7.5
+          ]
+        }
+      },
+      "from": [
+        5,
+        5,
+        5
+      ],
+      "to": [
+        11,
+        11,
+        11
+      ]
+    }
+  ],
+  "textures": {
+    "0": "pioneer:block/vacuum_pipe/vacuum_pipe_connected",
+    "particle": "pioneer:block/vacuum_pipe/vacuum_pipe"
+  }
+}

@@ -4,8 +4,8 @@
 	"parent": "block/block",
 	"texture_size": [32, 32],
 	"textures": {
-		"0": "pipe",
-		"particle": "pipe"
+		"0": "pioneer:block/vacuum_pipe/vacuum_pipe",
+		"particle": "pioneer:block/vacuum_pipe/vacuum_pipe"
 	},
 	"elements": [
 		{

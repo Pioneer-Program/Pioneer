@@ -16,7 +16,7 @@
 				"east": {"uv": [9, 11, 15, 16], "rotation": 90, "texture": "#0"},
 				"west": {"uv": [9, 11, 15, 16], "rotation": 90, "texture": "#0"},
 				"up": {"uv": [9, 11, 15, 16], "texture": "#0"},
-				"down": {"uv": [9, 11, 15, 16], "rotation": 180, "texture": "#0"}
+				"down": {"uv": [15, 11, 9, 16], "rotation": 180, "texture": "#0"}
 			}
 		}
 	]

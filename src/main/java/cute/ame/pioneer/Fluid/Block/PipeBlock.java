@@ -7,15 +7,15 @@ import cute.ame.pioneer.Fluid.Data.FluidConstants;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.Property;
+import net.minecraft.world.level.block.state.properties.AttachFace;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -27,16 +27,37 @@ public class PipeBlock extends FluidVesselBlock
 {
     public static final MapCodec<PipeBlock> CODEC = MapCodec.unit(PipeBlock::new);
 
+    public enum PipeConnection implements StringRepresentable {
+        NONE("none"),
+        PIPE("pipe"),
+        RIM("rim");
+
+        private final String name;
+
+        PipeConnection(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String getSerializedName() {
+            return this.name;
+        }
+
+        public boolean isConnected() {
+            return this != NONE;
+        }
+    }
+
     private static final Direction[] DIRECTIONS = Direction.values();
 
-    public static final BooleanProperty NORTH = BlockStateProperties.NORTH;
-    public static final BooleanProperty EAST  = BlockStateProperties.EAST;
-    public static final BooleanProperty SOUTH = BlockStateProperties.SOUTH;
-    public static final BooleanProperty WEST  = BlockStateProperties.WEST;
-    public static final BooleanProperty UP    = BlockStateProperties.UP;
-    public static final BooleanProperty DOWN  = BlockStateProperties.DOWN;
+    public static final EnumProperty<PipeConnection> NORTH = EnumProperty.create("north", PipeConnection.class);
+    public static final EnumProperty<PipeConnection> EAST  = EnumProperty.create("east", PipeConnection.class);
+    public static final EnumProperty<PipeConnection> SOUTH = EnumProperty.create("south", PipeConnection.class);
+    public static final EnumProperty<PipeConnection> WEST  = EnumProperty.create("west", PipeConnection.class);
+    public static final EnumProperty<PipeConnection> UP    = EnumProperty.create("up", PipeConnection.class);
+    public static final EnumProperty<PipeConnection> DOWN  = EnumProperty.create("down", PipeConnection.class);
 
-    public static final Map<Direction, BooleanProperty> PROPERTY_BY_DIRECTION;
+    public static final Map<Direction, EnumProperty<PipeConnection>> PROPERTY_BY_DIRECTION;
 
     protected final VoxelShape[] shapeByIndex;
 
@@ -44,9 +65,9 @@ public class PipeBlock extends FluidVesselBlock
     {
         super(metal(2.0f));
         this.registerDefaultState(this.stateDefinition.any()
-                .setValue(NORTH, false).setValue(EAST, false)
-                .setValue(SOUTH, false).setValue(WEST, false)
-                .setValue(UP, false).setValue(DOWN, false));
+                .setValue(NORTH, PipeConnection.NONE).setValue(EAST, PipeConnection.NONE)
+                .setValue(SOUTH, PipeConnection.NONE).setValue(WEST, PipeConnection.NONE)
+                .setValue(UP, PipeConnection.NONE).setValue(DOWN, PipeConnection.NONE));
         this.shapeByIndex = makeShapes();
     }
 
@@ -88,25 +109,48 @@ public class PipeBlock extends FluidVesselBlock
     private BlockState updateConnections(BlockState state, LevelAccessor level, BlockPos pos) {
         for (Direction direction : Direction.values()) {
             BlockPos neighborPos = pos.relative(direction);
-            boolean connects = canConnectTo(level, neighborPos, direction);
-            state = state.setValue(getProperty(direction), connects);
+            PipeConnection connection = getConnectionType(level, neighborPos, direction);
+            state = state.setValue(getProperty(direction), connection);
         }
         return state;
     }
 
-    private boolean canConnectTo(LevelAccessor level, BlockPos neighborPos, Direction direction) {
+    private PipeConnection getConnectionType(LevelAccessor level, BlockPos neighborPos, Direction direction) {
         BlockState neighborState = level.getBlockState(neighborPos);
-        return neighborState.getBlock() instanceof PipeBlock;
+        Block neighborBlock = neighborState.getBlock();
+
+        if (neighborBlock instanceof PipeBlock) {
+            return PipeConnection.PIPE;
+        }
+
+        if (neighborBlock instanceof SensorBlock) {
+            AttachFace face = neighborState.getValue(SensorBlock.FACE);
+            Direction attachedDirection = switch (face) {
+                case FLOOR -> Direction.UP;
+                case CEILING -> Direction.DOWN;
+                case WALL -> neighborState.getValue(SensorBlock.FACING);
+            };
+            if (attachedDirection == direction) {
+                return PipeConnection.RIM;
+            }
+            return PipeConnection.NONE;
+        }
+
+        if (neighborBlock instanceof FluidVesselBlock) {
+            return PipeConnection.RIM;
+        }
+
+        return PipeConnection.NONE;
     }
 
     @Override
     protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
                                      LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
-        boolean connects = canConnectTo(level, neighborPos, direction);
-        return state.setValue(getProperty(direction), connects);
+        PipeConnection connection = getConnectionType(level, neighborPos, direction);
+        return state.setValue(getProperty(direction), connection);
     }
 
-    private BooleanProperty getProperty(Direction dir) {
+    private EnumProperty<PipeConnection> getProperty(Direction dir) {
         return switch (dir) {
             case NORTH -> NORTH;
             case SOUTH -> SOUTH;
@@ -157,8 +201,8 @@ public class PipeBlock extends FluidVesselBlock
     protected int getAABBIndex(BlockState state) {
         int i = 0;
 
-        for(int j = 0; j < DIRECTIONS.length; ++j) {
-            if ((Boolean)state.getValue((Property)PROPERTY_BY_DIRECTION.get(DIRECTIONS[j]))) {
+        for (int j = 0; j < DIRECTIONS.length; ++j) {
+            if (state.getValue(PROPERTY_BY_DIRECTION.get(DIRECTIONS[j])).isConnected()) {
                 i |= 1 << j;
             }
         }
@@ -167,7 +211,7 @@ public class PipeBlock extends FluidVesselBlock
     }
 
     static {
-        PROPERTY_BY_DIRECTION = ImmutableMap.copyOf((Map) Util.make(Maps.newEnumMap(Direction.class), (p_55164_) -> {
+        PROPERTY_BY_DIRECTION = ImmutableMap.copyOf(Util.make(Maps.newEnumMap(Direction.class), (p_55164_) -> {
             p_55164_.put(Direction.NORTH, NORTH);
             p_55164_.put(Direction.EAST, EAST);
             p_55164_.put(Direction.SOUTH, SOUTH);

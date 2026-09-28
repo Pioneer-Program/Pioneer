@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import cute.ame.pioneer.Command.PioneerDebugCommand;
 import cute.ame.pioneer.Core.Thermal.BlockHeatSink;
 import cute.ame.pioneer.Core.Thermal.BlockTemperature;
+import cute.ame.pioneer.Data.DataGenerators;
 import cute.ame.pioneer.Registrie.*;
 import cute.ame.pioneer.Thermal.Helper.ThermalBlockSink;
 import cute.ame.pioneer.Thermal.Level.ThermalLevelData;
@@ -36,6 +37,8 @@ public class Pioneer
     ModCreativeModeTabs.register(modEventBus);
     BlockTemperature.register(ThermalLevelData::temperatureAt);
     BlockHeatSink.register(ThermalBlockSink.INSTANCE);
+
+    modEventBus.addListener(DataGenerators::gatherData);
 
     NeoForge.EVENT_BUS.addListener(Pioneer::onRegisterCommands);
   }
