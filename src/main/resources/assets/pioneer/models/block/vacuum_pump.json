@@ -7,8 +7,8 @@
 		64
 	],
 	"textures": {
-		"0": "pioneer:block/vaccum_pump",
-		"particle": "pioneer:block/vaccum_pump"
+		"0": "pioneer:block/vacuum_pump",
+		"particle": "pioneer:block/vacuum_pump"
 	},
 	"elements": [
 		{
