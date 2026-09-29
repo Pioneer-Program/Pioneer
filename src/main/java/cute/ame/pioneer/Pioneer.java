@@ -4,6 +4,7 @@ import com.mojang.logging.LogUtils;
 import cute.ame.pioneer.Command.PioneerDebugCommand;
 import cute.ame.celsius.Core.Thermal.Ambient;
 import cute.ame.celsius.Core.Thermal.Residency;
+import cute.ame.pioneer.Data.DataGenerators;
 import cute.ame.pioneer.Fluid.Helper.AmbientResolver;
 import cute.ame.pioneer.Fluid.Helper.FluidLevels;
 import cute.ame.pioneer.Registrie.*;
@@ -37,6 +38,7 @@ public class Pioneer
     Ambient.register(AmbientResolver.PROVIDER);
     Residency.install(FluidLevels.RESIDENCY);
 
+    modEventBus.addListener(DataGenerators::gatherData);
     NeoForge.EVENT_BUS.addListener(Pioneer::onRegisterCommands);
   }
 

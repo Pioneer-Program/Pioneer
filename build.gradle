@@ -107,6 +107,10 @@ neoForge {
 
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
+tasks.named('processResources', ProcessResources).configure {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
 configurations
 {
     runMods
@@ -201,8 +205,25 @@ tasks.register('copyRunMods', Sync) {
     into runModsDir
 }
 
+def fmlConfigFile = layout.projectDirectory.file('run/config/fml.toml').asFile
+tasks.register('configureFml') {
+    doLast {
+        if (!fmlConfigFile.parentFile.exists()) {
+            fmlConfigFile.parentFile.mkdirs()
+        }
+        if (fmlConfigFile.exists()) {
+            def content = fmlConfigFile.text
+            if (content.contains('maxThreads = -1')) {
+                fmlConfigFile.text = content.replace('maxThreads = -1', 'maxThreads = 1')
+            }
+        } else {
+            fmlConfigFile.text = "maxThreads = 1\n"
+        }
+    }
+}
+
 tasks.matching { it.name in ['runClient', 'runServer', 'runData', 'runGameTestServer'] }.configureEach {
-    dependsOn 'copyRunMods'
+    dependsOn 'copyRunMods', 'configureFml'
 }
 
 test {
