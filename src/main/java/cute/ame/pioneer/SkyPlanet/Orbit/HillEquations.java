@@ -35,9 +35,9 @@ public class HillEquations
     public static void HillEOM(RelativeState state, OrbitalElements mainOrbit, double dt)
     {
         /* precalculate constants for speed */
-        double n = mainOrbit.meanMotion(); // aka angular velocity
-        double invn = 1 / n;
-        double nt = n * dt;
+        double n = mainOrbit.meanMotion(); // aka angular velocity, rad/s
+        double invn = 1 / n; // sec
+        double nt = n * dt; // rad
         double sin = Math.sin(nt);
         double cos = Math.cos(nt);
 
@@ -102,7 +102,7 @@ public class HillEquations
     {
         return new Matrix3d(
             3 * n * sin, 0, 0,
-            6 * n * (cos - 1), 1, 0,
+            6 * n * (cos - 1), 0, 0,
             0, 0, -n * sin
         );
     }

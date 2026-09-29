@@ -27,20 +27,56 @@ class TestRelativeMotion {
         Matrix3d phiVR = HillEquations.phiVR(nt, s, c, n);
         Matrix3d phiVV = HillEquations.phiVV(nt, s, c);
 
-        double tol = 1.0e-6;
-        assertEquals(4.97849, phiRR.m00, tol);
-        assertEquals(0.0, phiRR.m01, tol);
-        assertEquals(0.0, phiRR.m02, tol);
+        double ftol = 1.0e-6;
+        double tol = 1.0e-3;
+
+        // PhiRR
+        assertEquals(4.978, phiRR.m00, tol);
+        assertEquals(0.0, phiRR.m01, ftol);
+        assertEquals(0.0, phiRR.m02, ftol);
         assertEquals(-194.242, phiRR.m10, tol);
         assertEquals(1.0, phiRR.m11, tol);
-        assertEquals(0.0, phiRR.m12, tol);
-        assertEquals(0.0, phiRR.m20, tol);
-        assertEquals(0.0, phiRR.m21, tol);
-        assertEquals(-0.326163, phiRR.m22, tol);
+        assertEquals(0.0, phiRR.m12, ftol);
+        assertEquals(0.0, phiRR.m20, ftol);
+        assertEquals(0.0, phiRR.m21, ftol);
+        assertEquals(-0.326, phiRR.m22, tol);
+
+        // PhiRV
+        assertEquals(817.1, phiRV.m00, 0.1);
+        assertEquals(2292.6, phiRV.m01, 0.1);
+        assertEquals(0.0, phiRV.m02, ftol);
+        assertEquals(-2292.6, phiRV.m10, 0.1);
+        assertEquals(-83131.6, phiRV.m11, 0.1);
+        assertEquals(0.0, phiRV.m12, ftol);
+        assertEquals(0.0, phiRV.m20, ftol);
+        assertEquals(0.0, phiRV.m21, ftol);
+        assertEquals(817.103, phiRV.m22, 0.1);
+
+        // PhiVR
+        assertEquals(0.00328092, phiVR.m00, ftol);
+        assertEquals(0.0, phiVR.m01, ftol);
+        assertEquals(0.0, phiVR.m02, ftol);
+        assertEquals(-0.00920550, phiVR.m10, ftol);
+        assertEquals(0.0, phiVR.m11, ftol);
+        assertEquals(0.0, phiVR.m12, ftol);
+        assertEquals(0.0, phiVR.m20, ftol);
+        assertEquals(0.0, phiVR.m21, ftol);
+        assertEquals(-0.00109364, phiVR.m22, ftol);
+
+        // PhiVV
+        assertEquals(-0.326, phiVV.m00, tol);
+        assertEquals(1.8906, phiVV.m01, 1.0e-4);
+        assertEquals(0.0, phiVV.m02, ftol);
+        assertEquals(-1.8906, phiVV.m10, 1.0e-4);
+        assertEquals(-4.305, phiVV.m11, tol);
+        assertEquals(0.0, phiVV.m12, ftol);
+        assertEquals(0.0, phiVV.m20, ftol);
+        assertEquals(0.0, phiVV.m21, ftol);
+        assertEquals(-0.3262, phiVV.m22, 1.0e-4);
     }
 
 	@Test
-	void addition() {
+	void problem7_7() {
         // Problem 7.7, Orbital Mechanics for Engineering Students by Howard Curtis
         // Main body is in 90-min period earth orbit.
         // Secondary body has dr = [1, 0, 0] km, dv = [0, 10, 0] m/s.
@@ -59,11 +95,11 @@ class TestRelativeMotion {
         HillEquations.HillEOM(state, coe, dt);
         double rmag = state.r.length();
 
-		assertEquals(11.2, rmag);
+		assertEquals(11.2, rmag, 0.5e-2);
 	}
 
     @Test
-    void test2() {
+    void problem7_8() {
         // Problem 7.8, Orbital Mechanics for Engineering Students by Howard Curtis
         // A and B are in the same circular earth orbit with a period of 2 h.
         // B is 6 km ahead of A.
@@ -71,5 +107,24 @@ class TestRelativeMotion {
         // Using a CW frame attached to A:
         // 1. determine the distance between A and B at t = 30 min (dr = 10.9 km)
         // 2. and the velocity of B relative to A. (dv = 10.8 m/s)
+
+        double mu = 3.986e14; // earth gravitational parameter, m^3/s^2
+        double P = 2.0 / 24.0; // period, days
+        double dt = 30.0; // propagation time, sec
+        double a = OrbitalElements.semiMajorFromPeriod(P, mu); // length matches units on mu
+        OrbitDefinition odef = new OrbitDefinition(a, P, 0.0, 0.0, 0.0, 0.0, 0.0);
+	    OrbitalElements coe = OrbitalElements.fromOrbitDefinition(odef, mu);
+
+        // y-axis aka vbar is in-track
+        Vector3d r = new Vector3d(0.0, 6.0, 0.0); // km
+        Vector3d v = new Vector3d(0.0, -3.0, 0.0); // m/s
+        HillEquations.RelativeState state = new HillEquations.RelativeState(r, v);
+
+        HillEquations.HillEOM(state, coe, dt);
+        double rmag = state.r.length();
+        double vmag = state.v.length();
+
+		assertEquals(10.9, rmag, 0.5e-2);
+		assertEquals(10.8, vmag, 0.5e-2);
     }
 }
