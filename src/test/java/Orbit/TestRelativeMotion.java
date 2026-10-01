@@ -81,21 +81,21 @@ class TestRelativeMotion {
         // Main body is in 90-min period earth orbit.
         // Secondary body has dr = [1, 0, 0] km, dv = [0, 10, 0] m/s.
         // 15 min later, magnitude of dr should be 11.2 km
-        double mu = 3.986e14; // earth gravitational parameter, m^3/s^2
-        double P = 1.5 / 24.0; // period, days
-        double a = OrbitalElements.semiMajorFromPeriod(P, mu);
-        OrbitDefinition odef = new OrbitDefinition(a, P, 0.0, 0.0, 0.0, 0.0, 0.0);
-	    OrbitalElements coe = OrbitalElements.fromOrbitDefinition(odef, mu);
+        double mu_km = 398_600; // earth gravitational parameter, km^3/s^2
+        double P_days = 1.5 / 24.0; // period, days
+        double a_km = OrbitalElements.semiMajorFromPeriod(P_days, mu_km);
+        OrbitDefinition odef_km = new OrbitDefinition(a_km, P_days, 0.0, 0.0, 0.0, 0.0, 0.0);
+	    OrbitalElements coe_km = OrbitalElements.fromOrbitDefinition(odef_km, mu_km);
 
         Vector3d r = new Vector3d(1.0, 0.0, 0.0); // km
-        Vector3d v = new Vector3d(0.0, 10.0, 0.0); // m/s
+        Vector3d v = new Vector3d(0.0, 10.0e-3, 0.0); // km/s
         HillEquations.RelativeState state = new HillEquations.RelativeState(r, v);
 
         double dt = 15.0 * 60.0; // sec
-        HillEquations.HillEOM(state, coe, dt);
-        double rmag = state.r.length();
+        HillEquations.HillEOM(state, coe_km, dt);
+        double rmag_km = state.r.length();
 
-		assertEquals(11.2, rmag, 0.5e-2);
+		assertEquals(11.2, rmag_km, 0.5e-2);
 	}
 
     @Test
@@ -108,7 +108,7 @@ class TestRelativeMotion {
         // 1. determine the distance between A and B at t = 30 min (dr = 10.9 km)
         // 2. and the velocity of B relative to A. (dv = 10.8 m/s)
 
-        double mu = 3.986e14; // earth gravitational parameter, m^3/s^2
+        double mu = 398_600; // earth gravitational parameter, km^3/s^2
         double P = 2.0 / 24.0; // period, days
         double dt = 30.0; // propagation time, sec
         double a = OrbitalElements.semiMajorFromPeriod(P, mu); // length matches units on mu
@@ -117,7 +117,7 @@ class TestRelativeMotion {
 
         // y-axis aka vbar is in-track
         Vector3d r = new Vector3d(0.0, 6.0, 0.0); // km
-        Vector3d v = new Vector3d(0.0, -3.0, 0.0); // m/s
+        Vector3d v = new Vector3d(0.0, -3.0e-3, 0.0); // km/s
         HillEquations.RelativeState state = new HillEquations.RelativeState(r, v);
 
         HillEquations.HillEOM(state, coe, dt);
