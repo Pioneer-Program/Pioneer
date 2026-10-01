@@ -22,6 +22,13 @@ public class Config
 
     public static ModConfigSpec.DoubleValue SCRUBBER_RATE;
 
+    public static ModConfigSpec.DoubleValue KELP_MOL_PER_TICK;
+    public static ModConfigSpec.DoubleValue KELP_CO2_FLOOR_P;
+    public static ModConfigSpec.IntValue KELP_PERIOD_TICKS;
+    public static ModConfigSpec.IntValue KELP_BED_MAX_BLOCKS;
+    public static ModConfigSpec.IntValue KELP_RESCANS_PER_TICK;
+    public static ModConfigSpec.IntValue KELP_LIGHT_SAMPLES;
+
     static final ModConfigSpec SPEC;
     static
     {
@@ -49,6 +56,12 @@ public class Config
 
         SCRUBBER_RATE = BUILDER.defineInRange("scrubber_rate", 0.05, 0.0, 1.0);
 
+        KELP_MOL_PER_TICK = BUILDER.defineInRange("kelp_mol_per_tick", 6.0e-5, 0.0, 1.0);
+        KELP_CO2_FLOOR_P = BUILDER.defineInRange("kelp_co2_floor_p", 5.0e-5, 0.0, 1.0);
+        KELP_PERIOD_TICKS = BUILDER.defineInRange("kelp_period_ticks", 20, 1, 1200);
+        KELP_BED_MAX_BLOCKS = BUILDER.defineInRange("kelp_bed_max_blocks", 1024, 16, 65_536);
+        KELP_RESCANS_PER_TICK = BUILDER.defineInRange("kelp_rescans_per_tick", 1, 1, 16);
+        KELP_LIGHT_SAMPLES = BUILDER.defineInRange("kelp_light_samples", 4, 1, 64);
         BUILDER.pop();
 
         SPEC = BUILDER.build();

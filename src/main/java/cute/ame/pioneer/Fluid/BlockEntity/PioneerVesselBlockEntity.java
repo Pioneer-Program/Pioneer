@@ -6,6 +6,8 @@ import cute.ame.celsius.Fluid.Block.FluidVesselBlock;
 import cute.ame.pioneer.Fluid.Block.PumpBlock;
 import cute.ame.pioneer.Fluid.Block.ScrubberBlock;
 import cute.ame.pioneer.Fluid.Block.ValveBlock;
+import cute.ame.pioneer.Fluid.Block.VentBlock;
+import cute.ame.pioneer.LifeSupport.Level.KelpBeds;
 import cute.ame.celsius.Fluid.Level.FluidLevelData;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -41,6 +43,22 @@ public class PioneerVesselBlockEntity extends FluidVesselBlockEntity implements 
     public PioneerVesselBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state)
     {
         super(type, pos, state);
+    }
+
+    @Override
+    public void onLoad()
+    {
+        super.onLoad();
+
+        if (getBlockState().getBlock() instanceof VentBlock) KelpBeds.onVentLoaded(this);
+    }
+
+    @Override
+    public void setRemoved()
+    {
+        if (getBlockState().getBlock() instanceof VentBlock) KelpBeds.onVentRemoved(this);
+
+        super.setRemoved();
     }
 
     public float getThrottle()
