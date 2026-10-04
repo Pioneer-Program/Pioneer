@@ -20,6 +20,12 @@ vec2 octaEncode(vec3 n)
 
 void main()
 {
+    if (uStarVisibility <= 0.0)
+    {
+        fragColor = vec4(0.0, 0.0, 0.0, 1.0);
+        return;
+    }
+
     vec2 ndc = (gl_FragCoord.xy / vec2(uScreenWidth, uScreenHeight)) * 2.0 - 1.0;
     vec4 nearPoint = uInvViewProj * vec4(ndc, -1.0, 1.0);
     vec4 farPoint = uInvViewProj * vec4(ndc,  1.0, 1.0);

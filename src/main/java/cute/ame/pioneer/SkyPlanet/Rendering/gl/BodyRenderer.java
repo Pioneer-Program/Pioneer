@@ -29,14 +29,11 @@ public final class BodyRenderer
     }
 
     private static final float NIGHT_FLOOR = 0.03f;
-    private static final float ATMO_TERMINATOR = 0.35f;
+    private static final float ATMO_TERMINATOR = 0.1f;
     private static final float RINGSHINE_GAIN = 0.55f;
     private static final float CUBE_SIDE = 2.0f;
     private static final float HALF = CUBE_SIDE * 0.5f;
-    private static final float CURVATURE = 0.45f;
-    private static final float SCATTER_WIDTH = 0.35f;
-    private static final float SCATTER_STRENGTH = 0.35f;
-    private static final float SCATTER_R = 1.00f, SCATTER_G = 0.62f, SCATTER_B = 0.36f;
+    static final float CURVATURE = 0.45f;
 
     public static void render(PoseStack ps, CubemapTextures cubemap, float alpha, float camObjX, float camObjY, float camObjZ, float sunX, float sunY, float sunZ, @Nullable RingDefinition rings, float sunAngRad, boolean hasAtmosphere)
     {
@@ -58,9 +55,6 @@ public final class BodyRenderer
                     set(shader, "uSunAngRad", Math.max(sunAngRad, 1e-5f));
                     setInt(shader, "uDebug", ShadingDebugMode.currentShaderId());
                     set(shader, "uCurvature", CURVATURE);
-                    set(shader, "uScatterWidth", SCATTER_WIDTH);
-                    set(shader, "uScatterStrength", SCATTER_STRENGTH);
-                    set(shader, "uScatterColor", SCATTER_R, SCATTER_G, SCATTER_B);
                     if (rings != null)
                     {
                         set(shader, "uRingInner", rings.innerRadius() * HALF);

@@ -83,6 +83,7 @@ public final class SolarSystemRenderer
         Optional<SolarSystemDefinition> sOpt = PioneerAPI.getSolarSystem(binding.systemId());
         if (sOpt.isEmpty()) return;
         SolarSystemDefinition system = sOpt.get();
+        AtmosphereRenderer.beginSkyFrame();
 
         long tick = level.getGameTime();
         double animSeconds = (level.getGameTime() + (double) partialTick) * PhysicalScale.SECONDS_PER_TICK;
@@ -285,13 +286,26 @@ public final class SolarSystemRenderer
         final float shellDist = (float) Math.sqrt(proj.dx * proj.dx + proj.dy * proj.dy + proj.dz * proj.dz);
         final float camDistObj = shellDist / apparentSize;
 
+        if(alpha > 0)
+        {
+            ps.pushPose();
+            ps.scale(apparentSize, apparentSize, apparentSize);
+
+            GPUProfiler.begin("celestial.planet.core");
+            BodyRenderer.render(ps, planet.resolveTexture(), alpha, -camLX * camDistObj, -camLY * camDistObj, -camLZ * camDistObj, sunLX, sunLY, sunLZ, planet.rings().orElse(null), sunAngRad, planet.atmosphere().isPresent());
+            GPUProfiler.end();
+
+            ps.popPose();
+        }
+
+        final float terrainCutoff = isSelf ? (float) (Minecraft.getInstance().gameRenderer.getRenderDistance() / PlanetCube.halfSide(planet)) : 0.0f;
         planet.atmosphere().ifPresent(atmo ->
         {
             ps.pushPose();
             ps.scale(apparentSize, apparentSize, apparentSize);
 
             GPUProfiler.begin("planet.volumetric.atmosphere");
-            AtmosphereRenderer.render(ps, atmo, env, planet.size(), -camLX, -camLY, -camLZ, sunLX, sunLY, sunLZ, camDistObj);
+            AtmosphereRenderer.render(ps, atmo, env, planet.size(), -camLX, -camLY, -camLZ, sunLX, sunLY, sunLZ, camDistObj, isSelf && alpha <= 0.0f, terrainCutoff);
             GPUProfiler.end();
 
             ps.popPose();
@@ -299,13 +313,6 @@ public final class SolarSystemRenderer
 
         ps.pushPose();
         ps.scale(apparentSize, apparentSize, apparentSize);
-
-        if(alpha > 0)
-        {
-            GPUProfiler.begin("celestial.planet.core");
-            BodyRenderer.render(ps, planet.resolveTexture(), alpha, -camLX * camDistObj, -camLY * camDistObj, -camLZ * camDistObj, sunLX, sunLY, sunLZ, planet.rings().orElse(null), sunAngRad, planet.atmosphere().isPresent());
-            GPUProfiler.end();
-        }
 
         planet.rings().ifPresent(rings ->
         {
