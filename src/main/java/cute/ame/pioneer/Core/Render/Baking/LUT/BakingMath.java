@@ -34,43 +34,82 @@ public final class BakingMath
         out[2] = z * invLen;
     }
 
-    public static float valueNoisePeriodic(float x, float y, float z, int period, long seed)
+    public static float perlinPeriodic(float x, float y, float z, int period, long seed)
     {
         int ix = (int) Math.floor(x), iy = (int) Math.floor(y), iz = (int) Math.floor(z);
         float fx = x - ix, fy = y - iy, fz = z - iz;
-        float ux = NoiseUtil.smoothStep(fx), uy = NoiseUtil.smoothStep(fy), uz = NoiseUtil.smoothStep(fz);
+        float gx = fx - 1f, gy = fy - 1f, gz = fz - 1f;
+        float ux = NoiseUtil.fade(fx), uy = NoiseUtil.fade(fy), uz = NoiseUtil.fade(fz);
 
         int x0 = Math.floorMod(ix, period), x1 = Math.floorMod(ix + 1, period);
         int y0 = Math.floorMod(iy, period), y1 = Math.floorMod(iy + 1, period);
         int z0 = Math.floorMod(iz, period), z1 = Math.floorMod(iz + 1, period);
 
-        float c000 = NoiseUtil.pseudoRandom3(x0, y0, z0, seed);
-        float c100 = NoiseUtil.pseudoRandom3(x1, y0, z0, seed);
-        float c010 = NoiseUtil.pseudoRandom3(x0, y1, z0, seed);
-        float c110 = NoiseUtil.pseudoRandom3(x1, y1, z0, seed);
-        float c001 = NoiseUtil.pseudoRandom3(x0, y0, z1, seed);
-        float c101 = NoiseUtil.pseudoRandom3(x1, y0, z1, seed);
-        float c011 = NoiseUtil.pseudoRandom3(x0, y1, z1, seed);
-        float c111 = NoiseUtil.pseudoRandom3(x1, y1, z1, seed);
+        float n000 = NoiseUtil.grad(NoiseUtil.hash3(x0, y0, z0, seed), fx, fy, fz);
+        float n100 = NoiseUtil.grad(NoiseUtil.hash3(x1, y0, z0, seed), gx, fy, fz);
+        float n010 = NoiseUtil.grad(NoiseUtil.hash3(x0, y1, z0, seed), fx, gy, fz);
+        float n110 = NoiseUtil.grad(NoiseUtil.hash3(x1, y1, z0, seed), gx, gy, fz);
+        float n001 = NoiseUtil.grad(NoiseUtil.hash3(x0, y0, z1, seed), fx, fy, gz);
+        float n101 = NoiseUtil.grad(NoiseUtil.hash3(x1, y0, z1, seed), gx, fy, gz);
+        float n011 = NoiseUtil.grad(NoiseUtil.hash3(x0, y1, z1, seed), fx, gy, gz);
+        float n111 = NoiseUtil.grad(NoiseUtil.hash3(x1, y1, z1, seed), gx, gy, gz);
 
-        float a = NoiseUtil.lerp(NoiseUtil.lerp(c000, c100, ux), NoiseUtil.lerp(c010, c110, ux), uy);
-        float b = NoiseUtil.lerp(NoiseUtil.lerp(c001, c101, ux), NoiseUtil.lerp(c011, c111, ux), uy);
-        return NoiseUtil.lerp(a, b, uz);
+        float a = NoiseUtil.lerp(NoiseUtil.lerp(n000, n100, ux), NoiseUtil.lerp(n010, n110, ux), uy);
+        float b = NoiseUtil.lerp(NoiseUtil.lerp(n001, n101, ux), NoiseUtil.lerp(n011, n111, ux), uy);
+        return NoiseUtil.lerp(a, b, uz) * 1.1547f;
     }
 
-    public static float fbmPeriodic(float u, float v, float w, int baseFreq, int octaves, long seed)
+    public static float perlinFbmPeriodic(float u, float v, float w, int baseFreq, int octaves, long seed)
     {
-        float sum = 0f, amp = 0.5f;
+        float sum = 0f, amp = 0.5f, norm = 0f;
         int freq = baseFreq;
 
         for (int i = 0; i < octaves; i++)
         {
-            float n = valueNoisePeriodic(u * freq, v * freq, w * freq, freq, seed + i * 13337L) * 2f - 1f;
-            sum += n * amp;
+            sum += perlinPeriodic(u * freq, v * freq, w * freq, freq, seed + i * 13337L) * amp;
+            norm += amp;
             amp *= 0.5f;
             freq *= 2;
         }
-        return NoiseUtil.clamp01(sum * 0.5f + 0.5f);
+        return sum / norm;
+    }
+
+    public static float worleyFbmPeriodic(float u, float v, float w, int baseCells, long seed)
+    {
+        float a = 1f - worleyPeriodic(u, v, w, baseCells, seed);
+        float b = 1f - worleyPeriodic(u, v, w, baseCells * 2, seed + 0x51ED2701L);
+        float c = 1f - worleyPeriodic(u, v, w, baseCells * 4, seed + 0x9E37B31CL);
+        return a * 0.625f + b * 0.25f + c * 0.125f;
+    }
+
+    public static void equalize(float[] values)
+    {
+        final int bins = 4096;
+        final int[] hist = new int[bins];
+        float min = Float.MAX_VALUE, max = -Float.MAX_VALUE;
+        for (float v : values)
+        {
+            if (v < min) min = v;
+            if (v > max) max = v;
+        }
+
+        final float scale = (bins - 1) / Math.max(max - min, 1e-6f);
+        for (float v : values) hist[(int) ((v - min) * scale)]++;
+
+        final float[] cdf = new float[bins + 1];
+        final float inv = 1f / values.length;
+        for (int i = 0, acc = 0; i < bins; i++)
+        {
+            acc += hist[i];
+            cdf[i + 1] = acc * inv;
+        }
+
+        for (int i = 0; i < values.length; i++)
+        {
+            float f = (values[i] - min) * scale;
+            int b = (int) f;
+            values[i] = NoiseUtil.lerp(cdf[b], cdf[b + 1], f - b);
+        }
     }
 
     public static float worleyPeriodic(float u, float v, float w, int cells, long seed)

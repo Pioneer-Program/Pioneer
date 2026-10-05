@@ -60,12 +60,12 @@ public final class NoiseUtil
         return v / n;
     }
 
-    private static float fade(float t)
+    public static float fade(float t)
     {
         return t * t * t * (t * (t * 6f - 15f) + 10f);
     }
 
-    private static float grad(long h, float x, float y, float z)
+    public static float grad(long h, float x, float y, float z)
     {
         int i = (int) (h >>> 59) & 15;
         float u = i < 8 ? x : y;
