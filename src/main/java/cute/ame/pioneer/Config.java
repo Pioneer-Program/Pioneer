@@ -8,6 +8,7 @@ public class Config
 
     public static ModConfigSpec.DoubleValue ORBIT_ENTRY_ALTITUDE_KM;
     public static ModConfigSpec.DoubleValue SHOW_OWN_PLANET_START_KM;
+    public static ModConfigSpec.BooleanValue WARP_THROUGH_FRAMES;
 
     public static ModConfigSpec.DoubleValue BREATHING_MIN_PRESSURE_P;
     public static ModConfigSpec.DoubleValue BREATHING_MOL_PER_TICK;
@@ -20,6 +21,13 @@ public class Config
 
     public static ModConfigSpec.IntValue SENSOR_PERIOD_TICKS;
 
+    public static ModConfigSpec.IntValue FRAME_GRID_RADIUS;
+    public static ModConfigSpec.IntValue FRAME_CELL_SPACING;
+    public static ModConfigSpec.IntValue FRAME_GRID_Y;
+    public static ModConfigSpec.DoubleValue FRAME_RELEASE_MAX_SPEED;
+    public static ModConfigSpec.DoubleValue FRAME_CARRY_RADIUS;
+    public static ModConfigSpec.DoubleValue FRAME_JOIN_RADIUS;
+
     static final ModConfigSpec SPEC;
     static
     {
@@ -29,6 +37,7 @@ public class Config
         BUILDER.push("Transitions");
         ORBIT_ENTRY_ALTITUDE_KM = BUILDER.defineInRange("orbit_entry_altitude_km", 100.0, 0.1, 1_000_000.0);
         SHOW_OWN_PLANET_START_KM = BUILDER.defineInRange("show_own_planet_start_km", 1.0, 0.0, 1_000_000.0);
+        WARP_THROUGH_FRAMES = BUILDER.define("warp_through_frames", true);
         BUILDER.pop();
 
         BUILDER.push("Fluids");
@@ -45,6 +54,15 @@ public class Config
 
         SENSOR_PERIOD_TICKS = BUILDER.defineInRange("sensor_period_ticks", 5, 1, 200);
 
+        BUILDER.pop();
+
+        BUILDER.push("Frames");
+        FRAME_GRID_RADIUS = BUILDER.defineInRange("frame_grid_radius", 3, 0, 8);
+        FRAME_CELL_SPACING = BUILDER.defineInRange("frame_cell_spacing", 8192, 1024, 65536);
+        FRAME_GRID_Y = BUILDER.defineInRange("frame_grid_y", 0, -256, 256);
+        FRAME_RELEASE_MAX_SPEED = BUILDER.defineInRange("frame_release_max_speed", 100.0, 0.0, 1.0e9);
+        FRAME_CARRY_RADIUS = BUILDER.defineInRange("frame_carry_radius", 16.0, 0.0, 256.0);
+        FRAME_JOIN_RADIUS = BUILDER.defineInRange("frame_join_radius", 256.0, 0.0, 2048.0);
         BUILDER.pop();
 
         SPEC = BUILDER.build();

@@ -1,12 +1,15 @@
 package cute.ame.pioneer.Seamless;
 
 import cute.ame.pioneer.Config;
+import cute.ame.pioneer.Core.API.Frame.FrameAPI;
 import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.Core.Observer.ObserverState;
 import cute.ame.pioneer.Core.Observer.ObserverStates;
+import cute.ame.pioneer.Frame.FrameBodies;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 
@@ -16,6 +19,7 @@ import java.util.Optional;
 public final class SeamlessThresholdDetector
 {
     private static final int CHECK_INTERVAL_TICKS = 5;
+    private static final double[] AT = new double[3];
 
     public enum ThresholdKind { NONE, SURFACE_APPROACHING_ORBIT, SPACE_APPROACHING_PLANET }
 
@@ -61,6 +65,9 @@ public final class SeamlessThresholdDetector
         Optional<SolarSystemDefinition> systemOpt = PioneerAPI.getSolarSystem(binding.systemId());
         if (systemOpt.isEmpty()) return ThresholdResult.NONE_RESULT;
 
+        if (Config.WARP_THROUGH_FRAMES.get() && FrameAPI.systemPosition(player, AT))
+            return evaluateFrameProximity(player.serverLevel());
+
         List<PlanetDefinition> planets = systemOpt.get().allPlanetsFlat();
 
         PlanetDefinition closest = null;
@@ -86,6 +93,22 @@ public final class SeamlessThresholdDetector
 
         if (closest == null) return ThresholdResult.NONE_RESULT;
         return new ThresholdResult(ThresholdKind.SPACE_APPROACHING_PLANET, Optional.of(closest), closestDist);
+    }
+
+    private static ThresholdResult evaluateFrameProximity(ServerLevel level)
+    {
+        long now = level.getGameTime();
+        double limit = FrameAPI.reentryAltitudeKm();
+        for (FrameBodies.Body body : FrameAPI.bodies(level))
+        {
+            PlanetDefinition planet = body.planet();
+            if (planet == null || planet.dimension().isEmpty()) continue;
+
+            double altitude = FrameAPI.altitudeKm(body, planet, now, AT[0], AT[1], AT[2], limit);
+            if (altitude <= limit)
+                return new ThresholdResult(ThresholdKind.SPACE_APPROACHING_PLANET, Optional.of(planet), altitude);
+        }
+        return ThresholdResult.NONE_RESULT;
     }
 
     private static double surfaceApproachMarginKm(ServerPlayer player, ObserverState obs)

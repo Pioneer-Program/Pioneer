@@ -1,6 +1,7 @@
 *
 !.gitignore
 !gradle.properties
+!.editorconfig
 
 !README.md
 !build.gradle

@@ -1,6 +1,7 @@
 package cute.ame.pioneer.Seamless;
 
 import cute.ame.pioneer.Config;
+import cute.ame.pioneer.Core.API.Frame.FrameAPI;
 import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.Core.Observer.ObserverState;
 import cute.ame.pioneer.Core.Observer.ObserverStates;
@@ -27,32 +28,9 @@ public final class TransitionManager
 {
     public enum State { IDLE, SWAPPING, SETTLING }
 
-    private static final class PlayerTransition
-    {
-        SeamlessThresholdDetector.ThresholdKind kind;
-        State state = State.IDLE;
-        ResourceKey<Level> fromDim;
-        ResourceKey<Level> targetDim;
-        BlockPos anchor;
-        int settleTicksRemaining;
-    }
-
     private static final int SETTLE_TICKS = 10;
     private static final int LANDING_PROBE_Y = 320;
-
     private static final Map<UUID, PlayerTransition> PLAYER_STATES = new HashMap<>();
-
-    public static void tick(ServerPlayer player)
-    {
-        PlayerTransition pt = PLAYER_STATES.computeIfAbsent(player.getUUID(), k -> new PlayerTransition());
-
-        switch (pt.state)
-        {
-            case IDLE -> tickIdle(player, pt);
-            case SWAPPING -> { }
-            case SETTLING -> tickSettling(pt);
-        }
-    }
 
     private static void tickIdle(ServerPlayer player, PlayerTransition pt)
     {
@@ -69,8 +47,23 @@ public final class TransitionManager
         pt.fromDim = player.level().dimension();
         pt.targetDim = targetOpt.get().dimension();
         pt.anchor = targetOpt.get().anchor();
+        pt.planet = result.targetPlanet().orElse(null);
 
         doSwap(player, pt);
+    }
+
+    public static void tick(ServerPlayer player)
+    {
+        PlayerTransition pt = PLAYER_STATES.computeIfAbsent(player.getUUID(), k -> new PlayerTransition());
+
+        switch (pt.state)
+        {
+            case IDLE -> tickIdle(player, pt);
+            case SWAPPING ->
+            {
+            }
+            case SETTLING -> tickSettling(pt);
+        }
     }
 
     private static void doSwap(ServerPlayer player, PlayerTransition pt)
@@ -80,6 +73,13 @@ public final class TransitionManager
         MinecraftServer server = player.getServer();
         ServerLevel targetLevel = server != null ? server.getLevel(pt.targetDim) : null;
         if (targetLevel == null) { resetToIdle(pt); return; }
+
+        if (warpThroughFrames(player, pt, targetLevel))
+        {
+            pt.state = State.SETTLING;
+            pt.settleTicksRemaining = SETTLE_TICKS;
+            return;
+        }
 
         BlockPos landing = pt.anchor;
 
@@ -97,9 +97,15 @@ public final class TransitionManager
         pt.settleTicksRemaining = SETTLE_TICKS;
     }
 
-    private static void tickSettling(PlayerTransition pt)
+    private static boolean warpThroughFrames(ServerPlayer player, PlayerTransition pt, ServerLevel targetLevel)
     {
-        if (--pt.settleTicksRemaining <= 0) resetToIdle(pt);
+        return switch (pt.kind)
+        {
+            case SURFACE_APPROACHING_ORBIT -> FrameAPI.warpToSpace(player, targetLevel);
+            case SPACE_APPROACHING_PLANET ->
+                pt.planet != null && FrameAPI.warpToSurface(player, targetLevel, pt.planet);
+            default -> false;
+        };
     }
 
     private static void resetToIdle(PlayerTransition pt)
@@ -109,7 +115,24 @@ public final class TransitionManager
         pt.fromDim = null;
         pt.targetDim = null;
         pt.anchor = null;
+        pt.planet = null;
         pt.settleTicksRemaining = 0;
+    }
+
+    private static void tickSettling(PlayerTransition pt)
+    {
+        if (--pt.settleTicksRemaining <= 0) resetToIdle(pt);
+    }
+
+    private static final class PlayerTransition
+    {
+        SeamlessThresholdDetector.ThresholdKind kind;
+        State state = State.IDLE;
+        ResourceKey<Level> fromDim;
+        ResourceKey<Level> targetDim;
+        BlockPos anchor;
+        PlanetDefinition planet;
+        int settleTicksRemaining;
     }
 
     public static void onPlayerDisconnect(ServerPlayer player)

@@ -14,7 +14,9 @@
     "Rendering.BlackHolePostProcessMixin",
     "Rendering.GameRendererMixin",
     "Rendering.SeamlessLoadingScreenMixin",
-    "Rendering.SkyMixin"
+    "Rendering.SkyMixin",
+    "Sable.ClientSubLevelShiftMixin",
+    "Sable.SnapshotInterpolatorShiftMixin"
   ],
   "injectors": {
     "defaultRequire": 1
