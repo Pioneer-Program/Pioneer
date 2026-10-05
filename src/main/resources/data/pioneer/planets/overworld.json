@@ -50,13 +50,13 @@
     ],
     "inner_altitude": 0.015,
     "outer_altitude": 0.05,
-    "coverage": 0.5,
+    "coverage": 0.73,
     "density": 1.0,
     "noise_scale": 6.0,
     "erosion": 0.55,
     "wind_speed": 0.4,
     "wind_direction": [
-      1.0,
+      0.367,
       0.0
     ],
     "mie_g": 0.85,
