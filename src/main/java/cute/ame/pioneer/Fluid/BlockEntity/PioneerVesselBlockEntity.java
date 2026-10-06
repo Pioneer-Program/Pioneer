@@ -1,14 +1,15 @@
 package cute.ame.pioneer.Fluid.BlockEntity;
 
-import cute.ame.celsius.Fluid.BlockEntity.FluidVesselBlockEntity;
-import cute.ame.pioneer.Core.Computer.ComputerPeripheral;
 import cute.ame.celsius.Fluid.Block.FluidVesselBlock;
+import cute.ame.celsius.Fluid.BlockEntity.FluidVesselBlockEntity;
+import cute.ame.celsius.Fluid.Level.FluidLevelData;
+import cute.ame.pioneer.Core.Computer.ComputerPeripheral;
 import cute.ame.pioneer.Fluid.Block.PumpBlock;
 import cute.ame.pioneer.Fluid.Block.ScrubberBlock;
 import cute.ame.pioneer.Fluid.Block.ValveBlock;
 import cute.ame.pioneer.Fluid.Block.VentBlock;
+import cute.ame.pioneer.Fluid.Block.VentMode;
 import cute.ame.pioneer.LifeSupport.Level.KelpBeds;
-import cute.ame.celsius.Fluid.Level.FluidLevelData;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -175,6 +176,14 @@ public class PioneerVesselBlockEntity extends FluidVesselBlockEntity implements 
             if (!matches(channel, ValveBlock.CHANNEL_OPEN)) return false;
 
             ValveBlock.setOpen(level, worldPosition, state, value >= 0.5);
+            return true;
+        }
+
+        if (state.getBlock() instanceof VentBlock)
+        {
+            if (!matches(channel, VentBlock.CHANNEL_MODE) || !Double.isFinite(value)) return false;
+
+            VentBlock.setMode(level, worldPosition, state, VentMode.byIndex((int) Math.round(value)));
             return true;
         }
 

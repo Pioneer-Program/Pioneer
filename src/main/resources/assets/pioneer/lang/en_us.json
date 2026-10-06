@@ -27,6 +27,10 @@
   "valve.pioneer.closed": "Valve closed",
 
   "scrubber.pioneer.filter": "Filtering %s",
+  "vent.pioneer.mode": "Vent: %s",
+  "vent.pioneer.mode.bidirectional": "Bidirectional",
+  "vent.pioneer.mode.intake": "Intake",
+  "vent.pioneer.mode.exhaust": "Exhaust",
 
   "multitool.pioneer.linked": "Connected %s",
   "multitool.pioneer.cut": "Disconnected %s",

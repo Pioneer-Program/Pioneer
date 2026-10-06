@@ -1,10 +1,15 @@
 package cute.ame.pioneer.Fluid.Block;
 
 import cute.ame.celsius.Fluid.Data.FluidConstants;
+import cute.ame.celsius.Fluid.Level.FluidLevelData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
@@ -14,8 +19,8 @@ import net.minecraft.world.level.block.SimpleWaterloggedBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.AttachFace;
-import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.material.FluidState;
@@ -33,6 +38,10 @@ public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBl
     public static final EnumProperty<AttachFace> FACE = BlockStateProperties.ATTACH_FACE;
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
+    public static final EnumProperty<VentMode> MODE = EnumProperty.create("mode", VentMode.class);
+
+    public static final String CHANNEL_MODE = "mode";
+
     private static final VoxelShape FLOOR_SHAPE = Block.box(1.0, 0.0, 3.0, 15.0, 4.0, 13.0);
     private static final Map<AttachFace, Map<Direction, VoxelShape>> SHAPES = buildShapes();
 
@@ -42,13 +51,18 @@ public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBl
         registerDefaultState(getStateDefinition().any()
             .setValue(FACE, AttachFace.WALL)
             .setValue(FACING, Direction.NORTH)
-            .setValue(WATERLOGGED, false));
+            .setValue(WATERLOGGED, false)
+            .setValue(MODE, VentMode.BIDIRECTIONAL));
     }
 
-    @Override
-    protected void createBlockStateDefinition(StateDefinition.@NotNull Builder<Block, BlockState> builder)
+    public static boolean setMode(Level level, BlockPos pos, BlockState state, VentMode mode)
     {
-        builder.add(FACE, FACING, WATERLOGGED);
+        if (!(state.getBlock() instanceof VentBlock)) return false;
+        if (state.getValue(MODE) == mode) return false;
+
+        level.setBlock(pos, state.setValue(MODE, mode), Block.UPDATE_CLIENTS);
+        level.playSound(null, pos, SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.BLOCKS, 0.3f, 1.8f);
+        return true;
     }
 
     @Override
@@ -77,6 +91,30 @@ public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBl
         if (state.getValue(WATERLOGGED)) level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
 
         return super.updateShape(state, direction, neighbour, level, pos, neighbourPos);
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.@NotNull Builder<Block, BlockState> builder)
+    {
+        builder.add(FACE, FACING, WATERLOGGED, MODE);
+    }
+
+    @Override
+    protected void onPlace(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull BlockState oldState, boolean movedByPiston)
+    {
+        super.onPlace(state, level, pos, oldState, movedByPiston);
+
+        if (!(level instanceof ServerLevel serverLevel)) return;
+        if (!oldState.is(this) || oldState.getValue(MODE) == state.getValue(MODE)) return;
+
+        FluidLevelData data = FluidLevelData.getIfPresent(serverLevel);
+        if (data != null) data.graph().invalidate();
+    }
+
+    @Override
+    public int bridgeFlow(BlockState state)
+    {
+        return state.getValue(MODE).flow();
     }
 
     @Override

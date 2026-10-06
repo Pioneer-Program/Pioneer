@@ -4,8 +4,10 @@ import cute.ame.celsius.Fluid.Registry.FluidSpecies;
 import cute.ame.pioneer.Fluid.Block.MassSpectrometerBlock;
 import cute.ame.pioneer.Fluid.Block.PipeBlock;
 import cute.ame.pioneer.Fluid.Block.ScrubberBlock;
-import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
+import cute.ame.pioneer.Fluid.Block.VentBlock;
+import cute.ame.pioneer.Fluid.Block.VentMode;
 import cute.ame.pioneer.Fluid.BlockEntity.MassSpectrometerBlockEntity;
+import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -28,27 +30,12 @@ public class MultiToolItem extends Item
         super(properties);
     }
 
-    @Override
-    public @NotNull InteractionResult onItemUseFirst(@NotNull ItemStack stack, @NotNull UseOnContext context)
+    private static Component vent(Level level, BlockPos pos, BlockState state, boolean back)
     {
-        Level level = context.getLevel();
-        BlockPos pos = context.getClickedPos();
-        BlockState state = level.getBlockState(pos);
-        Block block = state.getBlock();
+        VentMode next = state.getValue(VentBlock.MODE).cycle(back);
+        VentBlock.setMode(level, pos, state, next);
 
-        if (!(block instanceof PipeBlock) && !(block instanceof ScrubberBlock) && !(block instanceof MassSpectrometerBlock)) return InteractionResult.PASS;
-        if (level.isClientSide) return InteractionResult.SUCCESS;
-
-        Player player = context.getPlayer();
-        boolean back = context.isSecondaryUseActive();
-
-        Component message = null;
-        if (block instanceof PipeBlock) message = pipe(level, pos, state, context);
-        else if (block instanceof ScrubberBlock) message = scrubber(level, pos, back);
-        else message = spectrometer(level, pos, back);
-
-        if (message != null && player != null) player.displayClientMessage(message, true);
-        return InteractionResult.CONSUME;
+        return Component.translatable("vent.pioneer.mode", Component.translatable("vent.pioneer.mode." + next.getSerializedName()));
     }
 
     private static @Nullable Component pipe(Level level, BlockPos pos, BlockState state, UseOnContext context)
@@ -73,6 +60,31 @@ public class MultiToolItem extends Item
 
         vessel.setFilter(next);
         return Component.translatable("scrubber.pioneer.filter", Component.translatable("gas.pioneer." + next));
+    }
+
+    @Override
+    public @NotNull InteractionResult onItemUseFirst(@NotNull ItemStack stack, @NotNull UseOnContext context)
+    {
+        Level level = context.getLevel();
+        BlockPos pos = context.getClickedPos();
+        BlockState state = level.getBlockState(pos);
+        Block block = state.getBlock();
+
+        if (!(block instanceof PipeBlock) && !(block instanceof ScrubberBlock) && !(block instanceof MassSpectrometerBlock) && !(block instanceof VentBlock))
+            return InteractionResult.PASS;
+        if (level.isClientSide) return InteractionResult.SUCCESS;
+
+        Player player = context.getPlayer();
+        boolean back = context.isSecondaryUseActive();
+
+        Component message = null;
+        if (block instanceof PipeBlock) message = pipe(level, pos, state, context);
+        else if (block instanceof ScrubberBlock) message = scrubber(level, pos, back);
+        else if (block instanceof VentBlock) message = vent(level, pos, state, back);
+        else message = spectrometer(level, pos, back);
+
+        if (message != null && player != null) player.displayClientMessage(message, true);
+        return InteractionResult.CONSUME;
     }
 
     private static @Nullable Component spectrometer(Level level, BlockPos pos, boolean back)
