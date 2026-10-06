@@ -1,20 +1,30 @@
 package cute.ame.pioneer.Fluid.Block;
 
 import cute.ame.celsius.Fluid.Data.FluidConstants;
+import cute.ame.celsius.Fluid.Level.FluidLevelData;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.SimpleWaterloggedBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.material.FluidState;
+import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
@@ -23,10 +33,15 @@ import org.jetbrains.annotations.Nullable;
 import java.util.EnumMap;
 import java.util.Map;
 
-public class VentBlock extends PioneerVesselBlock
+public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBlock
 {
     public static final EnumProperty<AttachFace> FACE = BlockStateProperties.ATTACH_FACE;
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
+    public static final EnumProperty<VentMode> MODE = EnumProperty.create("mode", VentMode.class);
+
+    public static final String CHANNEL_MODE = "mode";
+
     private static final VoxelShape FLOOR_SHAPE = Block.box(1.0, 0.0, 3.0, 15.0, 4.0, 13.0);
     private static final Map<AttachFace, Map<Direction, VoxelShape>> SHAPES = buildShapes();
 
@@ -35,26 +50,71 @@ public class VentBlock extends PioneerVesselBlock
         super(metal(2.0f));
         registerDefaultState(getStateDefinition().any()
             .setValue(FACE, AttachFace.WALL)
-            .setValue(FACING, Direction.NORTH));
+            .setValue(FACING, Direction.NORTH)
+            .setValue(WATERLOGGED, false)
+            .setValue(MODE, VentMode.BIDIRECTIONAL));
     }
 
-    @Override
-    protected void createBlockStateDefinition(StateDefinition.@NotNull Builder<Block, BlockState> builder)
+    public static boolean setMode(Level level, BlockPos pos, BlockState state, VentMode mode)
     {
-        builder.add(FACE, FACING);
+        if (!(state.getBlock() instanceof VentBlock)) return false;
+        if (state.getValue(MODE) == mode) return false;
+
+        level.setBlock(pos, state.setValue(MODE, mode), Block.UPDATE_CLIENTS);
+        level.playSound(null, pos, SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.BLOCKS, 0.3f, 1.8f);
+        return true;
     }
 
     @Override
     public @Nullable BlockState getStateForPlacement(BlockPlaceContext context)
     {
         Direction clicked = context.getClickedFace();
+        BlockState base = defaultBlockState().setValue(WATERLOGGED, context.getLevel().getFluidState(context.getClickedPos()).getType() == Fluids.WATER);
 
         return switch (clicked)
         {
-            case UP -> defaultBlockState().setValue(FACE, AttachFace.FLOOR).setValue(FACING, context.getHorizontalDirection());
-            case DOWN -> defaultBlockState().setValue(FACE, AttachFace.CEILING).setValue(FACING, context.getHorizontalDirection());
-            default -> defaultBlockState().setValue(FACE, AttachFace.WALL).setValue(FACING, clicked);
+            case UP -> base.setValue(FACE, AttachFace.FLOOR).setValue(FACING, context.getHorizontalDirection());
+            case DOWN -> base.setValue(FACE, AttachFace.CEILING).setValue(FACING, context.getHorizontalDirection());
+            default -> base.setValue(FACE, AttachFace.WALL).setValue(FACING, clicked);
         };
+    }
+
+    @Override
+    protected @NotNull FluidState getFluidState(BlockState state)
+    {
+        return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
+    }
+
+    @Override
+    protected @NotNull BlockState updateShape(BlockState state, @NotNull Direction direction, @NotNull BlockState neighbour, @NotNull LevelAccessor level, @NotNull BlockPos pos, @NotNull BlockPos neighbourPos)
+    {
+        if (state.getValue(WATERLOGGED)) level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
+
+        return super.updateShape(state, direction, neighbour, level, pos, neighbourPos);
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.@NotNull Builder<Block, BlockState> builder)
+    {
+        builder.add(FACE, FACING, WATERLOGGED, MODE);
+    }
+
+    @Override
+    protected void onPlace(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull BlockState oldState, boolean movedByPiston)
+    {
+        super.onPlace(state, level, pos, oldState, movedByPiston);
+
+        if (!(level instanceof ServerLevel serverLevel)) return;
+        if (!oldState.is(this) || oldState.getValue(MODE) == state.getValue(MODE)) return;
+
+        FluidLevelData data = FluidLevelData.getIfPresent(serverLevel);
+        if (data != null) data.graph().invalidate();
+    }
+
+    @Override
+    public int bridgeFlow(BlockState state)
+    {
+        return state.getValue(MODE).flow();
     }
 
     @Override
@@ -95,6 +155,12 @@ public class VentBlock extends PioneerVesselBlock
     public static BlockPos mouth(BlockPos pos, BlockState state)
     {
         return pos.relative(opening(state));
+    }
+
+    @Override
+    public int ports(BlockState state)
+    {
+        return ALL_PORTS & ~port(opening(state));
     }
 
     @Override

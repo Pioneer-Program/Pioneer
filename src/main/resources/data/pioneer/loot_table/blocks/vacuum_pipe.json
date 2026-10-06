@@ -3,7 +3,7 @@
   "pools": [
     {
       "rolls": 1,
-      "entries": [ { "type": "minecraft:item", "name": "pioneer:vaccum_pipe" } ],
+      "entries": [ { "type": "minecraft:item", "name": "pioneer:vacuum_pipe" } ],
       "conditions": [ { "condition": "minecraft:survives_explosion" } ]
     }
   ]

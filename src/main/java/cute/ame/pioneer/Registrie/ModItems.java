@@ -2,6 +2,7 @@ package cute.ame.pioneer.Registrie;
 
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Planet.Arid.Item.AridCrystalShard;
+import cute.ame.pioneer.Item.MultiToolItem;
 import cute.ame.pioneer.Item.PortableThrusterItem;
 import cute.ame.pioneer.Item.SpaceNavigatorItemDebug;
 import net.minecraft.world.item.BlockItem;
@@ -72,4 +73,8 @@ public final class ModItems
   public static final DeferredItem<BlockItem> SHIP_CONTROLLER = ITEMS.register("ship_controller",  () -> new BlockItem(ModBlocks.SHIP_CONTROLLER.get(), new Properties()));
 
   public static final DeferredItem<BlockItem> THRUSTER = ITEMS.register("thruster", () -> new BlockItem(ModBlocks.THRUSTER.get(), new Properties()));
+
+  public static final DeferredItem<BlockItem> SCRUBBER = ITEMS.register("scrubber", () -> new BlockItem(ModBlocks.SCRUBBER.get(), new Properties()));
+
+  public static final DeferredItem<MultiToolItem> MULTI_TOOL = ITEMS.register("multi_tool", () -> new MultiToolItem(new Properties().stacksTo(1)));
 }

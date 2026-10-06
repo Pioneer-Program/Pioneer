@@ -29,11 +29,6 @@ repositories {
     }
 
     maven {
-        name = "JitPack"
-        url = "https://jitpack.io"
-    }
-
-    maven {
         name = 'BlameJared Maven (CrT / Bookshelf)'
         url = 'https://maven.blamejared.com'
     }
@@ -130,7 +125,7 @@ dependencies {
     runMods "curse.maven:iris-veil-compat-1541252:8280410"
 
     // ENGINE
-    implementation "com.github.Pioneer-Program:Celsius:${celsius_version}"
+    implementation "celsius:Celsius:${celsius_version}"
 
     // GAMEPLAY STUFF
     implementation "dev.ryanhcode.sable:sable-neoforge-${minecraft_version}:${sable_version}"

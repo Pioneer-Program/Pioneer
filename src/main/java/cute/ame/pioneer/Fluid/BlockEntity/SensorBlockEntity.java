@@ -1,6 +1,5 @@
 package cute.ame.pioneer.Fluid.BlockEntity;
 
-import cute.ame.pioneer.Fluid.Block.MassSpectrometerBlock;
 
 import cute.ame.pioneer.Fluid.Block.SensorBlock;
 import cute.ame.celsius.Fluid.Helper.SensorReadings;
@@ -109,13 +108,6 @@ public class SensorBlockEntity extends BlockEntity implements ComputerPeripheral
         if (instrument == null) return Component.translatable("gauge.pioneer.no_reading");
 
         Component value = instrument.describeValue(reading);
-
-        if (instrument instanceof MassSpectrometerBlock)
-        {
-            SpeciesTable table = FluidSpecies.active();
-            String key = table.isValid(table.indexOf(gas)) ? gas : SensorBlock.DEFAULT_GAS;
-            value = Component.translatable("gauge.pioneer.gas_of", Component.translatable("gas.pioneer." + key), value);
-        }
 
         if (label.isEmpty()) return value;
 
