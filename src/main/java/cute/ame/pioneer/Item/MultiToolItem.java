@@ -8,6 +8,7 @@ import cute.ame.pioneer.Fluid.Block.VentBlock;
 import cute.ame.pioneer.Fluid.Block.VentMode;
 import cute.ame.pioneer.Fluid.BlockEntity.MassSpectrometerBlockEntity;
 import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
+import cute.ame.pioneer.Registrie.ModDataComponents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -15,6 +16,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -23,6 +25,8 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
+
 public class MultiToolItem extends Item
 {
     public MultiToolItem(Properties properties)
@@ -30,12 +34,29 @@ public class MultiToolItem extends Item
         super(properties);
     }
 
-    private static Component vent(Level level, BlockPos pos, BlockState state, boolean back)
+    public static MultiToolMode modeOf(ItemStack stack)
     {
-        VentMode next = state.getValue(VentBlock.MODE).cycle(back);
-        VentBlock.setMode(level, pos, state, next);
+        return stack.getOrDefault(ModDataComponents.MULTITOOL_MODE.get(), MultiToolMode.CONFIGURE);
+    }
 
-        return Component.translatable("vent.pioneer.mode", Component.translatable("vent.pioneer.mode." + next.getSerializedName()));
+    public static void setMode(ItemStack stack, MultiToolMode mode)
+    {
+        stack.set(ModDataComponents.MULTITOOL_MODE.get(), mode);
+    }
+
+    public static ItemStack held(Player player)
+    {
+        ItemStack main = player.getMainHandItem();
+        if (main.getItem() instanceof MultiToolItem) return main;
+
+        ItemStack off = player.getOffhandItem();
+        return off.getItem() instanceof MultiToolItem ? off : ItemStack.EMPTY;
+    }
+
+    public static void cycleMode(Player player, boolean forward)
+    {
+        ItemStack stack = held(player);
+        if (!stack.isEmpty()) setMode(stack, modeOf(stack).cycle(forward));
     }
 
     private static @Nullable Component pipe(Level level, BlockPos pos, BlockState state, UseOnContext context)
@@ -62,9 +83,25 @@ public class MultiToolItem extends Item
         return Component.translatable("scrubber.pioneer.filter", Component.translatable("gas.pioneer." + next));
     }
 
+    private static Component vent(Level level, BlockPos pos, BlockState state, boolean back)
+    {
+        VentMode next = state.getValue(VentBlock.MODE).cycle(back);
+        VentBlock.setMode(level, pos, state, next);
+
+        return Component.translatable("vent.pioneer.mode", Component.translatable("vent.pioneer.mode." + next.getSerializedName()));
+    }
+
+    @Override
+    public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull List<Component> tooltip, @NotNull TooltipFlag flag)
+    {
+        tooltip.add(Component.translatable("multitool.pioneer.mode", modeOf(stack).title()));
+    }
+
     @Override
     public @NotNull InteractionResult onItemUseFirst(@NotNull ItemStack stack, @NotNull UseOnContext context)
     {
+        if (modeOf(stack) != MultiToolMode.CONFIGURE) return InteractionResult.PASS;
+
         Level level = context.getLevel();
         BlockPos pos = context.getClickedPos();
         BlockState state = level.getBlockState(pos);
