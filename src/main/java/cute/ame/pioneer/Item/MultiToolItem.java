@@ -100,7 +100,9 @@ public class MultiToolItem extends Item
     @Override
     public @NotNull InteractionResult onItemUseFirst(@NotNull ItemStack stack, @NotNull UseOnContext context)
     {
-        if (modeOf(stack) != MultiToolMode.CONFIGURE) return InteractionResult.PASS;
+        MultiToolMode mode = modeOf(stack);
+        if (mode == MultiToolMode.ROTATE) return MultiToolRotation.use(context);
+        if (mode != MultiToolMode.CONFIGURE) return InteractionResult.PASS;
 
         Level level = context.getLevel();
         BlockPos pos = context.getClickedPos();
@@ -114,11 +116,13 @@ public class MultiToolItem extends Item
         Player player = context.getPlayer();
         boolean back = context.isSecondaryUseActive();
 
-        Component message = null;
-        if (block instanceof PipeBlock) message = pipe(level, pos, state, context);
-        else if (block instanceof ScrubberBlock) message = scrubber(level, pos, back);
-        else if (block instanceof VentBlock) message = vent(level, pos, state, back);
-        else message = spectrometer(level, pos, back);
+        Component message = switch (block)
+        {
+            case PipeBlock pipeBlock -> pipe(level, pos, state, context);
+            case ScrubberBlock scrubberBlock -> scrubber(level, pos, back);
+            case VentBlock ventBlock -> vent(level, pos, state, back);
+            default -> spectrometer(level, pos, back);
+        };
 
         if (message != null && player != null) player.displayClientMessage(message, true);
         return InteractionResult.CONSUME;
