@@ -194,21 +194,16 @@ public final class FrameBodies
         public double[] parkingPoint(double fromX, double fromY, double fromZ, long tick, double[] out)
         {
             positionAt(tick, 0.0, out);
-            double dx, dy, dz;
-            if (planet == null)
-            {
-                dx = fromX - out[0];
-                dy = fromY - out[1];
-                dz = fromZ - out[2];
-            }
-            else
+            double dx = fromX - out[0], dy = fromY - out[1], dz = fromZ - out[2];
+            double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (len < 1.0e-9)
             {
                 dx = -out[0];
                 dy = -out[1];
                 dz = -out[2];
+                len = Math.sqrt(dx * dx + dy * dy + dz * dz);
             }
 
-            double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
             if (len < 1.0e-9)
             {
                 dx = 1.0;

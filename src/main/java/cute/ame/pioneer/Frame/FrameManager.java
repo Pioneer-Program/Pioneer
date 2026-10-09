@@ -20,16 +20,19 @@ import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.common.NeoForge;
+import org.joml.Vector2i;
 import org.joml.Vector3d;
 
 import javax.annotation.Nullable;
@@ -400,59 +403,12 @@ public final class FrameManager extends SavedData
         return best;
     }
 
-    public FrameResult release(ServerLevel level, LocalFrame frame, boolean force)
+    private static boolean overlapsPlotGrid(SubLevelContainer container, double minX, double minZ, double maxX, double maxZ)
     {
-        refresh(level);
-
-        long now = level.getGameTime();
-        FrameMotion m = frame.motion;
-        if (frame.fixed)
-            throw new FrameError("Frame #" + frame.id + " is fixed to " + frame.parentName + ", detach it first");
-        if (m.rotated()) throw new FrameError("Frame #" + frame.id + " is rotated, unspin it first");
-
-        double[] p = originOf(frame, now, 0.0, new double[3]);
-        double[] v = velocityOf(frame, now, new double[3]);
-        double speed = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) * 20.0;
-        double limit = Config.FRAME_RELEASE_MAX_SPEED.get();
-        if (!force && speed > limit)
-            throw new FrameError(String.format(Locale.ROOT, "Frame #%d is too fast (%.1f u/s, max %.1f)", frame.id, speed, limit));
-
-        int cell = frame.cell;
-        double dx = p[0] - grid.centerX(cell), dy = p[1] - grid.centerY(), dz = p[2] - grid.centerZ(cell);
-
-        FrameBox box = frame.box;
-        if (!box.isEmpty())
-        {
-            double minY = box.minY + dy, maxY = box.maxY + dy;
-            if (minY < level.getMinBuildHeight() || maxY > level.getMaxBuildHeight())
-                throw new FrameError("Frame #" + frame.id + " would land outside the height limits");
-
-            double minX = box.minX + dx, maxX = box.maxX + dx, minZ = box.minZ + dz, maxZ = box.maxZ + dz;
-            double extent = grid.extent();
-            if (maxX > -extent && minX < extent && maxZ > -extent && minZ < extent)
-                throw new FrameError("Frame #" + frame.id + " would land inside the frame grid, push it out first");
-
-            if (!level.getWorldBorder().isWithinBounds(minX, minZ) || !level.getWorldBorder().isWithinBounds(maxX, maxZ))
-                throw new FrameError("Frame #" + frame.id + " would land outside the world border");
-
-            ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
-            if (container != null && (container.inBounds(new Vector3d(minX, 0.0, minZ)) || container.inBounds(new Vector3d(maxX, 0.0, maxZ))))
-                throw new FrameError("Frame #" + frame.id + " would land in the Sable plot grid");
-        }
-
-        List<ServerSubLevel> subLevels = List.copyOf(frame.members);
-        List<ServerPlayer> players = List.copyOf(frame.players);
-        List<Entity> entities = entitiesInCell(level, cell);
-        FrameReport report = FrameTransfer.carry(level, subLevels, players, entities, dx, dy, dz, v[0] * 20.0, v[1] * 20.0, v[2] * 20.0);
-
-        frames.remove(frame);
-        byCell[cell] = null;
-        frame.clearMembers();
-        setDirty();
-        FrameSync.remove(level, this, cell);
-        Pioneer.LOGGER.info("frame released #{} from ({},{})", frame.id, grid.ix(cell), grid.iz(cell));
-        NeoForge.EVENT_BUS.post(new FrameEvent.Released(level, frame));
-        return new FrameResult(frame, report);
+        int shift = container.getLogPlotSize() + SectionPos.SECTION_BITS, side = 1 << container.getLogSideLength();
+        Vector2i origin = container.getOrigin();
+        return (Mth.floor(maxX) >> shift) >= origin.x && (Mth.floor(minX) >> shift) < origin.x + side
+            && (Mth.floor(maxZ) >> shift) >= origin.y && (Mth.floor(minZ) >> shift) < origin.y + side;
     }
 
     public FrameReport join(ServerLevel level, LocalFrame frame, ServerSubLevel ship)
@@ -591,6 +547,61 @@ public final class FrameManager extends SavedData
         double cx = grid.centerX(cell), cz = grid.centerZ(cell);
         AABB area = new AABB(cx - half, level.getMinBuildHeight(), cz - half, cx + half, level.getMaxBuildHeight(), cz + half);
         return level.getEntities((Entity) null, area, e -> !(e instanceof Player) && !e.isPassenger() && e.isAlive());
+    }
+
+    public FrameResult release(ServerLevel level, LocalFrame frame, boolean force)
+    {
+        refresh(level);
+
+        long now = level.getGameTime();
+        FrameMotion m = frame.motion;
+        if (frame.fixed)
+            throw new FrameError("Frame #" + frame.id + " is fixed to " + frame.parentName + ", detach it first");
+        if (m.rotated()) throw new FrameError("Frame #" + frame.id + " is rotated, unspin it first");
+
+        double[] p = originOf(frame, now, 0.0, new double[3]);
+        double[] v = velocityOf(frame, now, new double[3]);
+        double speed = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) * 20.0;
+        double limit = Config.FRAME_RELEASE_MAX_SPEED.get();
+        if (!force && speed > limit)
+            throw new FrameError(String.format(Locale.ROOT, "Frame #%d is too fast (%.1f u/s, max %.1f)", frame.id, speed, limit));
+
+        int cell = frame.cell;
+        double dx = p[0] - grid.centerX(cell), dy = p[1] - grid.centerY(), dz = p[2] - grid.centerZ(cell);
+
+        FrameBox box = frame.box;
+        if (!box.isEmpty())
+        {
+            double minY = box.minY + dy, maxY = box.maxY + dy;
+            if (minY < level.getMinBuildHeight() || maxY > level.getMaxBuildHeight())
+                throw new FrameError("Frame #" + frame.id + " would land outside the height limits");
+
+            double minX = box.minX + dx, maxX = box.maxX + dx, minZ = box.minZ + dz, maxZ = box.maxZ + dz;
+            double extent = grid.extent();
+            if (maxX > -extent && minX < extent && maxZ > -extent && minZ < extent)
+                throw new FrameError("Frame #" + frame.id + " would land inside the frame grid, push it out first");
+
+            if (!level.getWorldBorder().isWithinBounds(minX, minZ) || !level.getWorldBorder().isWithinBounds(maxX, maxZ))
+                throw new FrameError("Frame #" + frame.id + " would land outside the world border");
+
+            ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+            if (container != null && overlapsPlotGrid(container, minX, minZ, maxX, maxZ))
+                throw new FrameError("Frame #" + frame.id + " would land in the Sable plot grid");
+        }
+
+        List<ServerSubLevel> subLevels = List.copyOf(frame.members);
+        List<ServerPlayer> players = List.copyOf(frame.players);
+        List<Entity> entities = entitiesInCell(level, cell);
+        FrameReport report = FrameTransfer.carry(level, subLevels, players, entities, dx, dy, dz, v[0] * 20.0, v[1] * 20.0, v[2] * 20.0);
+
+        frames.remove(frame);
+        byCell[cell] = null;
+        frame.clearMembers();
+        setDirty();
+        FrameSync.remove(level, this, cell);
+        Pioneer.LOGGER.info("frame released #{} from ({},{})", frame.id, grid.ix(cell), grid.iz(cell));
+        NeoForge.EVENT_BUS.post(new FrameEvent.Released(level, frame));
+        return new FrameResult(frame, report);
     }
 
     private int carriedIn(int cell, Vector3d anchor, List<ServerPlayer> players)
