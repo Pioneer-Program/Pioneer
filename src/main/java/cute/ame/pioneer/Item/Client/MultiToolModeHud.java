@@ -2,10 +2,11 @@ package cute.ame.pioneer.Item.Client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
+import cute.ame.pioneer.Item.Module.MultiToolModule;
 import cute.ame.pioneer.Item.MultiToolItem;
-import cute.ame.pioneer.Item.MultiToolMode;
 import cute.ame.pioneer.Item.Network.MultiToolModePayload;
 import cute.ame.pioneer.Pioneer;
+import cute.ame.pioneer.Registrie.ModMultiToolModules;
 import net.minecraft.Util;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -68,8 +69,8 @@ public final class MultiToolModeHud
         boolean forward = delta < 0.0;
         long now = Util.getMillis();
 
-        MultiToolMode next = MultiToolItem.modeOf(stack).cycle(forward);
-        MultiToolItem.setMode(stack, next);
+        MultiToolModule next = ModMultiToolModules.cycle(MultiToolItem.moduleOf(stack), forward);
+        MultiToolItem.setModule(stack, next);
         PacketDistributor.sendToServer(new MultiToolModePayload(forward));
         minecraft.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.NOTE_BLOCK_HAT.value(), pitch(next), 0.35f));
 
@@ -80,9 +81,9 @@ public final class MultiToolModeHud
         event.setCanceled(true);
     }
 
-    private static float pitch(MultiToolMode mode)
+    private static float pitch(MultiToolModule module)
     {
-        return (float) Math.pow(2.0, mode.ordinal() * 4.0f / 12.0);
+        return (float) Math.pow(2.0, ModMultiToolModules.indexOf(module) * 4.0f / 12.0);
     }
 
     private static void show(long now)
@@ -114,11 +115,12 @@ public final class MultiToolModeHud
         float alpha = Math.min(Mth.clamp((now - appearedAt) / (float) 220L, 0.0f, 1.0f), Mth.clamp((visibleUntil - now) / (float) FADE_MS, 0.0f, 1.0f));
         if (alpha <= 0.0f) return;
 
-        int reach = Math.min(1, MultiToolMode.count() - 1);
+        int reach = Math.min(1, ModMultiToolModules.count() - 1);
         int centerX = graphics.guiWidth() / 2;
         int centerY = graphics.guiHeight() - 96;
         float offset = offset(now);
-        MultiToolMode current = MultiToolItem.modeOf(stack);
+        MultiToolModule current = MultiToolItem.moduleOf(stack);
+        int index = ModMultiToolModules.indexOf(current);
         RenderSystem.enableBlend();
 
         PoseStack pose = graphics.pose();
@@ -138,7 +140,7 @@ public final class MultiToolModeHud
             pose.translate(centerX + position * 30, centerY, 0.0f);
             pose.scale(scale, scale, 1.0f);
             graphics.setColor(1.0f, 1.0f, 1.0f, tint);
-            graphics.blit(MultiToolMode.byIndex(current.ordinal() + k).icon(), -ICON / 2, -ICON / 2, ICON, ICON, 0.0f, 0.0f, TEXTURE, TEXTURE, TEXTURE, TEXTURE);
+            graphics.blit(ModMultiToolModules.byIndex(index + k).icon(), -ICON / 2, -ICON / 2, ICON, ICON, 0.0f, 0.0f, TEXTURE, TEXTURE, TEXTURE, TEXTURE);
             pose.popPose();
         }
 

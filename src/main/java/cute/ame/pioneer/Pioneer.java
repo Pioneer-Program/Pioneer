@@ -1,13 +1,21 @@
 package cute.ame.pioneer;
 
 import com.mojang.logging.LogUtils;
-import cute.ame.pioneer.Command.PioneerDebugCommand;
 import cute.ame.celsius.Core.Thermal.Ambient;
 import cute.ame.celsius.Core.Thermal.Residency;
+import cute.ame.pioneer.Command.PioneerDebugCommand;
 import cute.ame.pioneer.Data.DataGenerators;
 import cute.ame.pioneer.Fluid.Helper.AmbientResolver;
 import cute.ame.pioneer.Fluid.Helper.FluidLevels;
-import cute.ame.pioneer.Registrie.*;
+import cute.ame.pioneer.Registrie.ModAttachmentTypes;
+import cute.ame.pioneer.Registrie.ModBlockEntities;
+import cute.ame.pioneer.Registrie.ModBlocks;
+import cute.ame.pioneer.Registrie.ModCreativeModeTabs;
+import cute.ame.pioneer.Registrie.ModDataComponents;
+import cute.ame.pioneer.Registrie.ModItems;
+import cute.ame.pioneer.Registrie.ModMultiToolModules;
+import cute.ame.pioneer.Registrie.ModParticles;
+import cute.ame.pioneer.Registrie.ModWorldgen;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -28,6 +36,7 @@ public class Pioneer
     ModWorldgen.BIOME_SOURCES.register(modEventBus);
     ModWorldgen.CHUNK_GENERATORS.register(modEventBus);
     ModParticles.PARTICLE_TYPES.register(modEventBus);
+      ModMultiToolModules.register(modEventBus);
     ModDataComponents.DATA_COMPONENTS.register(modEventBus);
     ModItems.ITEMS.register(modEventBus);
     ModBlocks.BLOCKS.register(modEventBus);

@@ -1,4 +1,4 @@
-package cute.ame.pioneer.Item;
+package cute.ame.pioneer.Item.Module;
 
 import cute.ame.celsius.Fluid.Block.FluidVesselBlock;
 import cute.ame.celsius.Fluid.Level.FluidLevelData;
@@ -12,6 +12,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -23,7 +24,7 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 
 import java.util.Objects;
 
-public final class MultiToolRotation
+public class RotateModule extends MultiToolModule
 {
     public static final TagKey<Block> ROTATABLE = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "multitool_rotatable"));
 
@@ -34,7 +35,8 @@ public final class MultiToolRotation
     private static final EnumProperty<Direction.Axis> HORIZONTAL_AXIS = BlockStateProperties.HORIZONTAL_AXIS;
     private static final Direction.Axis[] AXES = Direction.Axis.values();
 
-    public static InteractionResult use(UseOnContext context)
+    @Override
+    public InteractionResult useOn(ItemStack stack, UseOnContext context)
     {
         Level level = context.getLevel();
         BlockPos pos = context.getClickedPos();
