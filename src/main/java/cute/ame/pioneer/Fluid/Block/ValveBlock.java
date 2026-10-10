@@ -1,7 +1,9 @@
 package cute.ame.pioneer.Fluid.Block;
 
-import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
 import cute.ame.celsius.Fluid.Level.FluidLevelData;
+import cute.ame.pioneer.Core.Readout.Readout;
+import cute.ame.pioneer.Core.Readout.ReadoutUnit;
+import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -129,5 +131,12 @@ public class ValveBlock extends PioneerVesselBlock
     public float getNominalBurstPressure()
     {
         return 15.0f;
+    }
+
+    @Override
+    protected void details(ServerLevel level, BlockPos pos, BlockState state, Readout out)
+    {
+        out.translated("readout.pioneer.state", isOpen(state) ? "readout.pioneer.state.open" : "readout.pioneer.state.closed");
+        out.number("readout.pioneer.throttle", throttleAt(level, pos) * 100.0, ReadoutUnit.PERCENT);
     }
 }

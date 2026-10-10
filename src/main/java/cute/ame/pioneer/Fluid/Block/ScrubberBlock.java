@@ -2,9 +2,11 @@ package cute.ame.pioneer.Fluid.Block;
 
 import cute.ame.celsius.Fluid.Data.FluidConstants;
 import cute.ame.pioneer.Config;
+import cute.ame.pioneer.Core.Readout.Readout;
 import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -101,5 +103,12 @@ public class ScrubberBlock extends PioneerVesselBlock
     public float getNominalBurstPressure()
     {
         return 10.0f;
+    }
+
+    @Override
+    protected void details(ServerLevel level, BlockPos pos, BlockState state, Readout out)
+    {
+        if (level.getBlockEntity(pos) instanceof PioneerVesselBlockEntity vessel)
+            out.translated("readout.pioneer.filter", "gas.pioneer." + vessel.getFilter());
     }
 }

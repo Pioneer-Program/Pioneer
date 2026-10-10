@@ -1,10 +1,15 @@
 package cute.ame.pioneer.Thermal.Block;
 
-import cute.ame.pioneer.Thermal.BlockEntity.ThermalActuatorBlockEntity;
 import cute.ame.celsius.Thermal.Data.ThermalDevice;
 import cute.ame.celsius.Thermal.Registry.ThermalDevices;
+import cute.ame.pioneer.Core.Computer.ComputerPeripheral;
+import cute.ame.pioneer.Core.Readout.Readout;
+import cute.ame.pioneer.Core.Readout.ReadoutSource;
+import cute.ame.pioneer.Core.Readout.ReadoutUnit;
+import cute.ame.pioneer.Thermal.BlockEntity.ThermalActuatorBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
@@ -28,7 +33,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class ThermalActuatorBlock extends Block implements EntityBlock
+public class ThermalActuatorBlock extends Block implements EntityBlock, ReadoutSource
 {
     public static final BooleanProperty ACTIVE = BlockStateProperties.LIT;
 
@@ -119,5 +124,20 @@ public class ThermalActuatorBlock extends Block implements EntityBlock
     public static float setpointAt(BlockGetter level, BlockPos pos)
     {
         return level.getBlockEntity(pos) instanceof ThermalActuatorBlockEntity actuator ? actuator.getSetpoint() : Float.NaN;
+    }
+
+    @Override
+    public void readout(ServerLevel level, BlockPos pos, BlockState state, Readout out)
+    {
+        if (!(level.getBlockEntity(pos) instanceof ThermalActuatorBlockEntity actuator)) return;
+
+        if (!actuator.getLabel().isEmpty()) out.text("readout.pioneer.label", actuator.getLabel());
+
+        out.translated("readout.pioneer.state", isActive(state) ? "readout.pioneer.state.running" : "readout.pioneer.state.stopped");
+        out.number("readout.pioneer.setpoint", actuator.getSetpoint(), ReadoutUnit.KELVIN);
+        out.number("readout.pioneer.temperature", actuator.read(ComputerPeripheral.TEMPERATURE_READING, null), ReadoutUnit.KELVIN);
+
+        ThermalDevice device = ThermalDevices.of(state);
+        if (device != null) out.number("readout.pioneer.power", device.watts(), ReadoutUnit.WATT);
     }
 }

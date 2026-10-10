@@ -1,9 +1,11 @@
 package cute.ame.pioneer.Fluid.Block;
 
-import cute.ame.pioneer.Config;
-import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
 import cute.ame.celsius.Fluid.Data.FluidConstants;
 import cute.ame.celsius.Fluid.Level.FluidLevelData;
+import cute.ame.pioneer.Config;
+import cute.ame.pioneer.Core.Readout.Readout;
+import cute.ame.pioneer.Core.Readout.ReadoutUnit;
+import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -222,5 +224,14 @@ public class PumpBlock extends PioneerVesselBlock
     public float getNominalBurstPressure()
     {
         return 20.0f;
+    }
+
+    @Override
+    protected void details(ServerLevel level, BlockPos pos, BlockState state, Readout out)
+    {
+        boolean running = isActive(state);
+        out.translated("readout.pioneer.state", running ? "readout.pioneer.state.running" : "readout.pioneer.state.stopped");
+        out.number("readout.pioneer.power", powerAt(level, pos) * 100.0, ReadoutUnit.PERCENT);
+        if (running) out.number("readout.pioneer.boost", boost(level, pos, state), ReadoutUnit.PRESSURE);
     }
 }

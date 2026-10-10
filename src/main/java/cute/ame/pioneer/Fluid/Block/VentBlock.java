@@ -1,7 +1,11 @@
 package cute.ame.pioneer.Fluid.Block;
 
 import cute.ame.celsius.Fluid.Data.FluidConstants;
+import cute.ame.celsius.Fluid.Data.FluidNodeStore;
 import cute.ame.celsius.Fluid.Level.FluidLevelData;
+import cute.ame.celsius.Fluid.Level.RoomLevelData;
+import cute.ame.pioneer.Core.Readout.Readout;
+import cute.ame.pioneer.Core.Readout.ReadoutUnit;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -236,5 +240,19 @@ public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBl
     public float getNominalBurstPressure()
     {
         return 10.0f;
+    }
+
+    @Override
+    protected void details(ServerLevel level, BlockPos pos, BlockState state, Readout out)
+    {
+        out.translated("readout.pioneer.mode", "vent.pioneer.mode." + state.getValue(MODE).getSerializedName());
+
+        RoomLevelData rooms = RoomLevelData.getIfPresent(level);
+        FluidLevelData data = FluidLevelData.getIfPresent(level);
+        if (rooms == null || data == null) return;
+
+        int room = rooms.nodeAt(mouth(pos, state));
+        if (room != FluidNodeStore.INVALID && data.store().alive(room))
+            out.number("readout.pioneer.room_pressure", data.store().pressure(room), ReadoutUnit.PRESSURE);
     }
 }

@@ -1,20 +1,17 @@
 package cute.ame.pioneer.Fluid.BlockEntity;
 
-import cute.ame.celsius.Fluid.BlockEntity.FluidVesselBlockEntity;
 import cute.ame.celsius.Fluid.Data.FluidNodeStore;
 import cute.ame.celsius.Fluid.Data.SpeciesTable;
 import cute.ame.celsius.Fluid.Level.FluidLevelData;
 import cute.ame.celsius.Fluid.Level.RoomLevelData;
 import cute.ame.celsius.Fluid.Registry.FluidSpecies;
 import cute.ame.pioneer.Config;
-import cute.ame.pioneer.Core.Computer.ComputerPeripheral;
 import cute.ame.pioneer.Fluid.Block.SensorBlock;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.state.BlockState;
@@ -94,14 +91,6 @@ public class MassSpectrometerBlockEntity extends PioneerVesselBlockEntity
             if (room != FluidNodeStore.INVALID && store.alive(room)) return room;
         }
         return FluidNodeStore.INVALID;
-    }
-
-    public Component describe()
-    {
-        Component value = ComputerPeripheral.isReadable(reading) ? Component.translatable("gauge.pioneer.gas", String.format("%.2f", reading)) : Component.translatable("gauge.pioneer.no_reading");
-        value = Component.translatable("gauge.pioneer.gas_of", Component.translatable("gas.pioneer." + gas), value);
-
-        return label.isEmpty() ? value : Component.translatable("gauge.pioneer.labelled", label, value);
     }
 
     @Override

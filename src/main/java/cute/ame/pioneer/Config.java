@@ -29,6 +29,8 @@ public class Config
     public static ModConfigSpec.IntValue KELP_RESCANS_PER_TICK;
     public static ModConfigSpec.IntValue KELP_LIGHT_SAMPLES;
 
+    public static ModConfigSpec.IntValue MULTITOOL_READOUT_PERIOD_TICKS;
+
     static final ModConfigSpec SPEC;
     static
     {
@@ -62,6 +64,10 @@ public class Config
         KELP_BED_MAX_BLOCKS = BUILDER.defineInRange("kelp_bed_max_blocks", 1024, 16, 65_536);
         KELP_RESCANS_PER_TICK = BUILDER.defineInRange("kelp_rescans_per_tick", 1, 1, 16);
         KELP_LIGHT_SAMPLES = BUILDER.defineInRange("kelp_light_samples", 4, 1, 64);
+        BUILDER.pop();
+
+        BUILDER.push("MultiTool");
+        MULTITOOL_READOUT_PERIOD_TICKS = BUILDER.defineInRange("multitool_readout_period_ticks", 10, 1, 200);
         BUILDER.pop();
 
         SPEC = BUILDER.build();

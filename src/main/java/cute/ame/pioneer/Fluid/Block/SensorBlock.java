@@ -1,17 +1,15 @@
 package cute.ame.pioneer.Fluid.Block;
 
-import net.minecraft.server.level.ServerLevel;
-
-import net.minecraft.resources.ResourceLocation;
-
+import cute.ame.pioneer.Core.Computer.ComputerPeripheral;
+import cute.ame.pioneer.Core.Readout.Readout;
+import cute.ame.pioneer.Core.Readout.ReadoutSource;
+import cute.ame.pioneer.Core.Readout.ReadoutUnit;
 import cute.ame.pioneer.Fluid.BlockEntity.SensorBlockEntity;
-import cute.ame.celsius.Fluid.Helper.SensorReadings;
-
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelReader;
@@ -28,13 +26,12 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.material.PushReaction;
-import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public abstract class SensorBlock extends FaceAttachedHorizontalDirectionalBlock implements EntityBlock
+public abstract class SensorBlock extends FaceAttachedHorizontalDirectionalBlock implements EntityBlock, ReadoutSource
 {
     private static final VoxelShape FLOOR = Block.box(3.0, 0.0, 3.0, 13.0, 4.0, 13.0);
     private static final VoxelShape CEILING = Block.box(3.0, 12.0, 3.0, 13.0, 16.0, 13.0);
@@ -87,16 +84,6 @@ public abstract class SensorBlock extends FaceAttachedHorizontalDirectionalBlock
     }
 
     @Override
-    protected @NotNull InteractionResult useWithoutItem(@NotNull BlockState state, Level level, @NotNull BlockPos pos, Player player, @NotNull BlockHitResult hit)
-    {
-        if (level.isClientSide) return InteractionResult.SUCCESS;
-        if (!(level.getBlockEntity(pos) instanceof SensorBlockEntity sensor)) return InteractionResult.PASS;
-
-        player.displayClientMessage(sensor.describe(), true);
-        return InteractionResult.CONSUME;
-    }
-
-    @Override
     public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(@NotNull Level level, @NotNull BlockState state, @NotNull BlockEntityType<T> type)
     {
         if (level.isClientSide) return null;
@@ -122,4 +109,16 @@ public abstract class SensorBlock extends FaceAttachedHorizontalDirectionalBlock
     public abstract double getDialMax();
 
     public abstract Component describeValue(double value);
+
+    @Override
+    public void readout(ServerLevel level, BlockPos pos, BlockState state, Readout out)
+    {
+        if (!(level.getBlockEntity(pos) instanceof SensorBlockEntity sensor)) return;
+
+        if (!sensor.getLabel().isEmpty()) out.text("readout.pioneer.label", sensor.getLabel());
+
+        ResourceLocation type = getReadingType();
+        ReadoutUnit unit = ComputerPeripheral.PRESSURE_READING.equals(type) ? ReadoutUnit.PRESSURE : ComputerPeripheral.TEMPERATURE_READING.equals(type) ? ReadoutUnit.CELSIUS : ReadoutUnit.NONE;
+        out.number("readout.pioneer.reading", readAt(level, pos, sensor.getGas()), unit);
+    }
 }
