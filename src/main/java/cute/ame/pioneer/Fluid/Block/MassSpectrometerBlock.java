@@ -1,12 +1,16 @@
 package cute.ame.pioneer.Fluid.Block;
 
+import cute.ame.pioneer.Core.Configure.Configurable;
 import cute.ame.pioneer.Core.Readout.Readout;
 import cute.ame.pioneer.Core.Readout.ReadoutUnit;
 import cute.ame.pioneer.Fluid.BlockEntity.MassSpectrometerBlockEntity;
+import cute.ame.pioneer.Fluid.Helper.SpeciesCycle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -24,7 +28,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class MassSpectrometerBlock extends PioneerVesselBlock
+public class MassSpectrometerBlock extends PioneerVesselBlock implements Configurable
 {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final float SAMPLE_VOLUME_L = 1.0f;
@@ -140,5 +144,17 @@ public class MassSpectrometerBlock extends PioneerVesselBlock
 
         out.translated("readout.pioneer.sampling", "gas.pioneer." + spectrometer.getGas());
         out.number("readout.pioneer.reading", spectrometer.reading(), ReadoutUnit.PERCENT);
+    }
+
+    @Override
+    public @Nullable Component configure(ServerLevel level, BlockPos pos, BlockState state, UseOnContext context)
+    {
+        if (!(level.getBlockEntity(pos) instanceof MassSpectrometerBlockEntity sensor)) return null;
+
+        String next = SpeciesCycle.next(sensor.getGas(), context.isSecondaryUseActive());
+        if (next == null) return null;
+
+        sensor.setGas(next);
+        return Component.translatable("multitool.pioneer.reading", Component.translatable("gas.pioneer." + next));
     }
 }

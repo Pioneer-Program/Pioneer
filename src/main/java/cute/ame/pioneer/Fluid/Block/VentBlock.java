@@ -4,14 +4,17 @@ import cute.ame.celsius.Fluid.Data.FluidConstants;
 import cute.ame.celsius.Fluid.Data.FluidNodeStore;
 import cute.ame.celsius.Fluid.Level.FluidLevelData;
 import cute.ame.celsius.Fluid.Level.RoomLevelData;
+import cute.ame.pioneer.Core.Configure.Configurable;
 import cute.ame.pioneer.Core.Readout.Readout;
 import cute.ame.pioneer.Core.Readout.ReadoutUnit;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -37,7 +40,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.EnumMap;
 import java.util.Map;
 
-public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBlock
+public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBlock, Configurable
 {
     public static final EnumProperty<AttachFace> FACE = BlockStateProperties.ATTACH_FACE;
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
@@ -254,5 +257,14 @@ public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBl
         int room = rooms.nodeAt(mouth(pos, state));
         if (room != FluidNodeStore.INVALID && data.store().alive(room))
             out.number("readout.pioneer.room_pressure", data.store().pressure(room), ReadoutUnit.PRESSURE);
+    }
+
+    @Override
+    public Component configure(ServerLevel level, BlockPos pos, BlockState state, UseOnContext context)
+    {
+        VentMode next = state.getValue(MODE).cycle(context.isSecondaryUseActive());
+        setMode(level, pos, state, next);
+
+        return Component.translatable("vent.pioneer.mode", Component.translatable("vent.pioneer.mode." + next.getSerializedName()));
     }
 }

@@ -2,12 +2,16 @@ package cute.ame.pioneer.Fluid.Block;
 
 import cute.ame.celsius.Fluid.Data.FluidConstants;
 import cute.ame.pioneer.Config;
+import cute.ame.pioneer.Core.Configure.Configurable;
 import cute.ame.pioneer.Core.Readout.Readout;
 import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
+import cute.ame.pioneer.Fluid.Helper.SpeciesCycle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RotatedPillarBlock;
@@ -19,7 +23,7 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class ScrubberBlock extends PioneerVesselBlock
+public class ScrubberBlock extends PioneerVesselBlock implements Configurable
 {
     public static final EnumProperty<Direction.Axis> AXIS = BlockStateProperties.AXIS;
     public static final String DEFAULT_FILTER = "co2";
@@ -110,5 +114,17 @@ public class ScrubberBlock extends PioneerVesselBlock
     {
         if (level.getBlockEntity(pos) instanceof PioneerVesselBlockEntity vessel)
             out.translated("readout.pioneer.filter", "gas.pioneer." + vessel.getFilter());
+    }
+
+    @Override
+    public @Nullable Component configure(ServerLevel level, BlockPos pos, BlockState state, UseOnContext context)
+    {
+        if (!(level.getBlockEntity(pos) instanceof PioneerVesselBlockEntity vessel)) return null;
+
+        String next = SpeciesCycle.next(vessel.getFilter(), context.isSecondaryUseActive());
+        if (next == null) return null;
+
+        vessel.setFilter(next);
+        return Component.translatable("scrubber.pioneer.filter", Component.translatable("gas.pioneer." + next));
     }
 }
