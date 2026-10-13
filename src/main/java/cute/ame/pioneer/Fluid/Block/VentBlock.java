@@ -4,17 +4,17 @@ import cute.ame.celsius.Fluid.Data.FluidConstants;
 import cute.ame.celsius.Fluid.Data.FluidNodeStore;
 import cute.ame.celsius.Fluid.Level.FluidLevelData;
 import cute.ame.celsius.Fluid.Level.RoomLevelData;
-import cute.ame.pioneer.Core.Configure.Configurable;
+import cute.ame.pioneer.Core.Configure.Tunable;
+import cute.ame.pioneer.Core.Configure.TuneOptions;
+import cute.ame.pioneer.Core.Configure.Tunes;
 import cute.ame.pioneer.Core.Readout.Readout;
 import cute.ame.pioneer.Core.Readout.ReadoutUnit;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -37,10 +37,12 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
-public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBlock, Configurable
+public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBlock, Tunable
 {
     public static final EnumProperty<AttachFace> FACE = BlockStateProperties.ATTACH_FACE;
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
@@ -51,6 +53,8 @@ public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBl
 
     private static final VoxelShape FLOOR_SHAPE = Block.box(1.0, 0.0, 3.0, 15.0, 4.0, 13.0);
     private static final Map<AttachFace, Map<Direction, VoxelShape>> SHAPES = buildShapes();
+    private static final List<String> MODES = Arrays.stream(VentMode.values()).map(mode -> "vent.pioneer.mode." + mode.getSerializedName()).toList();
+    private static final List<String> MODE_ICONS = Arrays.stream(VentMode.values()).map(mode -> Tunes.icon("vent/" + mode.getSerializedName())).toList();
 
     public VentBlock()
     {
@@ -260,11 +264,17 @@ public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBl
     }
 
     @Override
-    public Component configure(ServerLevel level, BlockPos pos, BlockState state, UseOnContext context)
+    public void options(ServerLevel level, BlockPos pos, BlockState state, TuneOptions out)
     {
-        VentMode next = state.getValue(MODE).cycle(context.isSecondaryUseActive());
-        setMode(level, pos, state, next);
+        out.choice("readout.pioneer.mode", state.getValue(MODE).ordinal(), MODES, MODE_ICONS, true);
+    }
 
-        return Component.translatable("vent.pioneer.mode", Component.translatable("vent.pioneer.mode." + next.getSerializedName()));
+    @Override
+    public boolean tune(ServerLevel level, BlockPos pos, BlockState state, int option, double value)
+    {
+        if (option != 0) return false;
+
+        setMode(level, pos, state, VentMode.byIndex((int) value));
+        return true;
     }
 }

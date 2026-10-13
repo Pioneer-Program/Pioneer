@@ -65,6 +65,8 @@
   "readout.pioneer.phase.liquid": "Liquid",
   "readout.pioneer.room_pressure": "Room pressure",
   "readout.pioneer.burst": "Rated burst",
+  "tune.pioneer.dial_hint": "Release to confirm, Esc to cancel",
+  "tune.pioneer.grid_hint": "Hover a choice and release, Esc to cancel",
 
   "gauge.pioneer.no_reading": "no reading",
   "gauge.pioneer.pressure": "%s P",

@@ -1,16 +1,15 @@
 package cute.ame.pioneer.Fluid.Block;
 
-import cute.ame.pioneer.Core.Configure.Configurable;
+import cute.ame.pioneer.Core.Configure.Tunable;
+import cute.ame.pioneer.Core.Configure.TuneOptions;
+import cute.ame.pioneer.Core.Configure.Tunes;
 import cute.ame.pioneer.Core.Readout.Readout;
 import cute.ame.pioneer.Core.Readout.ReadoutUnit;
 import cute.ame.pioneer.Fluid.BlockEntity.MassSpectrometerBlockEntity;
-import cute.ame.pioneer.Fluid.Helper.SpeciesCycle;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.context.BlockPlaceContext;
-import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -28,7 +27,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class MassSpectrometerBlock extends PioneerVesselBlock implements Configurable
+public class MassSpectrometerBlock extends PioneerVesselBlock implements Tunable
 {
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final float SAMPLE_VOLUME_L = 1.0f;
@@ -147,14 +146,18 @@ public class MassSpectrometerBlock extends PioneerVesselBlock implements Configu
     }
 
     @Override
-    public @Nullable Component configure(ServerLevel level, BlockPos pos, BlockState state, UseOnContext context)
+    public void options(ServerLevel level, BlockPos pos, BlockState state, TuneOptions out)
     {
-        if (!(level.getBlockEntity(pos) instanceof MassSpectrometerBlockEntity sensor)) return null;
+        if (level.getBlockEntity(pos) instanceof MassSpectrometerBlockEntity sensor)
+            out.choice("readout.pioneer.sampling", Tunes.speciesIndex(sensor.getGas()), Tunes.speciesChoices(), Tunes.speciesIcons(), true);
+    }
 
-        String next = SpeciesCycle.next(sensor.getGas(), context.isSecondaryUseActive());
-        if (next == null) return null;
+    @Override
+    public boolean tune(ServerLevel level, BlockPos pos, BlockState state, int option, double value)
+    {
+        if (option != 0 || !(level.getBlockEntity(pos) instanceof MassSpectrometerBlockEntity sensor)) return false;
 
-        sensor.setGas(next);
-        return Component.translatable("multitool.pioneer.reading", Component.translatable("gas.pioneer." + next));
+        sensor.setGas(Tunes.speciesAt((int) value));
+        return true;
     }
 }

@@ -1,8 +1,10 @@
 package cute.ame.pioneer.Item.Network;
 
 import cute.ame.pioneer.Item.Client.Readout.MultiToolReadoutHud;
+import cute.ame.pioneer.Item.Client.Tune.TuneClient;
 import cute.ame.pioneer.Item.MultiToolItem;
 import cute.ame.pioneer.Item.Readout.MultiToolReadouts;
+import cute.ame.pioneer.Item.Tune.TuneServer;
 import cute.ame.pioneer.Pioneer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -25,5 +27,15 @@ public final class MultiToolNetworking
                 MultiToolReadouts.watch(player, payload.watching(), payload.pos());
         }));
         registrar.playToClient(MultiToolReadoutPayload.TYPE, MultiToolReadoutPayload.CODEC, (payload, context) -> context.enqueueWork(() -> MultiToolReadoutHud.receive(payload)));
+        registrar.playToServer(TuneRequestPayload.TYPE, TuneRequestPayload.CODEC, (payload, context) -> context.enqueueWork(() ->
+        {
+            if (context.player() instanceof ServerPlayer player) TuneServer.request(player, payload.pos());
+        }));
+        registrar.playToServer(TuneSetPayload.TYPE, TuneSetPayload.CODEC, (payload, context) -> context.enqueueWork(() ->
+        {
+            if (context.player() instanceof ServerPlayer player)
+                TuneServer.set(player, payload.pos(), payload.option(), payload.value());
+        }));
+        registrar.playToClient(TuneOptionsPayload.TYPE, TuneOptionsPayload.CODEC, (payload, context) -> context.enqueueWork(() -> TuneClient.receive(payload)));
     }
 }

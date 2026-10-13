@@ -1,6 +1,8 @@
 package cute.ame.pioneer.Fluid.Block;
 
 import cute.ame.celsius.Fluid.Level.FluidLevelData;
+import cute.ame.pioneer.Core.Configure.Tunable;
+import cute.ame.pioneer.Core.Configure.TuneOptions;
 import cute.ame.pioneer.Core.Readout.Readout;
 import cute.ame.pioneer.Core.Readout.ReadoutUnit;
 import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
@@ -23,7 +25,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class ValveBlock extends PioneerVesselBlock
+public class ValveBlock extends PioneerVesselBlock implements Tunable
 {
     public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
     public static final String CHANNEL_OPEN = "open";
@@ -138,5 +140,27 @@ public class ValveBlock extends PioneerVesselBlock
     {
         out.translated("readout.pioneer.state", isOpen(state) ? "readout.pioneer.state.open" : "readout.pioneer.state.closed");
         out.number("readout.pioneer.throttle", throttleAt(level, pos) * 100.0, ReadoutUnit.PERCENT);
+    }
+
+    @Override
+    public void options(ServerLevel level, BlockPos pos, BlockState state, TuneOptions out)
+    {
+        out.toggle("readout.pioneer.state", isOpen(state), "readout.pioneer.state.closed", "readout.pioneer.state.open");
+        out.range("readout.pioneer.throttle", throttleAt(level, pos) * 100.0, 0.0, 100.0, 5.0, ReadoutUnit.PERCENT, true);
+    }
+
+    @Override
+    public boolean tune(ServerLevel level, BlockPos pos, BlockState state, int option, double value)
+    {
+        if (option == 1)
+        {
+            setThrottle(level, pos, (float) (value / 100.0));
+            return true;
+        }
+
+        if (option != 0) return false;
+
+        setOpen(level, pos, state, value >= 0.5);
+        return true;
     }
 }

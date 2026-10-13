@@ -3,6 +3,8 @@ package cute.ame.pioneer.Thermal.Block;
 import cute.ame.celsius.Thermal.Data.ThermalDevice;
 import cute.ame.celsius.Thermal.Registry.ThermalDevices;
 import cute.ame.pioneer.Core.Computer.ComputerPeripheral;
+import cute.ame.pioneer.Core.Configure.Tunable;
+import cute.ame.pioneer.Core.Configure.TuneOptions;
 import cute.ame.pioneer.Core.Readout.Readout;
 import cute.ame.pioneer.Core.Readout.ReadoutSource;
 import cute.ame.pioneer.Core.Readout.ReadoutUnit;
@@ -33,7 +35,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class ThermalActuatorBlock extends Block implements EntityBlock, ReadoutSource
+public class ThermalActuatorBlock extends Block implements EntityBlock, ReadoutSource, Tunable
 {
     public static final BooleanProperty ACTIVE = BlockStateProperties.LIT;
 
@@ -139,5 +141,30 @@ public class ThermalActuatorBlock extends Block implements EntityBlock, ReadoutS
 
         ThermalDevice device = ThermalDevices.of(state);
         if (device != null) out.number("readout.pioneer.power", device.watts(), ReadoutUnit.WATT);
+    }
+
+    @Override
+    public void options(ServerLevel level, BlockPos pos, BlockState state, TuneOptions out)
+    {
+        out.toggle("readout.pioneer.state", isActive(state), "readout.pioneer.state.stopped", "readout.pioneer.state.running");
+
+        ThermalDevice device = ThermalDevices.of(state);
+        if (device != null && level.getBlockEntity(pos) instanceof ThermalActuatorBlockEntity actuator)
+            out.range("readout.pioneer.setpoint", actuator.getSetpoint(), device.minSetpointK(), device.maxSetpointK(), 5.0, ReadoutUnit.KELVIN, true);
+    }
+
+    @Override
+    public boolean tune(ServerLevel level, BlockPos pos, BlockState state, int option, double value)
+    {
+        if (option == 0)
+        {
+            setActive(level, pos, state, value >= 0.5);
+            return true;
+        }
+
+        if (option != 1 || !(level.getBlockEntity(pos) instanceof ThermalActuatorBlockEntity actuator)) return false;
+
+        actuator.setSetpoint((float) value);
+        return true;
     }
 }
