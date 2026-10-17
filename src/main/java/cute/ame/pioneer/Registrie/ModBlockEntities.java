@@ -1,14 +1,15 @@
 package cute.ame.pioneer.Registrie;
 
 import cute.ame.pioneer.Fluid.BlockEntity.MassSpectrometerBlockEntity;
-import cute.ame.pioneer.Fluid.BlockEntity.SensorBlockEntity;
 import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
+import cute.ame.pioneer.Fluid.BlockEntity.SensorBlockEntity;
+import cute.ame.pioneer.Item.Toolbox.ToolboxBlockEntity;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Spaceship.Entity.ShipEntity;
 import cute.ame.pioneer.Thermal.BlockEntity.ThermalActuatorBlockEntity;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import net.minecraft.core.registries.Registries;
 
 import java.util.function.Supplier;
 
@@ -42,5 +43,10 @@ public final class ModBlockEntities
     public static final Supplier<BlockEntityType<MassSpectrometerBlockEntity>> MASS_SPECTROMETER = BLOCK_ENTITIES.register(
         "mass_spectrometer",
         () -> BlockEntityType.Builder.of(MassSpectrometerBlockEntity::new, ModBlocks.MASS_SPECTROMETER.get()).build(null)
+    );
+
+    public static final Supplier<BlockEntityType<ToolboxBlockEntity>> TOOLBOX = BLOCK_ENTITIES.register(
+        "toolbox",
+        () -> BlockEntityType.Builder.of(ToolboxBlockEntity::new, ModBlocks.TOOLBOX.get()).build(null)
     );
 }

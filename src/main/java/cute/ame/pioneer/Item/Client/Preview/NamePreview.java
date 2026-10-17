@@ -26,6 +26,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
+import org.lwjgl.opengl.GL11;
 
 import java.util.Arrays;
 
@@ -51,6 +52,7 @@ public final class NamePreview extends MultiToolPreview
     private final Vector3f axis = new Vector3f();
 
     private int count;
+    private int aimedIndex;
     private float[] xs = new float[16];
     private float[] ys = new float[16];
     private float[] zs = new float[16];
@@ -127,13 +129,19 @@ public final class NamePreview extends MultiToolPreview
         Font font = frame.minecraft.font;
         float behind = camera.rotation().transform(0.0f, 0.0f, 1.0f, axis).dot(camera.getLookVector()) > 0.0f ? PLATE_DEPTH : -PLATE_DEPTH;
 
-        layer(frame, camera, buffers, font, true, 0.25f, behind);
-        layer(frame, camera, buffers, font, false, 1.0f, behind);
+        layer(frame, camera, buffers, font, true, 0.25f, behind, -1);
+        layer(frame, camera, buffers, font, false, 1.0f, behind, -1);
+        if (aimedIndex < 0) return;
+
+        GL11.glDepthRange(0.0, 0.01);
+        layer(frame, camera, buffers, font, false, 1.0f, behind, aimedIndex);
+        GL11.glDepthRange(0.0, 1.0);
     }
 
     private void collect(PreviewFrame frame)
     {
         count = 0;
+        aimedIndex = -1;
         for (Long2ObjectMap.Entry<NameClient.Label> entry : Long2ObjectMaps.fastIterable(NameClient.labels()))
         {
             long pos = entry.getLongKey();
@@ -163,19 +171,23 @@ public final class NamePreview extends MultiToolPreview
             colors[count] = MultiToolColors.colorOf(state);
             labels[count] = entry.getValue();
             icons[count] = icon(state.getBlock());
+            if (pos == focusPos) aimedIndex = count;
             count++;
         }
     }
 
-    private void layer(PreviewFrame frame, Camera camera, MultiBufferSource.BufferSource buffers, Font font, boolean seeThrough, float fade, float behind)
+    private void layer(PreviewFrame frame, Camera camera, MultiBufferSource.BufferSource buffers, Font font, boolean seeThrough, float fade, float behind, int only)
     {
         PoseStack pose = frame.pose;
+        int from = only < 0 ? 0 : only;
+        int to = only < 0 ? count : only + 1;
+        int skip = only < 0 && !seeThrough ? aimedIndex : -1;
 
         VertexConsumer plates = buffers.getBuffer(seeThrough ? RenderType.textSeeThrough(PLATE) : RenderType.text(PLATE));
-        for (int i = 0; i < count; i++)
+        for (int i = from; i < to; i++)
         {
             int a = Math.round(alphas[i] * fade * 255.0f);
-            if (a < 8) continue;
+            if (a < 8 || i == skip) continue;
 
             place(pose, camera, i);
             plate(plates, pose.last().pose(), content(i), a << 24 | colors[i], behind);
@@ -184,10 +196,10 @@ public final class NamePreview extends MultiToolPreview
         buffers.endBatch();
 
         Font.DisplayMode mode = seeThrough ? Font.DisplayMode.SEE_THROUGH : Font.DisplayMode.NORMAL;
-        for (int i = 0; i < count; i++)
+        for (int i = from; i < to; i++)
         {
             int a = Math.round(alphas[i] * fade * 255.0f);
-            if (a < 8) continue;
+            if (a < 8 || i == skip) continue;
 
             place(pose, camera, i);
             float left = -content(i) / 2.0f;

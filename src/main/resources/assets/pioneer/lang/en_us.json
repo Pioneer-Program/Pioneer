@@ -11,6 +11,7 @@
   "block.pioneer.barometer": "Barometer",
   "block.pioneer.thermometer": "Thermometer",
   "block.pioneer.mass_spectrometer": "Mass Spectrometer",
+  "block.pioneer.toolbox": "Toolbox",
   "block.pioneer.scrubber": "Scrubber",
   "item.pioneer.multi_tool": "Multi-Tool",
 
@@ -41,8 +42,9 @@
   "multitool.pioneer.mode.configure": "Configure",
   "multitool.pioneer.mode.name": "Name",
   "multitool.pioneer.mode.rotate": "Rotate",
+  "multitool.pioneer.mode.toolbox": "Toolbox",
   "readout.pioneer.line": "%s: %s",
-  "readout.pioneer.none": "-",
+  "readout.pioneer.none": "?",
   "readout.pioneer.label": "Name",
   "readout.pioneer.state": "State",
   "readout.pioneer.state.running": "Running",
@@ -68,7 +70,7 @@
   "tune.pioneer.dial_hint": "Release to confirm, Esc to cancel",
   "tune.pioneer.grid_hint": "Hover a choice and release, Esc to cancel",
   "name.pioneer.hint": "Enter to confirm, Esc to cancel",
-
+  "name.pioneer.empty": "Untitled",
 
   "gauge.pioneer.no_reading": "no reading",
   "gauge.pioneer.pressure": "%s P",

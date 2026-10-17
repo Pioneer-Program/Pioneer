@@ -8,7 +8,6 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import net.minecraft.util.StringUtil;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.NotNull;
@@ -36,7 +35,7 @@ public class NameEditScreen extends Screen
         super(Component.translatable("multitool.pioneer.mode.name"));
         this.pos = pos;
         this.original = current;
-        this.text = current;
+        this.text = NameServer.clean(current);
         this.icon = icon;
     }
 
@@ -97,9 +96,18 @@ public class NameEditScreen extends Screen
     @Override
     public boolean charTyped(char codePoint, int modifiers)
     {
-        if (!StringUtil.isAllowedChatCharacter(codePoint) || text.length() >= NameServer.MAX_LENGTH) return false;
+        boolean letter = NameServer.letter(codePoint);
+        if (text.length() >= NameServer.MAX_LENGTH) return false;
+        if (!letter && !NameServer.digit(codePoint))
+        {
+            if (codePoint != ' ' && codePoint != '_' && codePoint != '-' && codePoint != '.') return false;
+            if (!text.isEmpty() && !text.endsWith("_")) text += '_';
+            return true;
+        }
 
-        text = text + codePoint;
+        if (text.isEmpty() && !letter) return false;
+
+        text += Character.toLowerCase(codePoint);
         return true;
     }
 
@@ -121,8 +129,7 @@ public class NameEditScreen extends Screen
         if (Screen.isPaste(keyCode))
         {
             assert minecraft != null;
-            String pasted = StringUtil.filterText(minecraft.keyboardHandler.getClipboard());
-            text = (text + pasted).length() > NameServer.MAX_LENGTH ? (text + pasted).substring(0, NameServer.MAX_LENGTH) : text + pasted;
+            text = NameServer.clean(text + minecraft.keyboardHandler.getClipboard());
             return true;
         }
 

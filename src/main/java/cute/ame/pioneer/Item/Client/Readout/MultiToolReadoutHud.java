@@ -72,7 +72,7 @@ public final class MultiToolReadoutHud
         boolean target = false;
         long pos = 0L;
 
-        if (player != null && minecraft.level != null && !MultiToolItem.held(player).isEmpty() && minecraft.hitResult instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK)
+        if (player != null && minecraft.level != null && player.isShiftKeyDown() && !MultiToolItem.held(player).isEmpty() && minecraft.hitResult instanceof BlockHitResult hit && hit.getType() == HitResult.Type.BLOCK)
         {
             BlockPos aimed = hit.getBlockPos();
             if (minecraft.level.getBlockState(aimed).getBlock() instanceof ReadoutSource)

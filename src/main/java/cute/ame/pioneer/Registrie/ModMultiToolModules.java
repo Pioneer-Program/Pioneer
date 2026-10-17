@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import cute.ame.pioneer.Item.Module.ConfigureModule;
 import cute.ame.pioneer.Item.Module.MultiToolModule;
 import cute.ame.pioneer.Item.Module.RotateModule;
+import cute.ame.pioneer.Item.Module.ToolboxModule;
 import cute.ame.pioneer.Pioneer;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
@@ -26,6 +27,7 @@ public final class ModMultiToolModules
     public static final Codec<MultiToolModule> CODEC = Codec.STRING.xmap(ModMultiToolModules::byName, module -> REGISTRY.getKey(module).toString());
     public static final DeferredHolder<MultiToolModule, MultiToolModule> NAME = MODULES.register("name", MultiToolModule::new);
     public static final DeferredHolder<MultiToolModule, RotateModule> ROTATE = MODULES.register("rotate", RotateModule::new);
+    public static final DeferredHolder<MultiToolModule, ToolboxModule> TOOLBOX = MODULES.register("toolbox", ToolboxModule::new);
 
     public static void register(IEventBus bus)
     {

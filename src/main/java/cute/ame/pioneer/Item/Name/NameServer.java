@@ -7,7 +7,6 @@ import cute.ame.pioneer.Registrie.ModMultiToolModules;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.StringUtil;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -20,7 +19,7 @@ import java.util.List;
 
 public final class NameServer
 {
-    public static final int MAX_LENGTH = 32;
+    public static final int MAX_LENGTH = 16;
     public static final int RADIUS = 32;
 
     public static void request(ServerPlayer player)
@@ -79,10 +78,40 @@ public final class NameServer
         return entity instanceof ComputerPeripheral && !entity.getBlockState().is(MultiToolColors.UNNAMEABLE);
     }
 
-    public static String clean(String raw)
+    public static String clean(@Nullable String raw)
     {
-        String label = StringUtil.filterText(raw == null ? "" : raw).strip();
-        return label.length() > MAX_LENGTH ? label.substring(0, MAX_LENGTH).strip() : label;
+        if (raw == null) return "n";
+
+        StringBuilder label = new StringBuilder(MAX_LENGTH);
+        boolean boundary = false;
+        char previous = ' ';
+        for (int i = 0, n = raw.length(); i < n; i++)
+        {
+            char c = raw.charAt(i);
+            boolean letter = letter(c);
+            if (!letter && !digit(c)) boundary = !label.isEmpty();
+            else if (!label.isEmpty() || letter)
+            {
+                if (c >= 'A' && c <= 'Z' && (previous >= 'a' && previous <= 'z' || digit(previous)))
+                    boundary = !label.isEmpty();
+                if (label.length() + (boundary ? 2 : 1) > MAX_LENGTH) break;
+                if (boundary) label.append('_');
+                label.append(Character.toLowerCase(c));
+                boundary = false;
+            }
+            previous = c;
+        }
+        return label.toString();
+    }
+
+    public static boolean letter(char c)
+    {
+        return c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z';
+    }
+
+    public static boolean digit(char c)
+    {
+        return c >= '0' && c <= '9';
     }
 
     private static boolean holdsNameTool(ServerPlayer player)

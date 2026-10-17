@@ -23,7 +23,7 @@ public class MultiToolItem extends Item
 
     public static MultiToolModule moduleOf(ItemStack stack)
     {
-        return stack.getOrDefault(ModDataComponents.MULTITOOL_MODE.get(), ModMultiToolModules.CONFIGURE.get());
+        return stack.getOrDefault(ModDataComponents.MULTITOOL_MODE.get(), ModMultiToolModules.TOOLBOX.get());
     }
 
     public static void setModule(ItemStack stack, MultiToolModule module)
