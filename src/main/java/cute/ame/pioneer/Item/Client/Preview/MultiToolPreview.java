@@ -23,14 +23,20 @@ public abstract class MultiToolPreview
 
     protected static void ghost(PreviewFrame frame, BlockPos pos, BlockState state, @Nullable Quaternionf turn, float red, float green, float blue, float alpha)
     {
+        ghost(frame, pos, state, turn, 1.0f, red, green, blue, alpha);
+    }
+
+    protected static void ghost(PreviewFrame frame, BlockPos pos, BlockState state, @Nullable Quaternionf turn, float scale, float red, float green, float blue, float alpha)
+    {
         PoseStack pose = frame.pose;
         pose.pushPose();
         pose.translate(pos.getX() - frame.camera.x, pos.getY() - frame.camera.y, pos.getZ() - frame.camera.z);
 
-        if (turn != null)
+        if (turn != null || scale != 1.0f)
         {
             pose.translate(0.5f, 0.5f, 0.5f);
-            pose.mulPose(turn);
+            if (turn != null) pose.mulPose(turn);
+            if (scale != 1.0f) pose.scale(scale, scale, scale);
             pose.translate(-0.5f, -0.5f, -0.5f);
         }
 

@@ -1,8 +1,11 @@
 package cute.ame.pioneer.Item.Network;
 
+import cute.ame.pioneer.Item.Client.Name.NameClient;
 import cute.ame.pioneer.Item.Client.Readout.MultiToolReadoutHud;
 import cute.ame.pioneer.Item.Client.Tune.TuneClient;
 import cute.ame.pioneer.Item.MultiToolItem;
+import cute.ame.pioneer.Item.Name.MultiToolColors;
+import cute.ame.pioneer.Item.Name.NameServer;
 import cute.ame.pioneer.Item.Readout.MultiToolReadouts;
 import cute.ame.pioneer.Item.Tune.TuneServer;
 import cute.ame.pioneer.Pioneer;
@@ -37,5 +40,15 @@ public final class MultiToolNetworking
                 TuneServer.set(player, payload.pos(), payload.option(), payload.value());
         }));
         registrar.playToClient(TuneOptionsPayload.TYPE, TuneOptionsPayload.CODEC, (payload, context) -> context.enqueueWork(() -> TuneClient.receive(payload)));
+        registrar.playToServer(NameRequestPayload.TYPE, NameRequestPayload.CODEC, (payload, context) -> context.enqueueWork(() ->
+        {
+            if (context.player() instanceof ServerPlayer player) NameServer.request(player);
+        }));
+        registrar.playToServer(NameSetPayload.TYPE, NameSetPayload.CODEC, (payload, context) -> context.enqueueWork(() ->
+        {
+            if (context.player() instanceof ServerPlayer player) NameServer.set(player, payload.pos(), payload.label());
+        }));
+        registrar.playToClient(NameLabelsPayload.TYPE, NameLabelsPayload.CODEC, (payload, context) -> context.enqueueWork(() -> NameClient.receive(payload)));
+        registrar.playToClient(MultiToolColorsPayload.TYPE, MultiToolColorsPayload.CODEC, (payload, context) -> context.enqueueWork(() -> MultiToolColors.replace(payload.entries())));
     }
 }

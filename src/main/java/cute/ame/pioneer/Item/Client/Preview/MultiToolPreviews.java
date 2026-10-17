@@ -34,7 +34,11 @@ public final class MultiToolPreviews
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event)
     {
-        event.enqueueWork(() -> register(ModMultiToolModules.ROTATE.get(), new RotatePreview()));
+        event.enqueueWork(() ->
+        {
+            register(ModMultiToolModules.ROTATE.get(), new RotatePreview());
+            register(ModMultiToolModules.NAME.get(), new NamePreview());
+        });
     }
 
     @SubscribeEvent
