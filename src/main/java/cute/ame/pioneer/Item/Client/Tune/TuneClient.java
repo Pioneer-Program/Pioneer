@@ -2,12 +2,12 @@ package cute.ame.pioneer.Item.Client.Tune;
 
 import cute.ame.pioneer.Core.Configure.Tunable;
 import cute.ame.pioneer.Core.Configure.TuneOption;
-import cute.ame.pioneer.Item.MultiToolItem;
 import cute.ame.pioneer.Item.Network.TuneOptionsPayload;
 import cute.ame.pioneer.Item.Network.TuneRequestPayload;
 import cute.ame.pioneer.Item.Network.TuneSetPayload;
+import cute.ame.pioneer.Item.ToolBoxItem;
 import cute.ame.pioneer.Pioneer;
-import cute.ame.pioneer.Registrie.ModMultiToolModules;
+import cute.ame.pioneer.Registrie.ModToolBoxModules;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -44,7 +44,7 @@ public final class TuneClient
         if (player == null || minecraft.level == null) return;
 
         ItemStack stack = player.getItemInHand(event.getHand());
-        if (!(stack.getItem() instanceof MultiToolItem) || MultiToolItem.moduleOf(stack) != ModMultiToolModules.CONFIGURE.get())
+        if (!(stack.getItem() instanceof ToolBoxItem) || ToolBoxItem.moduleOf(stack) != ModToolBoxModules.CONFIGURE.get())
             return;
         if (!(minecraft.hitResult instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK) return;
 

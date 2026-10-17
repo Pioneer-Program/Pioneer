@@ -3,10 +3,10 @@ package cute.ame.pioneer.Item.Tune;
 import cute.ame.pioneer.Core.Configure.Tunable;
 import cute.ame.pioneer.Core.Configure.TuneOption;
 import cute.ame.pioneer.Core.Configure.TuneOptions;
-import cute.ame.pioneer.Item.MultiToolItem;
 import cute.ame.pioneer.Item.Network.TuneOptionsPayload;
 import cute.ame.pioneer.Item.Network.TuneSetPayload;
-import cute.ame.pioneer.Registrie.ModMultiToolModules;
+import cute.ame.pioneer.Item.ToolBoxItem;
+import cute.ame.pioneer.Registrie.ModToolBoxModules;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -74,8 +74,8 @@ public final class TuneServer
 
     private static @Nullable Tunable target(ServerPlayer player, BlockPos pos)
     {
-        ItemStack stack = MultiToolItem.held(player);
-        if (stack.isEmpty() || MultiToolItem.moduleOf(stack) != ModMultiToolModules.CONFIGURE.get()) return null;
+        ItemStack stack = ToolBoxItem.held(player);
+        if (stack.isEmpty() || ToolBoxItem.moduleOf(stack) != ModToolBoxModules.CONFIGURE.get()) return null;
 
         ServerLevel level = player.serverLevel();
         if (!level.isLoaded(pos) || !player.canInteractWithBlock(pos, 1.0)) return null;

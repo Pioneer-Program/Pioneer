@@ -3,8 +3,8 @@
   "credit": "Made with Blockbench",
   "parent": "minecraft:block/block",
   "textures": {
-    "0": "pioneer:item/multi_tool/wrench",
-    "particle": "pioneer:item/multi_tool/wrench"
+    "0": "pioneer:item/toolbox/wrench",
+    "particle": "pioneer:item/toolbox/wrench"
   },
   "elements": [
     {

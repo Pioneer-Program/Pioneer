@@ -13,8 +13,8 @@ import cute.ame.pioneer.Registrie.ModBlocks;
 import cute.ame.pioneer.Registrie.ModCreativeModeTabs;
 import cute.ame.pioneer.Registrie.ModDataComponents;
 import cute.ame.pioneer.Registrie.ModItems;
-import cute.ame.pioneer.Registrie.ModMultiToolModules;
 import cute.ame.pioneer.Registrie.ModParticles;
+import cute.ame.pioneer.Registrie.ModToolBoxModules;
 import cute.ame.pioneer.Registrie.ModWorldgen;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -36,7 +36,7 @@ public class Pioneer
     ModWorldgen.BIOME_SOURCES.register(modEventBus);
     ModWorldgen.CHUNK_GENERATORS.register(modEventBus);
     ModParticles.PARTICLE_TYPES.register(modEventBus);
-      ModMultiToolModules.register(modEventBus);
+      ModToolBoxModules.register(modEventBus);
     ModDataComponents.DATA_COMPONENTS.register(modEventBus);
     ModItems.ITEMS.register(modEventBus);
     ModBlocks.BLOCKS.register(modEventBus);

@@ -3,8 +3,8 @@ package cute.ame.pioneer.Item.Readout;
 import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Core.Readout.Readout;
 import cute.ame.pioneer.Core.Readout.ReadoutSource;
-import cute.ame.pioneer.Item.MultiToolItem;
-import cute.ame.pioneer.Item.Network.MultiToolReadoutPayload;
+import cute.ame.pioneer.Item.Network.ToolBoxReadoutPayload;
+import cute.ame.pioneer.Item.ToolBoxItem;
 import cute.ame.pioneer.Pioneer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @EventBusSubscriber(modid = Pioneer.MODID)
-public final class MultiToolReadouts
+public final class ToolBoxReadouts
 {
     private static final Map<UUID, Watch> WATCHES = new HashMap<>();
     private static final Readout BUFFER = new Readout();
@@ -49,7 +49,7 @@ public final class MultiToolReadouts
         if (WATCHES.isEmpty()) return;
 
         MinecraftServer server = event.getServer();
-        if (server.getTickCount() % Math.max(Config.MULTITOOL_READOUT_PERIOD_TICKS.get(), 1) != 0) return;
+        if (server.getTickCount() % Math.max(Config.TOOLBOX_READOUT_PERIOD_TICKS.get(), 1) != 0) return;
 
         Iterator<Map.Entry<UUID, Watch>> entries = WATCHES.entrySet().iterator();
         while (entries.hasNext())
@@ -75,7 +75,7 @@ public final class MultiToolReadouts
         BlockPos pos = CURSOR.set(watch.pos);
         ServerLevel level = player.serverLevel();
 
-        if (!MultiToolItem.held(player).isEmpty() && level.isLoaded(pos) && player.canInteractWithBlock(pos, 1.0))
+        if (!ToolBoxItem.held(player).isEmpty() && level.isLoaded(pos) && player.canInteractWithBlock(pos, 1.0))
         {
             BlockState state = level.getBlockState(pos);
             if (state.getBlock() instanceof ReadoutSource source) source.readout(level, pos, state, BUFFER);
@@ -86,7 +86,7 @@ public final class MultiToolReadouts
 
         watch.sent = fingerprint;
         watch.shown = true;
-        PacketDistributor.sendToPlayer(player, MultiToolReadoutPayload.of(watch.pos, BUFFER));
+        PacketDistributor.sendToPlayer(player, ToolBoxReadoutPayload.of(watch.pos, BUFFER));
     }
 
     private static final class Watch

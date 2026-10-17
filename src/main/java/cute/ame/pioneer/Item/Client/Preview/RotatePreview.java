@@ -9,7 +9,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 import org.joml.Quaternionf;
 
-public final class RotatePreview extends MultiToolPreview
+public final class RotatePreview extends ToolBoxPreview
 {
     private static final long APPEAR_MS = 200L;
     private static final long TURN_MS = 600L;

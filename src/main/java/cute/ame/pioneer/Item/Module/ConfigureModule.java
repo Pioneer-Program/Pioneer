@@ -11,7 +11,7 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
-public class ConfigureModule extends MultiToolModule
+public class ConfigureModule extends ToolBoxModule
 {
     @Override
     public InteractionResult useOn(ItemStack stack, UseOnContext context)

@@ -3,8 +3,8 @@ package cute.ame.pioneer.Item.Client.Preview;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import cute.ame.pioneer.Item.Client.Name.NameClient;
-import cute.ame.pioneer.Item.Name.MultiToolColors;
 import cute.ame.pioneer.Item.Name.NameServer;
+import cute.ame.pioneer.Item.Name.ToolBoxColors;
 import cute.ame.pioneer.Pioneer;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
@@ -30,14 +30,14 @@ import org.lwjgl.opengl.GL11;
 
 import java.util.Arrays;
 
-public final class NamePreview extends MultiToolPreview
+public final class NamePreview extends ToolBoxPreview
 {
     private static final long NONE = Long.MIN_VALUE;
     private static final float NEAR = 2.0f;
     private static final float FAR = 4.0f;
     private static final float REACH = 32.0f;
     private static final float PLATE_DEPTH = 0.5f;
-    private static final ResourceLocation PLATE = ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "textures/gui/multitool/name_plate.png");
+    private static final ResourceLocation PLATE = ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "textures/gui/toolbox/name_plate.png");
     private static final float TEXTURE_WIDTH = 24.0f;
     private static final float TEXTURE_HEIGHT = 16.0f;
     private static final float SLICE = 3.0f;
@@ -168,7 +168,7 @@ public final class NamePreview extends MultiToolPreview
             zs[count] = dz;
             scales[count] = 0.0075f * Mth.clamp(distance, NEAR, FAR) * Mth.lerp(emphasis, 1.0f, 1.25f);
             alphas[count] = alpha;
-            colors[count] = MultiToolColors.colorOf(state);
+            colors[count] = ToolBoxColors.colorOf(state);
             labels[count] = entry.getValue();
             icons[count] = icon(state.getBlock());
             if (pos == focusPos) aimedIndex = count;

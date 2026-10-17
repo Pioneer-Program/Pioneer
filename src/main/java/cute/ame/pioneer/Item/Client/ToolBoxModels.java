@@ -1,9 +1,9 @@
 package cute.ame.pioneer.Item.Client;
 
-import cute.ame.pioneer.Item.Module.MultiToolModule;
-import cute.ame.pioneer.Item.MultiToolItem;
+import cute.ame.pioneer.Item.Module.ToolBoxModule;
+import cute.ame.pioneer.Item.ToolBoxItem;
 import cute.ame.pioneer.Pioneer;
-import cute.ame.pioneer.Registrie.ModMultiToolModules;
+import cute.ame.pioneer.Registrie.ModToolBoxModules;
 import it.unimi.dsi.fastutil.objects.Reference2ObjectOpenHashMap;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -25,23 +25,23 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Map;
 
 @EventBusSubscriber(modid = Pioneer.MODID, value = Dist.CLIENT)
-public final class MultiToolModels
+public final class ToolBoxModels
 {
-    private static final ModelResourceLocation ITEM = ModelResourceLocation.inventory(ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "multi_tool"));
+    private static final ModelResourceLocation ITEM = ModelResourceLocation.inventory(ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "toolbox"));
 
-    public static ResourceLocation modelOf(MultiToolModule module)
+    public static ResourceLocation modelOf(ToolBoxModule module)
     {
-        ResourceLocation key = ModMultiToolModules.REGISTRY.getKey(module);
+        ResourceLocation key = ModToolBoxModules.REGISTRY.getKey(module);
 
         assert key != null;
-        return key.withPrefix("item/multi_tool/");
+        return key.withPrefix("item/toolbox/");
     }
 
     @SubscribeEvent
     public static void onRegisterAdditional(ModelEvent.RegisterAdditional event)
     {
         ResourceManager resources = Minecraft.getInstance().getResourceManager();
-        for (MultiToolModule module : ModMultiToolModules.REGISTRY)
+        for (ToolBoxModule module : ModToolBoxModules.REGISTRY)
         {
             ResourceLocation model = modelOf(module);
             if (resources.getResource(model.withPath(path -> "models/" + path + ".json")).isPresent())
@@ -56,8 +56,8 @@ public final class MultiToolModels
         BakedModel base = models.get(ITEM);
         if (base == null) return;
 
-        Reference2ObjectOpenHashMap<MultiToolModule, BakedModel> byModule = new Reference2ObjectOpenHashMap<>();
-        for (MultiToolModule module : ModMultiToolModules.REGISTRY)
+        Reference2ObjectOpenHashMap<ToolBoxModule, BakedModel> byModule = new Reference2ObjectOpenHashMap<>();
+        for (ToolBoxModule module : ModToolBoxModules.REGISTRY)
         {
             BakedModel model = models.get(ModelResourceLocation.standalone(modelOf(module)));
             if (model != null) byModule.put(module, model);
@@ -70,7 +70,7 @@ public final class MultiToolModels
     {
         private final ItemOverrides overrides;
 
-        private ModuleModel(BakedModel base, Reference2ObjectOpenHashMap<MultiToolModule, BakedModel> byModule)
+        private ModuleModel(BakedModel base, Reference2ObjectOpenHashMap<ToolBoxModule, BakedModel> byModule)
         {
             super(base);
             overrides = new ItemOverrides()
@@ -78,7 +78,7 @@ public final class MultiToolModels
                 @Override
                 public @NotNull BakedModel resolve(@NotNull BakedModel model, @NotNull ItemStack stack, @Nullable ClientLevel level, @Nullable LivingEntity entity, int seed)
                 {
-                    BakedModel found = byModule.get(MultiToolItem.moduleOf(stack));
+                    BakedModel found = byModule.get(ToolBoxItem.moduleOf(stack));
                     return found != null ? found : model;
                 }
             };

@@ -1,7 +1,7 @@
 package cute.ame.pioneer.Item.Module;
 
-import cute.ame.pioneer.Item.Toolbox.ToolboxBlock;
-import cute.ame.pioneer.Item.Toolbox.ToolboxBlockEntity;
+import cute.ame.pioneer.Item.ToolBox.ToolBoxBlock;
+import cute.ame.pioneer.Item.ToolBox.ToolBoxBlockEntity;
 import cute.ame.pioneer.Registrie.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.sounds.SoundSource;
@@ -17,14 +17,14 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.gameevent.GameEvent;
 import net.minecraft.world.phys.shapes.CollisionContext;
 
-public class ToolboxModule extends MultiToolModule
+public class PlaceModule extends ToolBoxModule
 {
     @Override
     public InteractionResult useOn(ItemStack stack, UseOnContext context)
     {
         Player player = context.getPlayer();
         Level level = context.getLevel();
-        if (player == null || level.getBlockState(context.getClickedPos()).getBlock() instanceof ToolboxBlock)
+        if (player == null || level.getBlockState(context.getClickedPos()).getBlock() instanceof ToolBoxBlock)
             return InteractionResult.PASS;
 
         BlockPlaceContext place = new BlockPlaceContext(context);
@@ -36,7 +36,7 @@ public class ToolboxModule extends MultiToolModule
             return InteractionResult.FAIL;
         if (level.isClientSide) return InteractionResult.SUCCESS;
         if (!level.setBlock(pos, state, Block.UPDATE_ALL_IMMEDIATE)) return InteractionResult.FAIL;
-        if (level.getBlockEntity(pos) instanceof ToolboxBlockEntity toolbox) toolbox.store(stack.copy());
+        if (level.getBlockEntity(pos) instanceof ToolBoxBlockEntity toolbox) toolbox.store(stack.copy());
 
         player.setItemInHand(context.getHand(), ItemStack.EMPTY);
         SoundType sound = state.getSoundType(level, pos, player);

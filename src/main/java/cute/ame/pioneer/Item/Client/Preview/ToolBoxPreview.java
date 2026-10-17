@@ -16,7 +16,7 @@ import org.joml.Quaternionf;
 
 import java.util.List;
 
-public abstract class MultiToolPreview
+public abstract class ToolBoxPreview
 {
     private static final Direction[] SIDES = Direction.values();
     private static final RandomSource RANDOM = RandomSource.create();

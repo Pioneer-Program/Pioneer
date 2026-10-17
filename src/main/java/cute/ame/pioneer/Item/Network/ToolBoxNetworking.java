@@ -1,12 +1,12 @@
 package cute.ame.pioneer.Item.Network;
 
 import cute.ame.pioneer.Item.Client.Name.NameClient;
-import cute.ame.pioneer.Item.Client.Readout.MultiToolReadoutHud;
+import cute.ame.pioneer.Item.Client.Readout.ToolBoxReadoutHud;
 import cute.ame.pioneer.Item.Client.Tune.TuneClient;
-import cute.ame.pioneer.Item.MultiToolItem;
-import cute.ame.pioneer.Item.Name.MultiToolColors;
 import cute.ame.pioneer.Item.Name.NameServer;
-import cute.ame.pioneer.Item.Readout.MultiToolReadouts;
+import cute.ame.pioneer.Item.Name.ToolBoxColors;
+import cute.ame.pioneer.Item.Readout.ToolBoxReadouts;
+import cute.ame.pioneer.Item.ToolBoxItem;
 import cute.ame.pioneer.Item.Tune.TuneServer;
 import cute.ame.pioneer.Pioneer;
 import net.minecraft.server.level.ServerPlayer;
@@ -16,20 +16,20 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 
 @EventBusSubscriber(modid = Pioneer.MODID)
-public final class MultiToolNetworking
+public final class ToolBoxNetworking
 {
     @SubscribeEvent
     public static void register(RegisterPayloadHandlersEvent event)
     {
         PayloadRegistrar registrar = event.registrar(Pioneer.MODID).versioned("1");
 
-        registrar.playToServer(MultiToolModePayload.TYPE, MultiToolModePayload.CODEC, (payload, context) -> context.enqueueWork(() -> MultiToolItem.cycleMode(context.player(), payload.forward())));
-        registrar.playToServer(MultiToolWatchPayload.TYPE, MultiToolWatchPayload.CODEC, (payload, context) -> context.enqueueWork(() ->
+        registrar.playToServer(ToolBoxModePayload.TYPE, ToolBoxModePayload.CODEC, (payload, context) -> context.enqueueWork(() -> ToolBoxItem.cycleMode(context.player(), payload.forward())));
+        registrar.playToServer(ToolBoxWatchPayload.TYPE, ToolBoxWatchPayload.CODEC, (payload, context) -> context.enqueueWork(() ->
         {
             if (context.player() instanceof ServerPlayer player)
-                MultiToolReadouts.watch(player, payload.watching(), payload.pos());
+                ToolBoxReadouts.watch(player, payload.watching(), payload.pos());
         }));
-        registrar.playToClient(MultiToolReadoutPayload.TYPE, MultiToolReadoutPayload.CODEC, (payload, context) -> context.enqueueWork(() -> MultiToolReadoutHud.receive(payload)));
+        registrar.playToClient(ToolBoxReadoutPayload.TYPE, ToolBoxReadoutPayload.CODEC, (payload, context) -> context.enqueueWork(() -> ToolBoxReadoutHud.receive(payload)));
         registrar.playToServer(TuneRequestPayload.TYPE, TuneRequestPayload.CODEC, (payload, context) -> context.enqueueWork(() ->
         {
             if (context.player() instanceof ServerPlayer player) TuneServer.request(player, payload.pos());
@@ -49,6 +49,6 @@ public final class MultiToolNetworking
             if (context.player() instanceof ServerPlayer player) NameServer.set(player, payload.pos(), payload.label());
         }));
         registrar.playToClient(NameLabelsPayload.TYPE, NameLabelsPayload.CODEC, (payload, context) -> context.enqueueWork(() -> NameClient.receive(payload)));
-        registrar.playToClient(MultiToolColorsPayload.TYPE, MultiToolColorsPayload.CODEC, (payload, context) -> context.enqueueWork(() -> MultiToolColors.replace(payload.entries())));
+        registrar.playToClient(ToolBoxColorsPayload.TYPE, ToolBoxColorsPayload.CODEC, (payload, context) -> context.enqueueWork(() -> ToolBoxColors.replace(payload.entries())));
     }
 }

@@ -1,8 +1,8 @@
 package cute.ame.pioneer.Item;
 
-import cute.ame.pioneer.Item.Module.MultiToolModule;
+import cute.ame.pioneer.Item.Module.ToolBoxModule;
 import cute.ame.pioneer.Registrie.ModDataComponents;
-import cute.ame.pioneer.Registrie.ModMultiToolModules;
+import cute.ame.pioneer.Registrie.ModToolBoxModules;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -14,42 +14,42 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class MultiToolItem extends Item
+public class ToolBoxItem extends Item
 {
-    public MultiToolItem(Properties properties)
+    public ToolBoxItem(Properties properties)
     {
         super(properties);
     }
 
-    public static MultiToolModule moduleOf(ItemStack stack)
+    public static ToolBoxModule moduleOf(ItemStack stack)
     {
-        return stack.getOrDefault(ModDataComponents.MULTITOOL_MODE.get(), ModMultiToolModules.TOOLBOX.get());
+        return stack.getOrDefault(ModDataComponents.TOOLBOX_MODE.get(), ModToolBoxModules.PLACE.get());
     }
 
-    public static void setModule(ItemStack stack, MultiToolModule module)
+    public static void setModule(ItemStack stack, ToolBoxModule module)
     {
-        stack.set(ModDataComponents.MULTITOOL_MODE.get(), module);
+        stack.set(ModDataComponents.TOOLBOX_MODE.get(), module);
     }
 
     public static ItemStack held(Player player)
     {
         ItemStack main = player.getMainHandItem();
-        if (main.getItem() instanceof MultiToolItem) return main;
+        if (main.getItem() instanceof ToolBoxItem) return main;
 
         ItemStack off = player.getOffhandItem();
-        return off.getItem() instanceof MultiToolItem ? off : ItemStack.EMPTY;
+        return off.getItem() instanceof ToolBoxItem ? off : ItemStack.EMPTY;
     }
 
     public static void cycleMode(Player player, boolean forward)
     {
         ItemStack stack = held(player);
-        if (!stack.isEmpty()) setModule(stack, ModMultiToolModules.cycle(moduleOf(stack), forward));
+        if (!stack.isEmpty()) setModule(stack, ModToolBoxModules.cycle(moduleOf(stack), forward));
     }
 
     @Override
     public void appendHoverText(@NotNull ItemStack stack, @NotNull TooltipContext context, @NotNull List<Component> tooltip, @NotNull TooltipFlag flag)
     {
-        tooltip.add(Component.translatable("multitool.pioneer.mode", moduleOf(stack).title()));
+        tooltip.add(Component.translatable("toolbox.pioneer.mode", moduleOf(stack).title()));
     }
 
     @Override

@@ -3,7 +3,7 @@ package cute.ame.pioneer.Registrie;
 import cute.ame.pioneer.Fluid.BlockEntity.MassSpectrometerBlockEntity;
 import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
 import cute.ame.pioneer.Fluid.BlockEntity.SensorBlockEntity;
-import cute.ame.pioneer.Item.Toolbox.ToolboxBlockEntity;
+import cute.ame.pioneer.Item.ToolBox.ToolBoxBlockEntity;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Spaceship.Entity.ShipEntity;
 import cute.ame.pioneer.Thermal.BlockEntity.ThermalActuatorBlockEntity;
@@ -45,8 +45,8 @@ public final class ModBlockEntities
         () -> BlockEntityType.Builder.of(MassSpectrometerBlockEntity::new, ModBlocks.MASS_SPECTROMETER.get()).build(null)
     );
 
-    public static final Supplier<BlockEntityType<ToolboxBlockEntity>> TOOLBOX = BLOCK_ENTITIES.register(
+    public static final Supplier<BlockEntityType<ToolBoxBlockEntity>> TOOLBOX = BLOCK_ENTITIES.register(
         "toolbox",
-        () -> BlockEntityType.Builder.of(ToolboxBlockEntity::new, ModBlocks.TOOLBOX.get()).build(null)
+        () -> BlockEntityType.Builder.of(ToolBoxBlockEntity::new, ModBlocks.TOOLBOX.get()).build(null)
     );
 }

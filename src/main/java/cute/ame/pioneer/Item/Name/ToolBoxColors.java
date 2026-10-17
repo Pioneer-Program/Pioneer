@@ -15,11 +15,11 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.List;
 
-public final class MultiToolColors
+public final class ToolBoxColors
 {
-    public static final TagKey<Block> UNNAMEABLE = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "multitool_unnameable"));
+    public static final TagKey<Block> UNNAMEABLE = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "toolbox_unnameable"));
 
-    public static final Codec<Integer> RGB = Codec.STRING.comapFlatMap(MultiToolColors::parse, rgb -> String.format("#%06X", rgb));
+    public static final Codec<Integer> RGB = Codec.STRING.comapFlatMap(ToolBoxColors::parse, rgb -> String.format("#%06X", rgb));
     public static final Codec<Entry> ENTRY = RecordCodecBuilder.create(instance -> instance.group(Codec.STRING.fieldOf("target").forGetter(Entry::target), RGB.fieldOf("color").forGetter(Entry::rgb)).apply(instance, Entry::new));
     public static final Codec<List<Entry>> FILE = ENTRY.listOf().fieldOf("values").codec();
     private static final Reference2IntOpenHashMap<Block> CACHE = new Reference2IntOpenHashMap<>();

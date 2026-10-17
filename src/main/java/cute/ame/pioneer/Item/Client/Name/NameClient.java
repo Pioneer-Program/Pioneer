@@ -1,11 +1,11 @@
 package cute.ame.pioneer.Item.Client.Name;
 
-import cute.ame.pioneer.Item.MultiToolItem;
 import cute.ame.pioneer.Item.Name.NameServer;
 import cute.ame.pioneer.Item.Network.NameLabelsPayload;
 import cute.ame.pioneer.Item.Network.NameRequestPayload;
+import cute.ame.pioneer.Item.ToolBoxItem;
 import cute.ame.pioneer.Pioneer;
-import cute.ame.pioneer.Registrie.ModMultiToolModules;
+import cute.ame.pioneer.Registrie.ModToolBoxModules;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.client.Minecraft;
@@ -93,7 +93,7 @@ public final class NameClient
         if (player == null || minecraft.level == null) return;
 
         ItemStack stack = player.getItemInHand(event.getHand());
-        if (!(stack.getItem() instanceof MultiToolItem) || MultiToolItem.moduleOf(stack) != ModMultiToolModules.NAME.get())
+        if (!(stack.getItem() instanceof ToolBoxItem) || ToolBoxItem.moduleOf(stack) != ModToolBoxModules.NAME.get())
             return;
         if (!(minecraft.hitResult instanceof BlockHitResult hit) || hit.getType() != HitResult.Type.BLOCK) return;
 

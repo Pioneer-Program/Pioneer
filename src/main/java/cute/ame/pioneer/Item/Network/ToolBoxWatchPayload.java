@@ -8,11 +8,11 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import org.jetbrains.annotations.NotNull;
 
-public record MultiToolWatchPayload(boolean watching, long pos) implements CustomPacketPayload
+public record ToolBoxWatchPayload(boolean watching, long pos) implements CustomPacketPayload
 {
-    public static final Type<MultiToolWatchPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "multitool_watch"));
+    public static final Type<ToolBoxWatchPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "toolbox_watch"));
 
-    public static final StreamCodec<ByteBuf, MultiToolWatchPayload> CODEC = StreamCodec.composite(ByteBufCodecs.BOOL, MultiToolWatchPayload::watching, ByteBufCodecs.VAR_LONG, MultiToolWatchPayload::pos, MultiToolWatchPayload::new);
+    public static final StreamCodec<ByteBuf, ToolBoxWatchPayload> CODEC = StreamCodec.composite(ByteBufCodecs.BOOL, ToolBoxWatchPayload::watching, ByteBufCodecs.VAR_LONG, ToolBoxWatchPayload::pos, ToolBoxWatchPayload::new);
 
     @Override
     public @NotNull Type<? extends CustomPacketPayload> type()

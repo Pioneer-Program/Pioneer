@@ -13,13 +13,13 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
-public record MultiToolReadoutPayload(long pos, List<Line> lines) implements CustomPacketPayload
+public record ToolBoxReadoutPayload(long pos, List<Line> lines) implements CustomPacketPayload
 {
-    public static final Type<MultiToolReadoutPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "multitool_readout"));
+    public static final Type<ToolBoxReadoutPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "toolbox_readout"));
 
-    public static final StreamCodec<ByteBuf, MultiToolReadoutPayload> CODEC = StreamCodec.of(MultiToolReadoutPayload::write, MultiToolReadoutPayload::read);
+    public static final StreamCodec<ByteBuf, ToolBoxReadoutPayload> CODEC = StreamCodec.of(ToolBoxReadoutPayload::write, ToolBoxReadoutPayload::read);
 
-    public static MultiToolReadoutPayload of(long pos, Readout readout)
+    public static ToolBoxReadoutPayload of(long pos, Readout readout)
     {
         int size = readout.size();
         List<Line> lines = new ArrayList<>(size);
@@ -27,10 +27,10 @@ public record MultiToolReadoutPayload(long pos, List<Line> lines) implements Cus
         for (int i = 0; i < size; i++)
             lines.add(new Line(readout.key(i), readout.kind(i), (byte) readout.unit(i).ordinal(), readout.value(i), readout.text(i)));
 
-        return new MultiToolReadoutPayload(pos, lines);
+        return new ToolBoxReadoutPayload(pos, lines);
     }
 
-    private static void write(ByteBuf buf, MultiToolReadoutPayload payload)
+    private static void write(ByteBuf buf, ToolBoxReadoutPayload payload)
     {
         buf.writeLong(payload.pos);
         VarInt.write(buf, payload.lines.size());
@@ -46,7 +46,7 @@ public record MultiToolReadoutPayload(long pos, List<Line> lines) implements Cus
         }
     }
 
-    private static MultiToolReadoutPayload read(ByteBuf buf)
+    private static ToolBoxReadoutPayload read(ByteBuf buf)
     {
         long pos = buf.readLong();
         int size = VarInt.read(buf);
@@ -62,7 +62,7 @@ public record MultiToolReadoutPayload(long pos, List<Line> lines) implements Cus
             else lines.add(new Line(key, kind, unit, 0.0, ByteBufCodecs.STRING_UTF8.decode(buf)));
         }
 
-        return new MultiToolReadoutPayload(pos, lines);
+        return new ToolBoxReadoutPayload(pos, lines);
     }
 
     @Override

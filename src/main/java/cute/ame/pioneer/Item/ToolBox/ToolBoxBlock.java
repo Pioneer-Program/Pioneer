@@ -1,4 +1,4 @@
-package cute.ame.pioneer.Item.Toolbox;
+package cute.ame.pioneer.Item.ToolBox;
 
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
@@ -32,14 +32,14 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class ToolboxBlock extends HorizontalDirectionalBlock implements EntityBlock
+public class ToolBoxBlock extends HorizontalDirectionalBlock implements EntityBlock
 {
-    public static final MapCodec<ToolboxBlock> CODEC = simpleCodec(properties -> new ToolboxBlock());
+    public static final MapCodec<ToolBoxBlock> CODEC = simpleCodec(properties -> new ToolBoxBlock());
 
     private static final VoxelShape NORTH_SOUTH = Block.box(1.0, 0.0, 4.0, 15.0, 10.0, 12.0);
     private static final VoxelShape EAST_WEST = Block.box(4.0, 0.0, 1.0, 12.0, 10.0, 15.0);
 
-    public ToolboxBlock()
+    public ToolBoxBlock()
     {
         super(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(0.8f).sound(SoundType.COPPER).noOcclusion().pushReaction(PushReaction.BLOCK));
         registerDefaultState(getStateDefinition().any().setValue(FACING, Direction.NORTH));
@@ -85,7 +85,7 @@ public class ToolboxBlock extends HorizontalDirectionalBlock implements EntityBl
     @Override
     protected @NotNull InteractionResult useWithoutItem(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull Player player, @NotNull BlockHitResult hit)
     {
-        if (!(level.getBlockEntity(pos) instanceof ToolboxBlockEntity toolbox)) return InteractionResult.PASS;
+        if (!(level.getBlockEntity(pos) instanceof ToolBoxBlockEntity toolbox)) return InteractionResult.PASS;
         if (level.isClientSide) return InteractionResult.SUCCESS;
 
         ItemStack stored = toolbox.take();
@@ -102,7 +102,7 @@ public class ToolboxBlock extends HorizontalDirectionalBlock implements EntityBl
     @Override
     protected void onRemove(@NotNull BlockState state, @NotNull Level level, @NotNull BlockPos pos, @NotNull BlockState newState, boolean movedByPiston)
     {
-        if (!level.isClientSide && !state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof ToolboxBlockEntity toolbox)
+        if (!level.isClientSide && !state.is(newState.getBlock()) && level.getBlockEntity(pos) instanceof ToolBoxBlockEntity toolbox)
             Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.25, pos.getZ() + 0.5, toolbox.take());
 
         super.onRemove(state, level, pos, newState, movedByPiston);
@@ -111,6 +111,6 @@ public class ToolboxBlock extends HorizontalDirectionalBlock implements EntityBl
     @Override
     public @Nullable BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state)
     {
-        return new ToolboxBlockEntity(pos, state);
+        return new ToolBoxBlockEntity(pos, state);
     }
 }

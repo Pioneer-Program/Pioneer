@@ -1,4 +1,4 @@
-package cute.ame.pioneer.Item.Toolbox;
+package cute.ame.pioneer.Item.ToolBox;
 
 import cute.ame.pioneer.Registrie.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -9,11 +9,11 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 
-public class ToolboxBlockEntity extends BlockEntity
+public class ToolBoxBlockEntity extends BlockEntity
 {
     private ItemStack stored = ItemStack.EMPTY;
 
-    public ToolboxBlockEntity(BlockPos pos, BlockState state)
+    public ToolBoxBlockEntity(BlockPos pos, BlockState state)
     {
         super(ModBlockEntities.TOOLBOX.get(), pos, state);
     }

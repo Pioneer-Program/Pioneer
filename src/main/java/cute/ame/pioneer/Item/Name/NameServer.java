@@ -1,9 +1,9 @@
 package cute.ame.pioneer.Item.Name;
 
 import cute.ame.pioneer.Core.Computer.ComputerPeripheral;
-import cute.ame.pioneer.Item.MultiToolItem;
 import cute.ame.pioneer.Item.Network.NameLabelsPayload;
-import cute.ame.pioneer.Registrie.ModMultiToolModules;
+import cute.ame.pioneer.Item.ToolBoxItem;
+import cute.ame.pioneer.Registrie.ModToolBoxModules;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -75,7 +75,7 @@ public final class NameServer
 
     public static boolean nameable(@Nullable BlockEntity entity)
     {
-        return entity instanceof ComputerPeripheral && !entity.getBlockState().is(MultiToolColors.UNNAMEABLE);
+        return entity instanceof ComputerPeripheral && !entity.getBlockState().is(ToolBoxColors.UNNAMEABLE);
     }
 
     public static String clean(@Nullable String raw)
@@ -116,7 +116,7 @@ public final class NameServer
 
     private static boolean holdsNameTool(ServerPlayer player)
     {
-        ItemStack stack = MultiToolItem.held(player);
-        return !stack.isEmpty() && MultiToolItem.moduleOf(stack) == ModMultiToolModules.NAME.get();
+        ItemStack stack = ToolBoxItem.held(player);
+        return !stack.isEmpty() && ToolBoxItem.moduleOf(stack) == ModToolBoxModules.NAME.get();
     }
 }

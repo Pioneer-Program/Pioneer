@@ -1,9 +1,9 @@
 package cute.ame.pioneer.Item.Client.Preview;
 
-import cute.ame.pioneer.Item.Module.MultiToolModule;
-import cute.ame.pioneer.Item.MultiToolItem;
+import cute.ame.pioneer.Item.Module.ToolBoxModule;
+import cute.ame.pioneer.Item.ToolBoxItem;
 import cute.ame.pioneer.Pioneer;
-import cute.ame.pioneer.Registrie.ModMultiToolModules;
+import cute.ame.pioneer.Registrie.ModToolBoxModules;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -21,12 +21,12 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 
 @EventBusSubscriber(modid = Pioneer.MODID, value = Dist.CLIENT)
-public final class MultiToolPreviews
+public final class ToolBoxPreviews
 {
-    private static final Map<MultiToolModule, MultiToolPreview> PREVIEWS = new IdentityHashMap<>();
+    private static final Map<ToolBoxModule, ToolBoxPreview> PREVIEWS = new IdentityHashMap<>();
     private static final PreviewFrame FRAME = new PreviewFrame();
 
-    public static void register(MultiToolModule module, MultiToolPreview preview)
+    public static void register(ToolBoxModule module, ToolBoxPreview preview)
     {
         PREVIEWS.put(module, preview);
     }
@@ -36,8 +36,8 @@ public final class MultiToolPreviews
     {
         event.enqueueWork(() ->
         {
-            register(ModMultiToolModules.ROTATE.get(), new RotatePreview());
-            register(ModMultiToolModules.NAME.get(), new NamePreview());
+            register(ModToolBoxModules.ROTATE.get(), new RotatePreview());
+            register(ModToolBoxModules.NAME.get(), new NamePreview());
         });
     }
 
@@ -51,10 +51,10 @@ public final class MultiToolPreviews
         ClientLevel level = minecraft.level;
         if (player == null || level == null || minecraft.options.hideGui) return;
 
-        ItemStack stack = MultiToolItem.held(player);
+        ItemStack stack = ToolBoxItem.held(player);
         if (stack.isEmpty()) return;
 
-        MultiToolPreview preview = PREVIEWS.get(MultiToolItem.moduleOf(stack));
+        ToolBoxPreview preview = PREVIEWS.get(ToolBoxItem.moduleOf(stack));
         if (preview == null) return;
 
         FRAME.minecraft = minecraft;

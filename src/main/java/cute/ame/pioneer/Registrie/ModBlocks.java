@@ -10,7 +10,7 @@ import cute.ame.pioneer.Fluid.Block.TankBlock;
 import cute.ame.pioneer.Fluid.Block.ThermometerBlock;
 import cute.ame.pioneer.Fluid.Block.ValveBlock;
 import cute.ame.pioneer.Fluid.Block.VentBlock;
-import cute.ame.pioneer.Item.Toolbox.ToolboxBlock;
+import cute.ame.pioneer.Item.ToolBox.ToolBoxBlock;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Planet.Arid.Block.AridCrystal;
 import cute.ame.pioneer.Planet.Arid.Block.AridDust;
@@ -141,8 +141,8 @@ public final class ModBlocks
         ScrubberBlock::new
     );
 
-    public static final DeferredBlock<ToolboxBlock> TOOLBOX = BLOCKS.register(
+    public static final DeferredBlock<ToolBoxBlock> TOOLBOX = BLOCKS.register(
         "toolbox",
-        ToolboxBlock::new
+        ToolBoxBlock::new
     );
 }

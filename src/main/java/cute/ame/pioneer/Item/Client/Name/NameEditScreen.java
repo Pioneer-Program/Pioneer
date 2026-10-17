@@ -32,7 +32,7 @@ public class NameEditScreen extends Screen
 
     public NameEditScreen(long pos, String current, ItemStack icon)
     {
-        super(Component.translatable("multitool.pioneer.mode.name"));
+        super(Component.translatable("toolbox.pioneer.mode.name"));
         this.pos = pos;
         this.original = current;
         this.text = NameServer.clean(current);

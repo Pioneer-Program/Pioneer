@@ -24,9 +24,9 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 
 import java.util.Objects;
 
-public class RotateModule extends MultiToolModule
+public class RotateModule extends ToolBoxModule
 {
-    public static final TagKey<Block> ROTATABLE = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "multitool_rotatable"));
+    public static final TagKey<Block> ROTATABLE = TagKey.create(Registries.BLOCK, ResourceLocation.fromNamespaceAndPath(Pioneer.MODID, "toolbox_rotatable"));
 
     private static final EnumProperty<AttachFace> ATTACH = BlockStateProperties.ATTACH_FACE;
     private static final DirectionProperty FACING = BlockStateProperties.FACING;

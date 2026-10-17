@@ -1,13 +1,13 @@
 package cute.ame.pioneer.Item.Module;
 
-import cute.ame.pioneer.Registrie.ModMultiToolModules;
+import cute.ame.pioneer.Registrie.ModToolBoxModules;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 
-public class MultiToolModule
+public class ToolBoxModule
 {
     private ResourceLocation icon;
     private Component title;
@@ -21,10 +21,10 @@ public class MultiToolModule
     {
         if (icon == null)
         {
-            ResourceLocation key = ModMultiToolModules.REGISTRY.getKey(this);
+            ResourceLocation key = ModToolBoxModules.REGISTRY.getKey(this);
 
             assert key != null;
-            icon = ResourceLocation.fromNamespaceAndPath(key.getNamespace(), "textures/gui/multitool/" + key.getPath() + ".png");
+            icon = ResourceLocation.fromNamespaceAndPath(key.getNamespace(), "textures/gui/toolbox/" + key.getPath() + ".png");
         }
 
         return icon;
@@ -34,10 +34,10 @@ public class MultiToolModule
     {
         if (title == null)
         {
-            ResourceLocation key = ModMultiToolModules.REGISTRY.getKey(this);
+            ResourceLocation key = ModToolBoxModules.REGISTRY.getKey(this);
             
             assert key != null;
-            title = Component.translatable("multitool." + key.getNamespace() + ".mode." + key.getPath());
+            title = Component.translatable("toolbox." + key.getNamespace() + ".mode." + key.getPath());
         }
 
         return title;
