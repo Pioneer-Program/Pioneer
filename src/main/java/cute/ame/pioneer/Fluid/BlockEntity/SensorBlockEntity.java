@@ -1,18 +1,14 @@
 package cute.ame.pioneer.Fluid.BlockEntity;
 
 
-import cute.ame.pioneer.Fluid.Block.SensorBlock;
 import cute.ame.celsius.Fluid.Helper.SensorReadings;
-
 import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Core.Computer.ComputerPeripheral;
-import cute.ame.celsius.Fluid.Registry.FluidSpecies;
-import cute.ame.celsius.Fluid.Data.SpeciesTable;
+import cute.ame.pioneer.Fluid.Block.SensorBlock;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
@@ -100,18 +96,6 @@ public class SensorBlockEntity extends BlockEntity implements ComputerPeripheral
         dial = next;
         setChanged();
         serverLevel.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
-    }
-
-    public Component describe()
-    {
-        SensorBlock instrument = instrument();
-        if (instrument == null) return Component.translatable("gauge.pioneer.no_reading");
-
-        Component value = instrument.describeValue(reading);
-
-        if (label.isEmpty()) return value;
-
-        return Component.translatable("gauge.pioneer.labelled", label, value);
     }
 
     @Override

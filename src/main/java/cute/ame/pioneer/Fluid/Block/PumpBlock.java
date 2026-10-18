@@ -1,9 +1,13 @@
 package cute.ame.pioneer.Fluid.Block;
 
-import cute.ame.pioneer.Config;
-import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
 import cute.ame.celsius.Fluid.Data.FluidConstants;
 import cute.ame.celsius.Fluid.Level.FluidLevelData;
+import cute.ame.pioneer.Config;
+import cute.ame.pioneer.Core.Configure.Tunable;
+import cute.ame.pioneer.Core.Configure.TuneOptions;
+import cute.ame.pioneer.Core.Readout.Readout;
+import cute.ame.pioneer.Core.Readout.ReadoutUnit;
+import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -30,7 +34,7 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class PumpBlock extends PioneerVesselBlock
+public class PumpBlock extends PioneerVesselBlock implements Tunable
 {
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
     public static final BooleanProperty ACTIVE = BlockStateProperties.LIT;
@@ -222,5 +226,36 @@ public class PumpBlock extends PioneerVesselBlock
     public float getNominalBurstPressure()
     {
         return 20.0f;
+    }
+
+    @Override
+    protected void details(ServerLevel level, BlockPos pos, BlockState state, Readout out)
+    {
+        boolean running = isActive(state);
+        out.translated("readout.pioneer.state", running ? "readout.pioneer.state.running" : "readout.pioneer.state.stopped");
+        out.number("readout.pioneer.power", powerAt(level, pos) * 100.0, ReadoutUnit.PERCENT);
+        if (running) out.number("readout.pioneer.boost", boost(level, pos, state), ReadoutUnit.PRESSURE);
+    }
+
+    @Override
+    public void options(ServerLevel level, BlockPos pos, BlockState state, TuneOptions out)
+    {
+        out.toggle("readout.pioneer.state", isActive(state), "readout.pioneer.state.stopped", "readout.pioneer.state.running");
+        out.range("readout.pioneer.power", powerAt(level, pos) * 100.0, 0.0, 100.0, 5.0, ReadoutUnit.PERCENT, true);
+    }
+
+    @Override
+    public boolean tune(ServerLevel level, BlockPos pos, BlockState state, int option, double value)
+    {
+        if (!(level.getBlockEntity(pos) instanceof PioneerVesselBlockEntity vessel)) return false;
+
+        if (option == 1) return vessel.setPower(value / 100.0);
+        if (option != 0) return false;
+
+        boolean run = value >= 0.5;
+        if (run && vessel.getPower() <= 0.0f) return vessel.setPower(1.0);
+
+        setActive(level, pos, state, run);
+        return true;
     }
 }

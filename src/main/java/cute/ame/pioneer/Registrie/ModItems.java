@@ -1,10 +1,10 @@
 package cute.ame.pioneer.Registrie;
 
-import cute.ame.pioneer.Pioneer;
-import cute.ame.pioneer.Planet.Arid.Item.AridCrystalShard;
-import cute.ame.pioneer.Item.MultiToolItem;
 import cute.ame.pioneer.Item.PortableThrusterItem;
 import cute.ame.pioneer.Item.SpaceNavigatorItemDebug;
+import cute.ame.pioneer.Item.ToolBoxItem;
+import cute.ame.pioneer.Pioneer;
+import cute.ame.pioneer.Planet.Arid.Item.AridCrystalShard;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item.Properties;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -76,5 +76,5 @@ public final class ModItems
 
   public static final DeferredItem<BlockItem> SCRUBBER = ITEMS.register("scrubber", () -> new BlockItem(ModBlocks.SCRUBBER.get(), new Properties()));
 
-  public static final DeferredItem<MultiToolItem> MULTI_TOOL = ITEMS.register("multi_tool", () -> new MultiToolItem(new Properties().stacksTo(1)));
+    public static final DeferredItem<ToolBoxItem> TOOLBOX = ITEMS.register("toolbox", () -> new ToolBoxItem(new Properties().stacksTo(1)));
 }

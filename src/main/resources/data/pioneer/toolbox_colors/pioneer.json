@@ -1,0 +1,44 @@
+{
+  "values": [
+    {
+      "target": "pioneer:vacuum_tank",
+      "color": "#55D8FF"
+    },
+    {
+      "target": "pioneer:vacuum_pump",
+      "color": "#3F7CFF"
+    },
+    {
+      "target": "pioneer:valve",
+      "color": "#B07CFF"
+    },
+    {
+      "target": "pioneer:vent",
+      "color": "#7CFFD4"
+    },
+    {
+      "target": "pioneer:scrubber",
+      "color": "#C8FF5A"
+    },
+    {
+      "target": "pioneer:barometer",
+      "color": "#FFE066"
+    },
+    {
+      "target": "pioneer:thermometer",
+      "color": "#FF6B6B"
+    },
+    {
+      "target": "pioneer:mass_spectrometer",
+      "color": "#FF7CE0"
+    },
+    {
+      "target": "pioneer:heater",
+      "color": "#FFA040"
+    },
+    {
+      "target": "pioneer:chiller",
+      "color": "#9AD0FF"
+    }
+  ]
+}

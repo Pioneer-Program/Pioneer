@@ -2,9 +2,14 @@ package cute.ame.pioneer.Fluid.Block;
 
 import cute.ame.celsius.Fluid.Data.FluidConstants;
 import cute.ame.pioneer.Config;
+import cute.ame.pioneer.Core.Configure.Tunable;
+import cute.ame.pioneer.Core.Configure.TuneOptions;
+import cute.ame.pioneer.Core.Configure.Tunes;
+import cute.ame.pioneer.Core.Readout.Readout;
 import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -17,7 +22,7 @@ import net.minecraft.world.level.block.state.properties.EnumProperty;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class ScrubberBlock extends PioneerVesselBlock
+public class ScrubberBlock extends PioneerVesselBlock implements Tunable
 {
     public static final EnumProperty<Direction.Axis> AXIS = BlockStateProperties.AXIS;
     public static final String DEFAULT_FILTER = "co2";
@@ -101,5 +106,28 @@ public class ScrubberBlock extends PioneerVesselBlock
     public float getNominalBurstPressure()
     {
         return 10.0f;
+    }
+
+    @Override
+    protected void details(ServerLevel level, BlockPos pos, BlockState state, Readout out)
+    {
+        if (level.getBlockEntity(pos) instanceof PioneerVesselBlockEntity vessel)
+            out.translated("readout.pioneer.filter", "gas.pioneer." + vessel.getFilter());
+    }
+
+    @Override
+    public void options(ServerLevel level, BlockPos pos, BlockState state, TuneOptions out)
+    {
+        if (level.getBlockEntity(pos) instanceof PioneerVesselBlockEntity vessel)
+            out.choice("readout.pioneer.filter", Tunes.speciesIndex(vessel.getFilter()), Tunes.speciesChoices(), Tunes.speciesIcons(), true);
+    }
+
+    @Override
+    public boolean tune(ServerLevel level, BlockPos pos, BlockState state, int option, double value)
+    {
+        if (option != 0 || !(level.getBlockEntity(pos) instanceof PioneerVesselBlockEntity vessel)) return false;
+
+        vessel.setFilter(Tunes.speciesAt((int) value));
+        return true;
     }
 }

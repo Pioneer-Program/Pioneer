@@ -5,13 +5,17 @@ import com.google.common.collect.Maps;
 import com.mojang.serialization.MapCodec;
 import cute.ame.celsius.Fluid.Block.FluidVesselBlock;
 import cute.ame.celsius.Fluid.Data.FluidConstants;
+import cute.ame.pioneer.Core.Configure.Configurable;
 import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import net.minecraft.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.item.context.BlockPlaceContext;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
@@ -22,6 +26,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.AttachFace;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -30,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
 
-public class PipeBlock extends PioneerVesselBlock
+public class PipeBlock extends PioneerVesselBlock implements Configurable
 {
     public static final MapCodec<PipeBlock> CODEC = MapCodec.unit(PipeBlock::new);
 
@@ -305,5 +310,23 @@ public class PipeBlock extends PioneerVesselBlock
             p_55164_.put(Direction.UP, UP);
             p_55164_.put(Direction.DOWN, DOWN);
         }));
+    }
+
+    private static Direction aimedArm(BlockPos pos, UseOnContext context)
+    {
+        Vec3 offset = context.getClickLocation().subtract(Vec3.atCenterOf(pos));
+        double reach = Math.max(Math.abs(offset.x), Math.max(Math.abs(offset.y), Math.abs(offset.z)));
+
+        if (reach <= CORE_HALF + 1.0e-3) return context.getClickedFace();
+        return Direction.getNearest(offset.x, offset.y, offset.z);
+    }
+
+    @Override
+    public @Nullable Component configure(ServerLevel level, BlockPos pos, BlockState state, UseOnContext context)
+    {
+        Direction direction = aimedArm(pos, context);
+        toggle(level, pos, state, direction);
+
+        return null;
     }
 }

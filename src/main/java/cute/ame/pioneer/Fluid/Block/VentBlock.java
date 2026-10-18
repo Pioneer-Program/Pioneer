@@ -1,7 +1,14 @@
 package cute.ame.pioneer.Fluid.Block;
 
 import cute.ame.celsius.Fluid.Data.FluidConstants;
+import cute.ame.celsius.Fluid.Data.FluidNodeStore;
 import cute.ame.celsius.Fluid.Level.FluidLevelData;
+import cute.ame.celsius.Fluid.Level.RoomLevelData;
+import cute.ame.pioneer.Core.Configure.Tunable;
+import cute.ame.pioneer.Core.Configure.TuneOptions;
+import cute.ame.pioneer.Core.Configure.Tunes;
+import cute.ame.pioneer.Core.Readout.Readout;
+import cute.ame.pioneer.Core.Readout.ReadoutUnit;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -30,10 +37,12 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
-public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBlock
+public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBlock, Tunable
 {
     public static final EnumProperty<AttachFace> FACE = BlockStateProperties.ATTACH_FACE;
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
@@ -44,6 +53,8 @@ public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBl
 
     private static final VoxelShape FLOOR_SHAPE = Block.box(1.0, 0.0, 3.0, 15.0, 4.0, 13.0);
     private static final Map<AttachFace, Map<Direction, VoxelShape>> SHAPES = buildShapes();
+    private static final List<String> MODES = Arrays.stream(VentMode.values()).map(mode -> "vent.pioneer.mode." + mode.getSerializedName()).toList();
+    private static final List<String> MODE_ICONS = Arrays.stream(VentMode.values()).map(mode -> Tunes.icon("vent/" + mode.getSerializedName())).toList();
 
     public VentBlock()
     {
@@ -236,5 +247,34 @@ public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBl
     public float getNominalBurstPressure()
     {
         return 10.0f;
+    }
+
+    @Override
+    protected void details(ServerLevel level, BlockPos pos, BlockState state, Readout out)
+    {
+        out.translated("readout.pioneer.mode", "vent.pioneer.mode." + state.getValue(MODE).getSerializedName());
+
+        RoomLevelData rooms = RoomLevelData.getIfPresent(level);
+        FluidLevelData data = FluidLevelData.getIfPresent(level);
+        if (rooms == null || data == null) return;
+
+        int room = rooms.nodeAt(mouth(pos, state));
+        if (room != FluidNodeStore.INVALID && data.store().alive(room))
+            out.number("readout.pioneer.room_pressure", data.store().pressure(room), ReadoutUnit.PRESSURE);
+    }
+
+    @Override
+    public void options(ServerLevel level, BlockPos pos, BlockState state, TuneOptions out)
+    {
+        out.choice("readout.pioneer.mode", state.getValue(MODE).ordinal(), MODES, MODE_ICONS, true);
+    }
+
+    @Override
+    public boolean tune(ServerLevel level, BlockPos pos, BlockState state, int option, double value)
+    {
+        if (option != 0) return false;
+
+        setMode(level, pos, state, VentMode.byIndex((int) value));
+        return true;
     }
 }

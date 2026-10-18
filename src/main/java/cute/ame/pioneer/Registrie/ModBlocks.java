@@ -1,17 +1,22 @@
 package cute.ame.pioneer.Registrie;
 
 import cute.ame.pioneer.Block.CeramicTiles;
-import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Fluid.Block.BarometerBlock;
 import cute.ame.pioneer.Fluid.Block.MassSpectrometerBlock;
 import cute.ame.pioneer.Fluid.Block.PipeBlock;
-import cute.ame.pioneer.Fluid.Block.TankBlock;
-import cute.ame.pioneer.Fluid.Block.ThermometerBlock;
 import cute.ame.pioneer.Fluid.Block.PumpBlock;
 import cute.ame.pioneer.Fluid.Block.ScrubberBlock;
+import cute.ame.pioneer.Fluid.Block.TankBlock;
+import cute.ame.pioneer.Fluid.Block.ThermometerBlock;
 import cute.ame.pioneer.Fluid.Block.ValveBlock;
 import cute.ame.pioneer.Fluid.Block.VentBlock;
-import cute.ame.pioneer.Planet.Arid.Block.*;
+import cute.ame.pioneer.Item.ToolBox.ToolBoxBlock;
+import cute.ame.pioneer.Pioneer;
+import cute.ame.pioneer.Planet.Arid.Block.AridCrystal;
+import cute.ame.pioneer.Planet.Arid.Block.AridDust;
+import cute.ame.pioneer.Planet.Arid.Block.AridGlyph;
+import cute.ame.pioneer.Planet.Arid.Block.AridRock;
+import cute.ame.pioneer.Planet.Arid.Block.AridStrata;
 import cute.ame.pioneer.Spaceship.Block.ShipController;
 import cute.ame.pioneer.Spaceship.Block.ThrusterBlock;
 import cute.ame.pioneer.Thermal.Block.ThermalActuatorBlock;
@@ -134,5 +139,10 @@ public final class ModBlocks
     public static final DeferredBlock<ScrubberBlock> SCRUBBER = BLOCKS.register(
         "scrubber",
         ScrubberBlock::new
+    );
+
+    public static final DeferredBlock<ToolBoxBlock> TOOLBOX = BLOCKS.register(
+        "toolbox",
+        ToolBoxBlock::new
     );
 }
