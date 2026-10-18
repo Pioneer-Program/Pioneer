@@ -25,6 +25,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.joml.Matrix4f;
+import org.joml.Vector3d;
 import org.joml.Vector3f;
 import org.lwjgl.opengl.GL11;
 
@@ -50,6 +51,7 @@ public final class NamePreview extends ToolBoxPreview
     private final Reference2ObjectOpenHashMap<Block, ItemStack> stacks = new Reference2ObjectOpenHashMap<>();
     private final BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
     private final Vector3f axis = new Vector3f();
+    private final Vector3d anchor = new Vector3d();
 
     private int count;
     private int aimedIndex;
@@ -146,19 +148,18 @@ public final class NamePreview extends ToolBoxPreview
         {
             long pos = entry.getLongKey();
             cursor.set(pos);
-
-            float dx = (float) (cursor.getX() + 0.5 - frame.camera.x);
-            float dz = (float) (cursor.getZ() + 0.5 - frame.camera.z);
-            float flat = dx * dx + dz * dz;
-            if (flat > REACH * REACH || !NameServer.nameable(frame.level.getBlockEntity(cursor))) continue;
+            if (!NameServer.nameable(frame.level.getBlockEntity(cursor))) continue;
 
             float emphasis = pos == focusPos ? focus : pos == fadingPos ? fading : 0.0f;
             BlockState state = frame.level.getBlockState(cursor);
             VoxelShape shape = state.getShape(frame.level, cursor);
             double top = shape.isEmpty() ? 1.0 : shape.max(Direction.Axis.Y);
 
-            float dy = (float) (cursor.getY() + top + 0.15f + 0.1f * emphasis - frame.camera.y);
-            float distance = Mth.sqrt(flat + dy * dy);
+            frame.toWorld(cursor.getX() + 0.5, cursor.getY() + top + 0.15 + 0.1 * emphasis, cursor.getZ() + 0.5, anchor);
+            float dx = (float) (anchor.x - frame.camera.x);
+            float dy = (float) (anchor.y - frame.camera.y);
+            float dz = (float) (anchor.z - frame.camera.z);
+            float distance = Mth.sqrt(dx * dx + dy * dy + dz * dz);
             float alpha = Mth.clamp((REACH - distance) / 8.0f, 0.0f, 1.0f);
             if (alpha < 0.03f) continue;
 

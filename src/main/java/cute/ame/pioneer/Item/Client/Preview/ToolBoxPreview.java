@@ -30,7 +30,7 @@ public abstract class ToolBoxPreview
     {
         PoseStack pose = frame.pose;
         pose.pushPose();
-        pose.translate(pos.getX() - frame.camera.x, pos.getY() - frame.camera.y, pos.getZ() - frame.camera.z);
+        frame.place(pose, pos.getX(), pos.getY(), pos.getZ());
 
         if (turn != null || scale != 1.0f)
         {

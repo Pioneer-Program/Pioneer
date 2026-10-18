@@ -4,6 +4,11 @@ import cute.ame.pioneer.Core.Computer.ComputerPeripheral;
 import cute.ame.pioneer.Item.Network.NameLabelsPayload;
 import cute.ame.pioneer.Item.ToolBoxItem;
 import cute.ame.pioneer.Registrie.ModToolBoxModules;
+import dev.ryanhcode.sable.Sable;
+import dev.ryanhcode.sable.companion.math.BoundingBox3d;
+import dev.ryanhcode.sable.companion.math.Pose3dc;
+import dev.ryanhcode.sable.sublevel.SubLevel;
+import dev.ryanhcode.sable.sublevel.plot.PlotChunkHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,8 +16,10 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.jetbrains.annotations.Nullable;
+import org.joml.Vector3d;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +58,27 @@ public final class NameServer
             }
         }
 
+        Vector3d point = new Vector3d();
+        Vec3 feet = player.position();
+        BoundingBox3d box = new BoundingBox3d(feet.x - RADIUS, feet.y - RADIUS, feet.z - RADIUS, feet.x + RADIUS, feet.y + RADIUS, feet.z + RADIUS);
+        for (SubLevel subLevel : Sable.HELPER.getAllIntersecting(level, box))
+        {
+            Pose3dc pose = subLevel.logicalPose();
+            for (PlotChunkHolder holder : subLevel.getPlot().getLoadedChunks())
+            {
+                for (BlockEntity entity : holder.getChunk().getBlockEntities().values())
+                {
+                    if (!nameable(entity) || ((ComputerPeripheral) entity).getLabel().isEmpty()) continue;
+
+                    BlockPos pos = entity.getBlockPos();
+                    pose.transformPosition(point.set(pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5));
+                    if (point.distanceSquared(feet.x, feet.y, feet.z) > reach) continue;
+
+                    entries.add(new NameLabelsPayload.Entry(pos.asLong(), ((ComputerPeripheral) entity).getLabel()));
+                }
+            }
+        }
+
         PacketDistributor.sendToPlayer(player, new NameLabelsPayload(true, entries));
     }
 
@@ -80,7 +108,7 @@ public final class NameServer
 
     public static String clean(@Nullable String raw)
     {
-        if (raw == null) return "n";
+        if (raw == null) return "";
 
         StringBuilder label = new StringBuilder(MAX_LENGTH);
         boolean boundary = false;

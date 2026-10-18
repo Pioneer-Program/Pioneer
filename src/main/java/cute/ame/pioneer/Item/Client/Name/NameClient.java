@@ -8,6 +8,7 @@ import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Registrie.ModToolBoxModules;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.player.LocalPlayer;
@@ -32,6 +33,7 @@ public final class NameClient
     private static double requestX;
     private static double requestZ;
     private static boolean requested;
+    private static long requestedAt;
 
     public static @Nullable Label label(long pos)
     {
@@ -46,6 +48,7 @@ public final class NameClient
     public static void request(LocalPlayer player)
     {
         requested = true;
+        requestedAt = Util.getMillis();
         requestX = player.getX();
         requestZ = player.getZ();
         PacketDistributor.sendToServer(NameRequestPayload.INSTANCE);
@@ -54,6 +57,10 @@ public final class NameClient
     public static boolean needsRequest(LocalPlayer player, double moved)
     {
         if (!requested) return true;
+
+        long since = Util.getMillis() - requestedAt;
+        if (since >= 5000L) return true;
+        if (since < 1000L) return false;
 
         double dx = player.getX() - requestX;
         double dz = player.getZ() - requestZ;
