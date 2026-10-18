@@ -153,9 +153,12 @@ public final class NamePreview extends ToolBoxPreview
             float emphasis = pos == focusPos ? focus : pos == fadingPos ? fading : 0.0f;
             BlockState state = frame.level.getBlockState(cursor);
             VoxelShape shape = state.getShape(frame.level, cursor);
-            double top = shape.isEmpty() ? 1.0 : shape.max(Direction.Axis.Y);
+            boolean empty = shape.isEmpty();
+            double top = empty ? 1.0 : shape.max(Direction.Axis.Y);
+            double middleX = empty ? 0.5 : (shape.min(Direction.Axis.X) + shape.max(Direction.Axis.X)) / 2.0;
+            double middleZ = empty ? 0.5 : (shape.min(Direction.Axis.Z) + shape.max(Direction.Axis.Z)) / 2.0;
 
-            frame.toWorld(cursor.getX() + 0.5, cursor.getY() + top + 0.15 + 0.1 * emphasis, cursor.getZ() + 0.5, anchor);
+            frame.toWorld(cursor.getX() + middleX, cursor.getY() + top + 0.15 + 0.1 * emphasis, cursor.getZ() + middleZ, anchor);
             float dx = (float) (anchor.x - frame.camera.x);
             float dy = (float) (anchor.y - frame.camera.y);
             float dz = (float) (anchor.z - frame.camera.z);
@@ -180,7 +183,7 @@ public final class NamePreview extends ToolBoxPreview
     private void layer(PreviewFrame frame, Camera camera, MultiBufferSource.BufferSource buffers, Font font, boolean seeThrough, float fade, float behind, int only)
     {
         PoseStack pose = frame.pose;
-        int from = only < 0 ? 0 : only;
+        int from = Math.max(only, 0);
         int to = only < 0 ? count : only + 1;
         int skip = only < 0 && !seeThrough ? aimedIndex : -1;
 
