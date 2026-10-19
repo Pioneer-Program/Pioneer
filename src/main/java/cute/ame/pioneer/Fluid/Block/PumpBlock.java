@@ -1,5 +1,6 @@
 package cute.ame.pioneer.Fluid.Block;
 
+import cute.ame.celsius.Fluid.Block.IFluidVesselBlock;
 import cute.ame.celsius.Fluid.Data.FluidConstants;
 import cute.ame.celsius.Fluid.Level.FluidLevelData;
 import cute.ame.pioneer.Config;
@@ -189,7 +190,7 @@ public class PumpBlock extends PioneerVesselBlock implements Tunable
     public int ports(BlockState state)
     {
         Direction facing = state.getValue(FACING);
-        return port(facing) | port(facing.getOpposite());
+        return IFluidVesselBlock.port(facing) | IFluidVesselBlock.port(facing.getOpposite());
     }
 
     @Override

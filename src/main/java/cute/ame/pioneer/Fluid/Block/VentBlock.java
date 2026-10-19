@@ -1,5 +1,6 @@
 package cute.ame.pioneer.Fluid.Block;
 
+import cute.ame.celsius.Fluid.Block.IFluidVesselBlock;
 import cute.ame.celsius.Fluid.Data.FluidConstants;
 import cute.ame.celsius.Fluid.Data.FluidNodeStore;
 import cute.ame.celsius.Fluid.Level.FluidLevelData;
@@ -171,7 +172,7 @@ public class VentBlock extends PioneerVesselBlock implements SimpleWaterloggedBl
     @Override
     public int ports(BlockState state)
     {
-        return ALL_PORTS & ~port(opening(state));
+        return ALL_PORTS & ~IFluidVesselBlock.port(opening(state));
     }
 
     @Override

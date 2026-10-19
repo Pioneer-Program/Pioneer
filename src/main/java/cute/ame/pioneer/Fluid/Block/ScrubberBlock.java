@@ -1,5 +1,6 @@
 package cute.ame.pioneer.Fluid.Block;
 
+import cute.ame.celsius.Fluid.Block.IFluidVesselBlock;
 import cute.ame.celsius.Fluid.Data.FluidConstants;
 import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Core.Configure.Tunable;
@@ -78,7 +79,7 @@ public class ScrubberBlock extends PioneerVesselBlock implements Tunable
 
         for (Direction.Axis axis : axes)
         {
-            int bulk = port(Direction.fromAxisAndDirection(axis, Direction.AxisDirection.POSITIVE)) | port(Direction.fromAxisAndDirection(axis, Direction.AxisDirection.NEGATIVE));
+            int bulk = IFluidVesselBlock.port(Direction.fromAxisAndDirection(axis, Direction.AxisDirection.POSITIVE)) | IFluidVesselBlock.port(Direction.fromAxisAndDirection(axis, Direction.AxisDirection.NEGATIVE));
             filters[axis.ordinal()] = ALL_PORTS & ~bulk;
         }
         return filters;

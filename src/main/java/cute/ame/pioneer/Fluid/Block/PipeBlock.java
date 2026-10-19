@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.mojang.serialization.MapCodec;
 import cute.ame.celsius.Fluid.Block.FluidVesselBlock;
+import cute.ame.celsius.Fluid.Block.IFluidVesselBlock;
 import cute.ame.celsius.Fluid.Data.FluidConstants;
 import cute.ame.pioneer.Core.Configure.Configurable;
 import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
@@ -157,22 +158,6 @@ public class PipeBlock extends PioneerVesselBlock implements Configurable
         return state;
     }
 
-    @Override
-    protected @NotNull BlockState updateShape(@NotNull BlockState state, @NotNull Direction direction, @NotNull BlockState neighbour, @NotNull LevelAccessor level, @NotNull BlockPos pos, @NotNull BlockPos neighbourPos)
-    {
-        EnumProperty<PipeConnection> arm = arm(direction);
-        PipeConnection linked = state.getValue(arm);
-        Direction face = direction.getOpposite();
-
-        boolean next;
-        if (sealed(level, pos, direction)) next = false;
-        else if (neighbour.getBlock() instanceof PipeBlock pipe) next = (pipe.ports(neighbour) & port(face)) != 0;
-        else next = accepts(neighbour, face);
-        PipeConnection connection = next ? getConnectionType(neighbour, face) : PipeConnection.NONE;
-
-        return connection == linked ? state : state.setValue(arm, connection);
-    }
-
     public static int toggle(Level level, BlockPos pos, BlockState state, Direction direction)
     {
         if (!(level.getBlockEntity(pos) instanceof PioneerVesselBlockEntity vessel)) return TOGGLE_NONE;
@@ -180,7 +165,7 @@ public class PipeBlock extends PioneerVesselBlock implements Configurable
         EnumProperty<PipeConnection> arm = arm(direction);
         if (state.getValue(arm).isConnected())
         {
-            vessel.setSealed(vessel.getSealed() | port(direction));
+            vessel.setSealed(vessel.getSealed() | IFluidVesselBlock.port(direction));
             level.setBlock(pos, state.setValue(arm, PipeConnection.NONE), Block.UPDATE_ALL);
             return TOGGLE_CUT;
         }
@@ -190,8 +175,9 @@ public class PipeBlock extends PioneerVesselBlock implements Configurable
         Direction face = direction.getOpposite();
         if (!accepts(neighbour, face)) return TOGGLE_NONE;
 
-        vessel.setSealed(vessel.getSealed() & ~port(direction));
-        if (neighbour.getBlock() instanceof PipeBlock && level.getBlockEntity(side) instanceof PioneerVesselBlockEntity other) other.setSealed(other.getSealed() & ~port(face));
+        vessel.setSealed(vessel.getSealed() & ~IFluidVesselBlock.port(direction));
+        if (neighbour.getBlock() instanceof PipeBlock && level.getBlockEntity(side) instanceof PioneerVesselBlockEntity other)
+            other.setSealed(other.getSealed() & ~IFluidVesselBlock.port(face));
 
         level.setBlock(pos, state.setValue(arm, getConnectionType(neighbour, face)), Block.UPDATE_ALL);
         return TOGGLE_LINKED;
@@ -199,12 +185,7 @@ public class PipeBlock extends PioneerVesselBlock implements Configurable
 
     private static boolean sealed(BlockGetter level, BlockPos pos, Direction face)
     {
-        return level.getBlockEntity(pos) instanceof PioneerVesselBlockEntity vessel && (vessel.getSealed() & port(face)) != 0;
-    }
-
-    private static boolean accepts(BlockState neighbour, Direction face)
-    {
-        return getConnectionType(neighbour, face).isConnected();
+        return level.getBlockEntity(pos) instanceof PioneerVesselBlockEntity vessel && (vessel.getSealed() & IFluidVesselBlock.port(face)) != 0;
     }
 
     private static PipeConnection getConnectionType(BlockState neighborState, Direction face) {
@@ -228,11 +209,34 @@ public class PipeBlock extends PioneerVesselBlock implements Configurable
             return PipeConnection.NONE;
         }
 
-        if (neighborBlock instanceof FluidVesselBlock vessel && (vessel.ports(neighborState) & port(face)) != 0) {
+        if (neighborBlock instanceof FluidVesselBlock vessel && (vessel.ports(neighborState) & IFluidVesselBlock.port(face)) != 0)
+        {
             return PipeConnection.RIM;
         }
 
         return PipeConnection.NONE;
+    }
+
+    private static boolean accepts(BlockState neighbour, Direction face)
+    {
+        return getConnectionType(neighbour, face).isConnected();
+    }
+
+    @Override
+    protected @NotNull BlockState updateShape(@NotNull BlockState state, @NotNull Direction direction, @NotNull BlockState neighbour, @NotNull LevelAccessor level, @NotNull BlockPos pos, @NotNull BlockPos neighbourPos)
+    {
+        EnumProperty<PipeConnection> arm = arm(direction);
+        PipeConnection linked = state.getValue(arm);
+        Direction face = direction.getOpposite();
+
+        boolean next;
+        if (sealed(level, pos, direction)) next = false;
+        else if (neighbour.getBlock() instanceof PipeBlock pipe)
+            next = (pipe.ports(neighbour) & IFluidVesselBlock.port(face)) != 0;
+        else next = accepts(neighbour, face);
+        PipeConnection connection = next ? getConnectionType(neighbour, face) : PipeConnection.NONE;
+
+        return connection == linked ? state : state.setValue(arm, connection);
     }
 
     @Override

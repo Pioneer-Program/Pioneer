@@ -1,5 +1,6 @@
 package cute.ame.pioneer.Fluid.Block;
 
+import cute.ame.celsius.Fluid.Block.IFluidVesselBlock;
 import cute.ame.pioneer.Core.Configure.Tunable;
 import cute.ame.pioneer.Core.Configure.TuneOptions;
 import cute.ame.pioneer.Core.Configure.Tunes;
@@ -73,7 +74,7 @@ public class MassSpectrometerBlock extends PioneerVesselBlock implements Tunable
     @Override
     public int ports(BlockState state)
     {
-        return port(state.getValue(FACING).getOpposite()) | port(Direction.DOWN);
+        return IFluidVesselBlock.port(state.getValue(FACING).getOpposite()) | IFluidVesselBlock.port(Direction.DOWN);
     }
 
     @Override
