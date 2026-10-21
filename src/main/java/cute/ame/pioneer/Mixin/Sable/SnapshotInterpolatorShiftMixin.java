@@ -1,5 +1,7 @@
 package cute.ame.pioneer.Mixin.Sable;
 
+import cute.ame.pioneer.Core.Frame.FrameShift;
+import cute.ame.pioneer.Frame.Client.ShiftPoses;
 import cute.ame.pioneer.Frame.Client.ShiftableInterpolator;
 import dev.ryanhcode.sable.companion.math.Pose3d;
 import dev.ryanhcode.sable.companion.math.Pose3dc;
@@ -21,7 +23,8 @@ public abstract class SnapshotInterpolatorShiftMixin implements ShiftableInterpo
     @Unique private static final int PIONEER$SHIFTS = 4;
 
     @Unique private final int[] pioneer$tick = new int[PIONEER$SHIFTS];
-    @Unique private final double[] pioneer$delta = new double[PIONEER$SHIFTS * 3];
+    @Unique private final double[] pioneer$shifts = new double[PIONEER$SHIFTS * 7];
+    @Unique private final double[] pioneer$scratch = new double[4];
 
     @Shadow @Final public ObjectArrayList<SubLevelSnapshotInterpolator.Snapshot> buffer;
 
@@ -30,38 +33,29 @@ public abstract class SnapshotInterpolatorShiftMixin implements ShiftableInterpo
     @Unique private int pioneer$next;
     @Unique private boolean pioneer$replaying;
 
-    @Unique
-    private static Pose3d pioneer$moved(Pose3dc pose, double dx, double dy, double dz)
-    {
-        Pose3d moved = new Pose3d(pose);
-        moved.position().add(dx, dy, dz);
-        return moved;
-    }
-
     @Shadow
     public abstract void receiveSnapshot(int gameTick, Pose3dc data);
 
     @Override
     @SuppressWarnings("SynchronizeOnNonFinalField")
     // tell idea to shut up basically, dw, it's fine, buffer is final >:3
-    public void pioneer$shift(int tick, double dx, double dy, double dz)
+    public void pioneer$shift(int tick, FrameShift shift)
     {
         synchronized (buffer)
         {
-            for (int i = 0, n = buffer.size(); i < n; i++)
+            for (int i = 0, n = buffer.size(); i < n; ++i)
             {
                 SubLevelSnapshotInterpolator.Snapshot s = buffer.get(i);
-                if (s.gameTick() < tick)
-                    buffer.set(i, new SubLevelSnapshotInterpolator.Snapshot(s.gameTick(), pioneer$moved(s.pose(), dx, dy, dz)));
+                if (s.gameTick() >= tick) continue;
+
+                buffer.set(i, new SubLevelSnapshotInterpolator.Snapshot(s.gameTick(), ShiftPoses.apply(new Pose3d(s.pose()), shift, pioneer$scratch)));
             }
         }
 
-        runningSnapshot.position().add(dx, dy, dz);
+        ShiftPoses.apply(runningSnapshot, shift, pioneer$scratch);
         int slot = pioneer$next;
         pioneer$tick[slot] = tick;
-        pioneer$delta[slot * 3] = dx;
-        pioneer$delta[slot * 3 + 1] = dy;
-        pioneer$delta[slot * 3 + 2] = dz;
+        ShiftPoses.store(shift, pioneer$shifts, slot);
         pioneer$next = (slot + 1) % PIONEER$SHIFTS;
         if (pioneer$count < PIONEER$SHIFTS) pioneer$count++;
     }
@@ -71,23 +65,32 @@ public abstract class SnapshotInterpolatorShiftMixin implements ShiftableInterpo
     {
         if (pioneer$replaying || pioneer$count == 0) return;
 
-        double dx = 0.0, dy = 0.0, dz = 0.0;
-        boolean late = false;
-        for (int i = 0; i < pioneer$count; i++)
+        int start = pioneer$count < PIONEER$SHIFTS ? 0 : pioneer$next;
+        Pose3d moved = null;
+        FrameShift shift = null;
+        double[] scratch = null;
+        for (int k = 0; k < pioneer$count; ++k)
         {
-            if (gameTick >= pioneer$tick[i]) continue;
-            dx += pioneer$delta[i * 3];
-            dy += pioneer$delta[i * 3 + 1];
-            dz += pioneer$delta[i * 3 + 2];
-            late = true;
+            int slot = (start + k) % PIONEER$SHIFTS;
+            if (gameTick >= pioneer$tick[slot]) continue;
+
+            if (moved == null)
+            {
+                moved = new Pose3d(data);
+                shift = new FrameShift();
+                scratch = new double[4];
+            }
+
+            ShiftPoses.apply(moved, ShiftPoses.load(pioneer$shifts, slot, shift), scratch);
         }
-        if (!late) return;
+
+        if (moved == null) return;
 
         ci.cancel();
         pioneer$replaying = true;
         try
         {
-            receiveSnapshot(gameTick, pioneer$moved(data, dx, dy, dz));
+            receiveSnapshot(gameTick, moved);
         }
         finally
         {

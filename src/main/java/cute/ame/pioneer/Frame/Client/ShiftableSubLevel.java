@@ -1,6 +1,8 @@
 package cute.ame.pioneer.Frame.Client;
 
+import cute.ame.pioneer.Core.Frame.FrameShift;
+
 public interface ShiftableSubLevel
 {
-    void pioneer$shift(int tick, double dx, double dy, double dz);
+    void pioneer$shift(int tick, FrameShift shift);
 }

@@ -39,6 +39,7 @@ import org.joml.Vector3d;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -285,7 +286,21 @@ public final class FrameDebugCommand
         source.sendSuccess(() -> Component.literal("  " + String.format(ChatFormatting.GRAY + "moved sublevels=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "players=" + ChatFormatting.GREEN + "%d " + ChatFormatting.DARK_GRAY + "(riding %d, seated %d, free %d) " + ChatFormatting.GRAY + "entities=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "tick=" + ChatFormatting.DARK_GRAY + "%d", report.subLevels, report.players(), report.riders, report.seated, report.free, report.entities, report.tick)), false);
         source.sendSuccess(() -> Component.literal("  " + xyz("raw", player.getX(), player.getY(), player.getZ())), false);
         source.sendSuccess(() -> Component.literal("  " + ChatFormatting.GRAY + FrameAPI.nearestBody(space.level(), player.getX(), player.getY(), player.getZ())), false);
+        ServerSubLevel ship = shipOf(player, space.level());
+        if (ship == null) return 1;
+
+        Vector3d speed = FrameAPI.velocity(space.level(), ship, new Vector3d());
+        double spin = Math.toDegrees(spinOf(space.level(), ship).length());
+        source.sendSuccess(() -> Component.literal("  " + String.format(Locale.ROOT, ChatFormatting.GRAY + "ship speed=" + ChatFormatting.YELLOW + "%.1f u/s " + ChatFormatting.GRAY + "spin=" + ChatFormatting.YELLOW + "%.1f deg/s", speed.length(), spin)), false);
         return 1;
+    }
+
+    private static Vector3d spinOf(ServerLevel level, ServerSubLevel ship)
+    {
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null || ship.isRemoved()) return new Vector3d();
+
+        return container.physicsSystem().getPipeline().getAngularVelocity(ship, new Vector3d());
     }
 
     private static int executeOpen(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException

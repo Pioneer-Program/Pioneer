@@ -12,6 +12,7 @@ import cute.ame.pioneer.Core.Frame.FrameMotion;
 import cute.ame.pioneer.Core.Frame.FrameParent;
 import cute.ame.pioneer.Core.Frame.FramePose;
 import cute.ame.pioneer.Core.Frame.FrameQuat;
+import cute.ame.pioneer.Core.Frame.FrameShift;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
 import dev.ryanhcode.sable.Sable;
@@ -45,6 +46,8 @@ import java.util.Locale;
 public final class FrameManager extends SavedData
 {
     public static final String NAME = "pioneer_frames";
+
+    private static final double TICKS_PER_SECOND = 20.0;
 
     private static final SavedData.Factory<FrameManager> FACTORY = new SavedData.Factory<>(FrameManager::fromConfig, FrameManager::load, null);
     private final ArrayList<LocalFrame> frames = new ArrayList<>(8);
@@ -307,7 +310,8 @@ public final class FrameManager extends SavedData
         byCell[cell] = frame;
         setDirty();
         FrameSync.upsert(level, this, frame);
-        FrameReport report = FrameTransfer.carry(level, subLevels, players, entities, grid.centerX(cell) - anchor.x, grid.centerY() - anchor.y, grid.centerZ(cell) - anchor.z, -shipVelocity.x, -shipVelocity.y, -shipVelocity.z);
+        FrameShift shift = new FrameShift().translation(grid.centerX(cell) - anchor.x, grid.centerY() - anchor.y, grid.centerZ(cell) - anchor.z, -shipVelocity.x, -shipVelocity.y, -shipVelocity.z);
+        FrameReport report = FrameTransfer.carry(level, subLevels, players, entities, shift);
 
         refresh(level);
         Pioneer.LOGGER.info("frame created #{} at ({},{})", frame.id, grid.ix(cell), grid.iz(cell));
@@ -422,22 +426,18 @@ public final class FrameManager extends SavedData
         LocalFrame existing = at(at.x, at.z);
         if (existing != null) throw new FrameError("Ship is already in frame #" + existing.id);
 
-        long now = level.getGameTime();
-        if (poseOf(frame, now, 0.0, pose).rotated)
-            throw new FrameError("Frame #" + frame.id + " is rotated, a ship cannot join it yet");
-
         int cell = frame.cell;
-        double[] o = pose.toLocal(at.x, at.y, at.z, new double[3]);
-        double dx = grid.centerX(cell) + o[0] - at.x, dy = grid.centerY() + o[1] - at.y, dz = grid.centerZ(cell) + o[2] - at.z;
-        double half = grid.halfCell();
+        double cx = grid.centerX(cell), cy = grid.centerY(), cz = grid.centerZ(cell), half = grid.halfCell();
+        FrameShift shift = shift(null, frame, level.getGameTime());
+        double[] o = shift.position(at.x, at.y, at.z, new double[3]);
         BoundingBox3dc b = ship.boundingBox();
-        if (b.minX() - at.x + o[0] < -half || b.maxX() - at.x + o[0] > half || b.minZ() - at.z + o[2] < -half || b.maxZ() - at.z + o[2] > half)
-            throw new FrameError(String.format(Locale.ROOT, "Ship is %.0f from frame #%d, outside its cell (half %.0f)", Math.sqrt(o[0] * o[0] + o[1] * o[1] + o[2] * o[2]), frame.id, half));
-        if (b.minY() + dy < level.getMinBuildHeight() || b.maxY() + dy > level.getMaxBuildHeight())
+        double[] box = shift.bounds(b.minX(), b.minY(), b.minZ(), b.maxX(), b.maxY(), b.maxZ(), new double[6]);
+        if (box[0] - cx < -half || box[3] - cx > half || box[2] - cz < -half || box[5] - cz > half)
+            throw new FrameError(String.format(Locale.ROOT, "Ship is %.0f from frame #%d, outside its cell (half %.0f)", Math.sqrt((o[0] - cx) * (o[0] - cx) + (o[1] - cy) * (o[1] - cy) + (o[2] - cz) * (o[2] - cz)), frame.id, half));
+        if (box[1] < level.getMinBuildHeight() || box[4] > level.getMaxBuildHeight())
             throw new FrameError("Ship would land outside the height limits of frame #" + frame.id);
 
-        double[] v = velocityOf(frame, now, new double[3]);
-        FrameReport report = FrameTransfer.carry(level, List.of(ship), crewOf(level, null, ship), entitiesNear(level, ship), dx, dy, dz, -v[0] * 20.0, -v[1] * 20.0, -v[2] * 20.0);
+        FrameReport report = FrameTransfer.carry(level, List.of(ship), crewOf(level, null, ship), entitiesNear(level, ship), shift);
 
         refresh(level);
         Pioneer.LOGGER.info("frame {} joined #{}", FrameTransfer.shortId(ship), frame.id);
@@ -464,7 +464,8 @@ public final class FrameManager extends SavedData
         Vector3d u = FrameTransfer.velocityOf(level, anchor, new Vector3d());
         frame.motion.recenter(level.getGameTime(), ox, oy, oz, u.x / 20.0, u.y / 20.0, u.z / 20.0);
         changed(frame, FrameEvent.Cause.RECENTER);
-        FrameReport report = FrameTransfer.carry(level, List.copyOf(frame.members), List.copyOf(frame.players), entitiesInCell(level, cell), -ox, -oy, -oz, -u.x, -u.y, -u.z);
+        FrameShift shift = new FrameShift().translation(-ox, -oy, -oz, -u.x, -u.y, -u.z);
+        FrameReport report = FrameTransfer.carry(level, List.copyOf(frame.members), List.copyOf(frame.players), entitiesInCell(level, cell), shift);
 
         refresh(level);
         return report;
@@ -554,12 +555,6 @@ public final class FrameManager extends SavedData
         refresh(level);
 
         long now = level.getGameTime();
-        FrameMotion m = frame.motion;
-        if (frame.fixed)
-            throw new FrameError("Frame #" + frame.id + " is fixed to " + frame.parentName + ", detach it first");
-        if (m.rotated()) throw new FrameError("Frame #" + frame.id + " is rotated, unspin it first");
-
-        double[] p = originOf(frame, now, 0.0, new double[3]);
         double[] v = velocityOf(frame, now, new double[3]);
         double speed = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) * 20.0;
         double limit = Config.FRAME_RELEASE_MAX_SPEED.get();
@@ -567,16 +562,17 @@ public final class FrameManager extends SavedData
             throw new FrameError(String.format(Locale.ROOT, "Frame #%d is too fast (%.1f u/s, max %.1f)", frame.id, speed, limit));
 
         int cell = frame.cell;
-        double dx = p[0] - grid.centerX(cell), dy = p[1] - grid.centerY(), dz = p[2] - grid.centerZ(cell);
+        FrameShift shift = shift(frame, null, now);
 
         FrameBox box = frame.box;
         if (!box.isEmpty())
         {
-            double minY = box.minY + dy, maxY = box.maxY + dy;
+            double[] land = shift.bounds(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, new double[6]);
+            double minY = land[1], maxY = land[4];
             if (minY < level.getMinBuildHeight() || maxY > level.getMaxBuildHeight())
                 throw new FrameError("Frame #" + frame.id + " would land outside the height limits");
 
-            double minX = box.minX + dx, maxX = box.maxX + dx, minZ = box.minZ + dz, maxZ = box.maxZ + dz;
+            double minX = land[0], maxX = land[3], minZ = land[2], maxZ = land[5];
             double extent = grid.extent();
             if (maxX > -extent && minX < extent && maxZ > -extent && minZ < extent)
                 throw new FrameError("Frame #" + frame.id + " would land inside the frame grid, push it out first");
@@ -592,7 +588,7 @@ public final class FrameManager extends SavedData
         List<ServerSubLevel> subLevels = List.copyOf(frame.members);
         List<ServerPlayer> players = List.copyOf(frame.players);
         List<Entity> entities = entitiesInCell(level, cell);
-        FrameReport report = FrameTransfer.carry(level, subLevels, players, entities, dx, dy, dz, v[0] * 20.0, v[1] * 20.0, v[2] * 20.0);
+        FrameReport report = FrameTransfer.carry(level, subLevels, players, entities, shift);
 
         frames.remove(frame);
         byCell[cell] = null;
@@ -602,6 +598,26 @@ public final class FrameManager extends SavedData
         Pioneer.LOGGER.info("frame released #{} from ({},{})", frame.id, grid.ix(cell), grid.iz(cell));
         NeoForge.EVENT_BUS.post(new FrameEvent.Released(level, frame));
         return new FrameResult(frame, report);
+    }
+
+    private FrameShift shift(@Nullable LocalFrame from, @Nullable LocalFrame to, long now)
+    {
+        double[] fromVelocity = new double[3], fromSpin = new double[3], toVelocity = new double[3], toSpin = new double[3];
+        FramePose a = state(from, now, new FramePose(), fromVelocity, fromSpin);
+        FramePose b = state(to, now, new FramePose(), toVelocity, toSpin);
+        double fx = from == null ? 0.0 : grid.centerX(from.cell), fy = from == null ? 0.0 : grid.centerY(), fz = from == null ? 0.0 : grid.centerZ(from.cell);
+        double tx = to == null ? 0.0 : grid.centerX(to.cell), ty = to == null ? 0.0 : grid.centerY(), tz = to == null ? 0.0 : grid.centerZ(to.cell);
+        return new FrameShift().between(a, fx, fy, fz, fromVelocity, fromSpin, b, tx, ty, tz, toVelocity, toSpin).scaleKick(TICKS_PER_SECOND);
+    }
+
+    private FramePose state(@Nullable LocalFrame frame, long now, FramePose out, double[] velocity, double[] spin)
+    {
+        if (frame == null) return out.identity();
+
+        FrameParent parent = frame.parent(system());
+        out.velocity(frame.motion, parent, frame.fixed, now, 0.0, velocity);
+        out.angularVelocity(frame.motion, parent, frame.fixed, now, spin);
+        return out.set(frame.motion, parent, frame.fixed, now, 0.0);
     }
 
     private int carriedIn(int cell, Vector3d anchor, List<ServerPlayer> players)

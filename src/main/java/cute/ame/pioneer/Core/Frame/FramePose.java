@@ -65,6 +65,31 @@ public final class FramePose
         return out;
     }
 
+    public double[] angularVelocity(FrameMotion motion, FrameParent parent, boolean fixed, long tick, double[] out)
+    {
+        out[0] = motion.wx;
+        out[1] = motion.wy;
+        out[2] = motion.wz;
+        if (parent == null || !fixed) return out;
+
+        parent.orientationAt(tick, 0.0, b);
+        FrameQuat.rotate(b, out[0], out[1], out[2], out);
+        parent.spinAt(tick, r);
+        out[0] += r[0];
+        out[1] += r[1];
+        out[2] += r[2];
+        return out;
+    }
+
+    public FramePose identity()
+    {
+        px = py = pz = 0.0;
+        qx = qy = qz = 0.0;
+        qw = 1.0;
+        rotated = false;
+        return this;
+    }
+
     public FrameMotion reparent(FrameMotion m, FrameParent from, boolean fromFixed, FrameParent to, boolean toFixed, long now)
     {
         m.rebase(now);
