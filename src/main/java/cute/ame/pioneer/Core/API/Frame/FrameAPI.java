@@ -24,6 +24,9 @@ import java.util.List;
 
 public final class FrameAPI
 {
+    @Nullable
+    private static volatile FrameGrid fallbackGrid;
+
     public static boolean supports(ServerLevel level)
     {
         return PioneerAPI.isSpaceDimension(level.dimension());
@@ -32,7 +35,18 @@ public final class FrameAPI
     public static FrameGrid grid(ServerLevel level)
     {
         FrameManager manager = FrameManager.of(level);
-        return manager != null ? manager.grid() : new FrameGrid(Config.FRAME_GRID_RADIUS.get(), Config.FRAME_CELL_SPACING.get(), Config.FRAME_GRID_Y.get());
+        return manager != null ? manager.grid() : configGrid();
+    }
+
+    private static FrameGrid configGrid()
+    {
+        int radius = Config.FRAME_GRID_RADIUS.get(), spacing = Config.FRAME_CELL_SPACING.get(), y = Config.FRAME_GRID_Y.get();
+        FrameGrid grid = fallbackGrid;
+        if (grid != null && grid.sameAs(radius, spacing, y)) return grid;
+
+        grid = new FrameGrid(radius, spacing, y);
+        fallbackGrid = grid;
+        return grid;
     }
 
     public static List<LocalFrame> frames(ServerLevel level)

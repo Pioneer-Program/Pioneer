@@ -82,12 +82,8 @@ public final class FrameManager extends SavedData
     @Nullable
     public static FrameManager of(ServerLevel level)
     {
-        return PioneerAPI.isSpaceDimension(level.dimension()) ? get(level) : null;
-    }
+        if (!PioneerAPI.isSpaceDimension(level.dimension())) return null;
 
-    @Nullable
-    public static FrameManager get(ServerLevel level)
-    {
         FrameManager manager = level.getDataStorage().get(FACTORY, NAME);
         if (manager != null) manager.level = level;
 
@@ -110,7 +106,7 @@ public final class FrameManager extends SavedData
         return manager;
     }
 
-    public static FrameManager load(CompoundTag tag, HolderLookup.Provider registries)
+    private static FrameManager load(CompoundTag tag, HolderLookup.Provider registries)
     {
         FrameManager manager = new FrameManager(new FrameGrid(tag.getInt("radius"), Math.max(tag.getInt("spacing"), 1), tag.getInt("y")));
         manager.nextId = Math.max(tag.getInt("next"), 1);
@@ -192,19 +188,14 @@ public final class FrameManager extends SavedData
         return cell < 0 ? 0 : strays[cell];
     }
 
-    public double centerX(LocalFrame f)
+    public boolean live(LocalFrame frame)
     {
-        return grid.centerX(f.cell);
+        return frame.cell < byCell.length && byCell[frame.cell] == frame;
     }
 
-    public double centerY()
+    private void requireLive(LocalFrame frame)
     {
-        return grid.centerY();
-    }
-
-    public double centerZ(LocalFrame f)
-    {
-        return grid.centerZ(f.cell);
+        if (!live(frame)) throw new FrameError("Frame #" + frame.id + " no longer exists");
     }
 
     private void setGrid(FrameGrid grid)
@@ -342,6 +333,7 @@ public final class FrameManager extends SavedData
 
     public void drop(ServerLevel level, LocalFrame frame)
     {
+        requireLive(frame);
         refresh(level);
         if (!frame.members.isEmpty() || !frame.players.isEmpty())
             throw new FrameError("Frame #" + frame.id + " is not empty, release it instead");
@@ -349,9 +341,9 @@ public final class FrameManager extends SavedData
         remove(level, frame);
     }
 
-    public int sweep(ServerLevel level)
+    public void sweep(ServerLevel level)
     {
-        if (frames.isEmpty()) return 0;
+        if (frames.isEmpty()) return;
 
         refresh(level);
         int dropped = 0;
@@ -361,16 +353,14 @@ public final class FrameManager extends SavedData
             if (!f.auto || f.absent > 0 || !f.members.isEmpty() || !f.players.isEmpty()) continue;
 
             remove(level, f);
-            dropped++;
         }
-        return dropped;
     }
 
     private void remove(ServerLevel level, LocalFrame frame)
     {
-        int cell = frame.cell;
-        if (byCell[cell] != frame) return;
+        if (!live(frame)) return;
 
+        int cell = frame.cell;
         frames.remove(frame);
         byCell[cell] = null;
         frame.clearMembers();
@@ -419,7 +409,7 @@ public final class FrameManager extends SavedData
     {
         refresh(level);
         if (ship.isRemoved()) throw new FrameError("Ship was removed");
-        if (byCell[frame.cell] != frame) throw new FrameError("Frame #" + frame.id + " no longer exists");
+        requireLive(frame);
 
         ship.updateBoundingBox();
         Vector3d at = new Vector3d(ship.logicalPose().position());
@@ -447,6 +437,7 @@ public final class FrameManager extends SavedData
 
     public FrameReport recenter(ServerLevel level, LocalFrame frame)
     {
+        requireLive(frame);
         refresh(level);
         ServerSubLevel anchor = frame.anchor;
         if (anchor == null) throw new FrameError("Frame #" + frame.id + " has no ship to center on");
@@ -473,18 +464,21 @@ public final class FrameManager extends SavedData
 
     public void push(LocalFrame frame, long now, double dvx, double dvy, double dvz)
     {
+        requireLive(frame);
         frame.motion.rebase(now).addVelocity(dvx / 20.0, dvy / 20.0, dvz / 20.0);
         changed(frame, FrameEvent.Cause.MOTION);
     }
 
     public void accelerate(LocalFrame frame, long now, double ax, double ay, double az)
     {
+        requireLive(frame);
         frame.motion.rebase(now).accelerate(ax / 400.0, ay / 400.0, az / 400.0);
         changed(frame, FrameEvent.Cause.MOTION);
     }
 
     public void stop(LocalFrame frame, long now)
     {
+        requireLive(frame);
         FrameMotion m = frame.motion.rebase(now);
         m.set(now, m.px, m.py, m.pz, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
         changed(frame, FrameEvent.Cause.MOTION);
@@ -492,18 +486,21 @@ public final class FrameManager extends SavedData
 
     public void spin(LocalFrame frame, long now, double wx, double wy, double wz)
     {
+        requireLive(frame);
         frame.motion.rebase(now).spin(wx, wy, wz);
         changed(frame, FrameEvent.Cause.ORIENTATION);
     }
 
     public void unspin(LocalFrame frame, long now)
     {
+        requireLive(frame);
         frame.motion.rebase(now).spin(0.0, 0.0, 0.0).orient(0.0, 0.0, 0.0, 1.0);
         changed(frame, FrameEvent.Cause.ORIENTATION);
     }
 
     public void reparent(LocalFrame frame, long now, @Nullable FrameParent to, boolean fixed)
     {
+        requireLive(frame);
         pose.reparent(frame.motion, frame.parent(system()), frame.fixed, to, fixed, now);
         frame.attach(to == null ? "" : to.name(), fixed);
         changed(frame, FrameEvent.Cause.PARENT);
@@ -511,6 +508,7 @@ public final class FrameManager extends SavedData
 
     public void orient(LocalFrame frame, long now, double qx, double qy, double qz, double qw)
     {
+        requireLive(frame);
         double[] q = FrameQuat.normalize(new double[]{qx, qy, qz, qw});
         frame.motion.rebase(now).orient(q[0], q[1], q[2], q[3]);
         changed(frame, FrameEvent.Cause.ORIENTATION);
@@ -518,6 +516,7 @@ public final class FrameManager extends SavedData
 
     public void assign(LocalFrame frame, FrameMotion motion, @Nullable FrameParent parent, boolean fixed)
     {
+        requireLive(frame);
         double[] q = FrameQuat.normalize(new double[]{motion.qx, motion.qy, motion.qz, motion.qw});
         frame.motion.set(motion).orient(q[0], q[1], q[2], q[3]);
         frame.attach(parent == null ? "" : parent.name(), fixed);
@@ -526,6 +525,7 @@ public final class FrameManager extends SavedData
 
     public void place(LocalFrame frame, long now, double x, double y, double z)
     {
+        requireLive(frame);
         FrameParent parent = frame.parent(system());
         FrameMotion m = pose.reparent(frame.motion, parent, frame.fixed, null, false, now);
         m.translate(x - m.px, y - m.py, z - m.pz);
@@ -552,6 +552,7 @@ public final class FrameManager extends SavedData
 
     public FrameResult release(ServerLevel level, LocalFrame frame, boolean force)
     {
+        requireLive(frame);
         refresh(level);
 
         long now = level.getGameTime();

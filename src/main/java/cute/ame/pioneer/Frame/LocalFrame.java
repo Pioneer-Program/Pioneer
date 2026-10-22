@@ -26,8 +26,8 @@ public final class LocalFrame
     private final List<ServerSubLevel> membersView = Collections.unmodifiableList(members);
     private final List<ServerPlayer> playersView = Collections.unmodifiableList(players);
 
+    final int cell;
     double mass;
-    int cell;
     @Nullable
     ServerSubLevel anchor;
     double anchorMass;

@@ -36,12 +36,6 @@ public final class FrameBox
         return this;
     }
 
-    public FrameBox set(FrameBox o)
-    {
-        if (o.empty) return clear();
-        return set(o.minX, o.minY, o.minZ, o.maxX, o.maxY, o.maxZ);
-    }
-
     public FrameBox include(double minX, double minY, double minZ, double maxX, double maxY, double maxZ)
     {
         if (empty) return set(minX, minY, minZ, maxX, maxY, maxZ);
@@ -54,29 +48,6 @@ public final class FrameBox
         return this;
     }
 
-    public FrameBox include(FrameBox o)
-    {
-        if (o.empty) return this;
-        return include(o.minX, o.minY, o.minZ, o.maxX, o.maxY, o.maxZ);
-    }
-
-    public FrameBox move(double dx, double dy, double dz)
-    {
-        if (empty) return this;
-        minX += dx;
-        maxX += dx;
-        minY += dy;
-        maxY += dy;
-        minZ += dz;
-        maxZ += dz;
-        return this;
-    }
-
-    public double gap(FrameBox o)
-    {
-        return gap(o.minX, o.minY, o.minZ, o.maxX, o.maxY, o.maxZ);
-    }
-
     public double gap(double minX, double minY, double minZ, double maxX, double maxY, double maxZ)
     {
         if (empty) return Double.POSITIVE_INFINITY;
@@ -85,20 +56,5 @@ public final class FrameBox
         double dy = axisGap(this.minY, this.maxY, minY, maxY);
         double dz = axisGap(this.minZ, this.maxZ, minZ, maxZ);
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
-    }
-
-    public double centerX()
-    {
-        return (minX + maxX) * 0.5;
-    }
-
-    public double centerY()
-    {
-        return (minY + maxY) * 0.5;
-    }
-
-    public double centerZ()
-    {
-        return (minZ + maxZ) * 0.5;
     }
 }

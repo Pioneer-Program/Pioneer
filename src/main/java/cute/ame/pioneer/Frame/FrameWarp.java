@@ -118,7 +118,7 @@ public final class FrameWarp
         return true;
     }
 
-    public static FrameMotion exit(PlanetDefinition planet, double x, double eyeY, double z, long now, FrameMotion out)
+    private static FrameMotion exit(PlanetDefinition planet, double x, double eyeY, double z, long now, FrameMotion out)
     {
         ObserverState obs = ObserverState.fromSurfaceBlocks(planet, x, eyeY, z, ObserverState.Origin.SURFACE_BLOCKS);
         CubeSurface.orientation(obs.face(), Q);
@@ -132,7 +132,7 @@ public final class FrameWarp
         return out.set(now, obs.bodyKmX(), obs.bodyKmY(), obs.bodyKmZ(), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0).orient(Q[0], Q[1], Q[2], Q[3]).spin(0.0, 0.0, 0.0);
     }
 
-    public static int landing(FrameBodies.Body body, PlanetDefinition planet, FramePose from, long now, double eyeX, double eyeY, double eyeZ, float yaw, float pitch, double[] out)
+    private static int landing(FrameBodies.Body body, PlanetDefinition planet, FramePose from, long now, double eyeX, double eyeY, double eyeZ, float yaw, float pitch, double[] out)
     {
         from.toSystem(eyeX, eyeY, eyeZ, A);
         toBody(body, now, A[0], A[1], A[2], B);

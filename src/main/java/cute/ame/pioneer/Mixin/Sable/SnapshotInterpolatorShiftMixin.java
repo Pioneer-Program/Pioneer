@@ -31,6 +31,7 @@ public abstract class SnapshotInterpolatorShiftMixin implements ShiftableInterpo
     @Shadow @Final private Pose3d runningSnapshot;
     @Unique private int pioneer$count;
     @Unique private int pioneer$next;
+    @Unique private int pioneer$latest = Integer.MIN_VALUE;
     @Unique private boolean pioneer$replaying;
 
     @Shadow
@@ -57,13 +58,14 @@ public abstract class SnapshotInterpolatorShiftMixin implements ShiftableInterpo
         pioneer$tick[slot] = tick;
         ShiftPoses.store(shift, pioneer$shifts, slot);
         pioneer$next = (slot + 1) % PIONEER$SHIFTS;
+        pioneer$latest = Math.max(pioneer$latest, tick);
         if (pioneer$count < PIONEER$SHIFTS) pioneer$count++;
     }
 
     @Inject(method = "receiveSnapshot", at = @At("HEAD"), cancellable = true)
     private void pioneer$shiftLateSnapshot(int gameTick, Pose3dc data, CallbackInfo ci)
     {
-        if (pioneer$replaying || pioneer$count == 0) return;
+        if (gameTick >= pioneer$latest || pioneer$replaying) return;
 
         int start = pioneer$count < PIONEER$SHIFTS ? 0 : pioneer$next;
         Pose3d moved = null;

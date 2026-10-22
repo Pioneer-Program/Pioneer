@@ -119,12 +119,12 @@ public final class FrameDebugCommand
         CommandSourceStack source = ctx.getSource();
         long now = space.level().getGameTime();
         LocalFrame frame = FrameAPI.frameOf(player);
+        FrameGrid grid = FrameAPI.grid(space.level());
 
         if (frame == null)
         {
-            FrameGrid grid = FrameAPI.grid(space.level());
             int cell = grid.cellAt(player.getX(), player.getZ());
-            String where = cell < 0 ? ChatFormatting.RED + "outside grid" : String.format(ChatFormatting.GREEN + "free (%d,%d)", grid.ix(cell), grid.iz(cell));
+            String where = cell < 0 ? ChatFormatting.RED + "outside grid" : String.format(Locale.ROOT, ChatFormatting.GREEN + "free (%d,%d)", grid.ix(cell), grid.iz(cell));
             source.sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.WHITE + "not in a frame " + ChatFormatting.GRAY + "cell=" + where), false);
             source.sendSuccess(() -> Component.literal("  " + xyz("raw", player.getX(), player.getY(), player.getZ())), false);
             source.sendSuccess(() -> Component.literal("  " + ChatFormatting.GRAY + FrameAPI.nearestBody(space.level(), player.getX(), player.getY(), player.getZ())), false);
@@ -134,8 +134,8 @@ public final class FrameDebugCommand
         FrameAPI.refresh(space.level());
         double[] virtual = FrameAPI.toSystem(space.level(), frame, player.getX(), player.getY(), player.getZ(), now, 0.0, new double[3]);
 
-        source.sendSuccess(() -> Component.literal(PREFIX + frameText(frame, FrameAPI.grid(space.level()))), false);
-        source.sendSuccess(() -> Component.literal("  " + xyz("virtual", virtual[0], virtual[1], virtual[2]) + " " + xyz("raw", player.getX(), player.getY(), player.getZ()) + " " + xyz("offset", player.getX() - FrameAPI.grid(space.level()).centerX(frame.cell()), player.getY() - FrameAPI.grid(space.level()).centerY(), player.getZ() - FrameAPI.grid(space.level()).centerZ(frame.cell()))), false);
+        source.sendSuccess(() -> Component.literal(PREFIX + frameText(frame, grid)), false);
+        source.sendSuccess(() -> Component.literal("  " + xyz("virtual", virtual[0], virtual[1], virtual[2]) + " " + xyz("raw", player.getX(), player.getY(), player.getZ()) + " " + offsetText(player, frame, grid)), false);
         source.sendSuccess(() -> Component.literal("  " + motionText(frame.motion(), now)), false);
         source.sendSuccess(() -> Component.literal("  " + ChatFormatting.GRAY + FrameAPI.nearestBody(space.level(), virtual[0], virtual[1], virtual[2])), false);
         return 1;
@@ -148,7 +148,7 @@ public final class FrameDebugCommand
         FrameGrid grid = FrameAPI.grid(space.level());
         List<LocalFrame> frames = FrameAPI.frames(space.level());
         int count = frames.size();
-        source.sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "%d frame(s) " + ChatFormatting.GRAY + "| grid=" + ChatFormatting.AQUA + "%dx%d " + ChatFormatting.GRAY + "spacing=" + ChatFormatting.GOLD + "%d " + ChatFormatting.GRAY + "used=" + ChatFormatting.GOLD + "%d/%d", count, grid.side(), grid.side(), grid.spacing(), count, grid.cellCount())), false);
+        source.sendSuccess(() -> Component.literal(PREFIX + String.format(Locale.ROOT, ChatFormatting.WHITE + "%d frame(s) " + ChatFormatting.GRAY + "| grid=" + ChatFormatting.AQUA + "%dx%d " + ChatFormatting.GRAY + "spacing=" + ChatFormatting.GOLD + "%d " + ChatFormatting.GRAY + "used=" + ChatFormatting.GOLD + "%d/%d", count, grid.side(), grid.side(), grid.spacing(), count, grid.cellCount())), false);
         if (count == 0) return 1;
 
         FrameAPI.refresh(space.level());
@@ -158,7 +158,7 @@ public final class FrameDebugCommand
         for (LocalFrame frame : frames)
         {
             FrameAPI.origin(space.level(), frame, now, 0.0, position);
-            final String line = "  " + frameText(frame, grid) + " " + ChatFormatting.GRAY + "speed=" + ChatFormatting.YELLOW + String.format("%.1f u/s ", frame.motion().speedAt(now) * 20.0) + xyz("virtual", position[0], position[1], position[2]);
+            final String line = "  " + frameText(frame, grid) + " " + ChatFormatting.GRAY + "speed=" + ChatFormatting.YELLOW + String.format(Locale.ROOT, "%.1f u/s ", frame.motion().speedAt(now) * 20.0) + xyz("virtual", position[0], position[1], position[2]);
             source.sendSuccess(() -> Component.literal(line), false);
         }
         return 1;
@@ -174,14 +174,14 @@ public final class FrameDebugCommand
 
         int used = FrameAPI.frames(space.level()).size();
         String precise = grid.precise() ? ChatFormatting.GREEN + "precise" : ChatFormatting.RED + "PAST 32768";
-        source.sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.WHITE + "grid %dx%d " + ChatFormatting.GRAY + "spacing=" + ChatFormatting.GOLD + "%d " + ChatFormatting.GRAY + "extent=" + ChatFormatting.AQUA + "+-%.0f " + ChatFormatting.GRAY + "y=" + ChatFormatting.AQUA + "%d " + ChatFormatting.GRAY + "used=" + ChatFormatting.GOLD + "%d/%d " + ChatFormatting.DARK_GRAY + "(%s" + ChatFormatting.DARK_GRAY + ")", grid.side(), grid.side(), grid.spacing(), grid.extent(), grid.y(), used, grid.cellCount(), precise)), false);
+        source.sendSuccess(() -> Component.literal(PREFIX + String.format(Locale.ROOT, ChatFormatting.WHITE + "grid %dx%d " + ChatFormatting.GRAY + "spacing=" + ChatFormatting.GOLD + "%d " + ChatFormatting.GRAY + "extent=" + ChatFormatting.AQUA + "+-%.0f " + ChatFormatting.GRAY + "y=" + ChatFormatting.AQUA + "%d " + ChatFormatting.GRAY + "used=" + ChatFormatting.GOLD + "%d/%d " + ChatFormatting.DARK_GRAY + "(%s" + ChatFormatting.DARK_GRAY + ")", grid.side(), grid.side(), grid.spacing(), grid.extent(), grid.y(), used, grid.cellCount(), precise)), false);
 
         int mine = grid.cellAt(player.getX(), player.getZ());
         int radius = grid.radius();
         for (int iz = -radius; iz <= radius; iz++)
         {
             StringBuilder row = new StringBuilder(8 + 3 * grid.side());
-            row.append("  ").append(ChatFormatting.GRAY).append(String.format("z%+d ", iz));
+            row.append("  ").append(ChatFormatting.GRAY).append(String.format(Locale.ROOT, "z%+d ", iz));
 
             for (int ix = -radius; ix <= radius; ix++)
             {
@@ -194,7 +194,7 @@ public final class FrameDebugCommand
                 else if (FrameAPI.strays(space.level(), cell) > 0) token = "*";
                 else token = ".";
                 ChatFormatting colour = frame != null ? ChatFormatting.AQUA : cell == mine ? ChatFormatting.YELLOW : token.equals("*") ? ChatFormatting.GOLD : ChatFormatting.DARK_GRAY;
-                row.append(colour).append(String.format("%3s", token));
+                row.append(colour).append(String.format(Locale.ROOT, "%3s", token));
             }
 
             final String line = row.toString();
@@ -250,7 +250,7 @@ public final class FrameDebugCommand
         double[] virtual = FrameAPI.toSystem(space.level(), frame, player.getX(), player.getY(), player.getZ(), now, 0.0, new double[3]);
 
         source.sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.GREEN + "created " + frameText(frame, FrameAPI.grid(space.level()))), false);
-        source.sendSuccess(() -> Component.literal("  " + String.format(ChatFormatting.GRAY + "carried sublevels=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "players=" + ChatFormatting.GREEN + "%d " + ChatFormatting.DARK_GRAY + "(riding %d, seated %d, free %d) " + ChatFormatting.GRAY + "entities=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "tick=" + ChatFormatting.DARK_GRAY + "%d", report.subLevels, report.players(), report.riders, report.seated, report.free, report.entities, report.tick)), false);
+        source.sendSuccess(() -> Component.literal("  " + carriedText("carried", report)), false);
         source.sendSuccess(() -> Component.literal("  " + xyz("virtual", virtual[0], virtual[1], virtual[2]) + " " + xyz("raw", player.getX(), player.getY(), player.getZ())), false);
         source.sendSuccess(() -> Component.literal("  " + motionText(frame.motion(), now)), false);
         source.sendSuccess(() -> Component.literal("  " + ChatFormatting.GRAY + FrameAPI.nearestBody(space.level(), virtual[0], virtual[1], virtual[2])), false);
@@ -280,10 +280,9 @@ public final class FrameDebugCommand
         var report = released.report();
         int id = released.frame().id;
         int cell = released.frame().cell();
-        long now = space.level().getGameTime();
 
-        source.sendSuccess(() -> Component.literal(PREFIX + String.format(ChatFormatting.GREEN + "released " + ChatFormatting.WHITE + "frame #%d " + ChatFormatting.GRAY + "freed cell=" + ChatFormatting.AQUA + "(%d,%d)", id, grid.ix(cell), grid.iz(cell))), false);
-        source.sendSuccess(() -> Component.literal("  " + String.format(ChatFormatting.GRAY + "moved sublevels=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "players=" + ChatFormatting.GREEN + "%d " + ChatFormatting.DARK_GRAY + "(riding %d, seated %d, free %d) " + ChatFormatting.GRAY + "entities=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "tick=" + ChatFormatting.DARK_GRAY + "%d", report.subLevels, report.players(), report.riders, report.seated, report.free, report.entities, report.tick)), false);
+        source.sendSuccess(() -> Component.literal(PREFIX + String.format(Locale.ROOT, ChatFormatting.GREEN + "released " + ChatFormatting.WHITE + "frame #%d " + ChatFormatting.GRAY + "freed cell=" + ChatFormatting.AQUA + "(%d,%d)", id, grid.ix(cell), grid.iz(cell))), false);
+        source.sendSuccess(() -> Component.literal("  " + carriedText("moved", report)), false);
         source.sendSuccess(() -> Component.literal("  " + xyz("raw", player.getX(), player.getY(), player.getZ())), false);
         source.sendSuccess(() -> Component.literal("  " + ChatFormatting.GRAY + FrameAPI.nearestBody(space.level(), player.getX(), player.getY(), player.getZ())), false);
         ServerSubLevel ship = shipOf(player, space.level());
@@ -371,7 +370,7 @@ public final class FrameDebugCommand
         double floor = body.planet().dimension().isPresent() ? FrameAPI.reentryAltitudeKm() : 0.0;
         if (km <= floor)
         {
-            source.sendFailure(Component.literal(ERROR_PREFIX + ChatFormatting.RED + String.format("%.1f km is under the re-entry altitude of %s (%.1f km), you would warp to the surface", km, body.name(), floor)));
+            source.sendFailure(Component.literal(ERROR_PREFIX + ChatFormatting.RED + String.format(Locale.ROOT, "%.1f km is under the re-entry altitude of %s (%.1f km), you would warp to the surface", km, body.name(), floor)));
             return 0;
         }
 
@@ -380,7 +379,7 @@ public final class FrameDebugCommand
         FramePose pose = new FramePose().set(over, body, true, now, 0.0);
         FrameAPI.assign(space.level(), frame, over, body, true);
 
-        source.sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.WHITE + "frame #" + frame.id + " " + ChatFormatting.GRAY + String.format("held " + ChatFormatting.YELLOW + "%.1f km " + ChatFormatting.GRAY + "above " + ChatFormatting.AQUA + "%s " + ChatFormatting.GRAY + "parent=" + ChatFormatting.AQUA + "%s", km, body.name(), parentText(frame))), false);
+        source.sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.WHITE + "frame #" + frame.id + " " + ChatFormatting.GRAY + String.format(Locale.ROOT, "held " + ChatFormatting.YELLOW + "%.1f km " + ChatFormatting.GRAY + "above " + ChatFormatting.AQUA + "%s " + ChatFormatting.GRAY + "parent=" + ChatFormatting.AQUA + "%s", km, body.name(), parentText(frame))), false);
         source.sendSuccess(() -> Component.literal("  " + motionText(frame.motion(), now)), false);
         source.sendSuccess(() -> Component.literal("  " + ChatFormatting.GRAY + FrameAPI.nearestBody(space.level(), pose.px, pose.py, pose.pz)), false);
         return 1;
@@ -422,7 +421,7 @@ public final class FrameDebugCommand
         int found = 0;
 
         FrameAPI.refresh(space.level());
-        source.sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.WHITE + "frames within " + ChatFormatting.GOLD + String.format("%.0f", radius) + ChatFormatting.WHITE + " of frame #" + frame.id), false);
+        source.sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.WHITE + "frames within " + ChatFormatting.GOLD + String.format(Locale.ROOT, "%.0f", radius) + ChatFormatting.WHITE + " of frame #" + frame.id), false);
         for (LocalFrame f : FrameAPI.frames(space.level()))
         {
             if (f == frame) continue;
@@ -434,7 +433,7 @@ public final class FrameDebugCommand
 
             FrameAPI.velocity(space.level(), f, now, other);
             double dx = other[0] - velocity[0], dy = other[1] - velocity[1], dz = other[2] - velocity[2];
-            final String line = "  " + frameText(f, grid) + " " + ChatFormatting.GRAY + String.format("d=" + ChatFormatting.YELLOW + "%.1f " + ChatFormatting.GRAY + "dv=" + ChatFormatting.YELLOW + "%.1f u/s ", distance, Math.sqrt(dx * dx + dy * dy + dz * dz)) + xyz("offset", offset[0], offset[1], offset[2]);
+            final String line = "  " + frameText(f, grid) + " " + ChatFormatting.GRAY + String.format(Locale.ROOT, "d=" + ChatFormatting.YELLOW + "%.1f " + ChatFormatting.GRAY + "dv=" + ChatFormatting.YELLOW + "%.1f u/s ", distance, Math.sqrt(dx * dx + dy * dy + dz * dz)) + xyz("offset", offset[0], offset[1], offset[2]);
             source.sendSuccess(() -> Component.literal(line), false);
             found++;
         }
@@ -476,9 +475,10 @@ public final class FrameDebugCommand
         }
 
         Vector3d local = FrameAPI.velocity(space.level(), ship, new Vector3d());
-        source.sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.GREEN + "joined " + frameText(frame, FrameAPI.grid(space.level()))), false);
+        FrameGrid grid = FrameAPI.grid(space.level());
+        source.sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.GREEN + "joined " + frameText(frame, grid)), false);
         source.sendSuccess(() -> Component.literal("  " + carriedText("carried", report)), false);
-        source.sendSuccess(() -> Component.literal("  " + xyz("offset", player.getX() - FrameAPI.grid(space.level()).centerX(frame.cell()), player.getY() - FrameAPI.grid(space.level()).centerY(), player.getZ() - FrameAPI.grid(space.level()).centerZ(frame.cell())) + String.format(ChatFormatting.GRAY + " ship speed in frame=" + ChatFormatting.YELLOW + "%.1f u/s", local.length())), false);
+        source.sendSuccess(() -> Component.literal("  " + offsetText(player, frame, grid) + String.format(Locale.ROOT, ChatFormatting.GRAY + " ship speed in frame=" + ChatFormatting.YELLOW + "%.1f u/s", local.length())), false);
         return 1;
     }
 
@@ -507,13 +507,18 @@ public final class FrameDebugCommand
         double drift = Math.sqrt((after[0] - before[0]) * (after[0] - before[0]) + (after[1] - before[1]) * (after[1] - before[1]) + (after[2] - before[2]) * (after[2] - before[2]));
         source.sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.GREEN + "recentered " + frameText(frame, FrameAPI.grid(space.level()))), false);
         source.sendSuccess(() -> Component.literal("  " + carriedText("moved", report)), false);
-        source.sendSuccess(() -> Component.literal("  " + motionText(frame.motion(), now) + String.format(ChatFormatting.GRAY + " | virtual drift=" + ChatFormatting.YELLOW + "%.4f", drift)), false);
+        source.sendSuccess(() -> Component.literal("  " + motionText(frame.motion(), now) + String.format(Locale.ROOT, ChatFormatting.GRAY + " | virtual drift=" + ChatFormatting.YELLOW + "%.4f", drift)), false);
         return 1;
+    }
+
+    private static String offsetText(ServerPlayer player, LocalFrame frame, FrameGrid grid)
+    {
+        return xyz("offset", player.getX() - grid.centerX(frame.cell()), player.getY() - grid.centerY(), player.getZ() - grid.centerZ(frame.cell()));
     }
 
     private static String carriedText(String verb, FrameReport report)
     {
-        return String.format(ChatFormatting.GRAY + verb + " sublevels=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "players=" + ChatFormatting.GREEN + "%d " + ChatFormatting.DARK_GRAY + "(riding %d, seated %d, free %d) " + ChatFormatting.GRAY + "entities=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "tick=" + ChatFormatting.DARK_GRAY + "%d", report.subLevels, report.players(), report.riders, report.seated, report.free, report.entities, report.tick);
+        return String.format(Locale.ROOT, ChatFormatting.GRAY + verb + " sublevels=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "players=" + ChatFormatting.GREEN + "%d " + ChatFormatting.DARK_GRAY + "(riding %d, seated %d, free %d) " + ChatFormatting.GRAY + "entities=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "tick=" + ChatFormatting.DARK_GRAY + "%d", report.subLevels, report.players(), report.riders, report.seated, report.free, report.entities, report.tick);
     }
 
     private static int executePush(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
@@ -566,8 +571,8 @@ public final class FrameDebugCommand
         FrameAPI.spin(space.level(), frame, Math.toRadians(x), Math.toRadians(y), Math.toRadians(z));
 
         double rate = Math.sqrt(x * x + y * y + z * z);
-        String axis = rate < 1.0e-12 ? "-" : String.format("(%.2f, %.2f, %.2f)", x / rate, y / rate, z / rate);
-        String detail = String.format(ChatFormatting.GRAY + "spinning " + ChatFormatting.YELLOW + "%.1f deg/s " + ChatFormatting.GRAY + "axis=" + ChatFormatting.AQUA + "%s " + ChatFormatting.GRAY + "tilt=" + ChatFormatting.YELLOW + "%.1f deg", rate, axis, tiltDegrees(frame.motion(), now));
+        String axis = rate < 1.0e-12 ? "-" : String.format(Locale.ROOT, "(%.2f, %.2f, %.2f)", x / rate, y / rate, z / rate);
+        String detail = String.format(Locale.ROOT, ChatFormatting.GRAY + "spinning " + ChatFormatting.YELLOW + "%.1f deg/s " + ChatFormatting.GRAY + "axis=" + ChatFormatting.AQUA + "%s " + ChatFormatting.GRAY + "tilt=" + ChatFormatting.YELLOW + "%.1f deg", rate, axis, tiltDegrees(frame.motion(), now));
 
         ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.WHITE + "frame #" + frame.id + " " + detail), false);
         return 1;
@@ -636,21 +641,21 @@ public final class FrameDebugCommand
         double tilt = tiltDegrees(frame.motion(), now);
         FrameAPI.unspin(space.level(), frame);
 
-        ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.WHITE + "frame #" + frame.id + " " + ChatFormatting.GRAY + String.format("spin reset " + ChatFormatting.DARK_GRAY + "(was tilt=" + ChatFormatting.YELLOW + "%.1f deg" + ChatFormatting.DARK_GRAY + ")", tilt)), false);
+        ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.WHITE + "frame #" + frame.id + " " + ChatFormatting.GRAY + String.format(Locale.ROOT, "spin reset " + ChatFormatting.DARK_GRAY + "(was tilt=" + ChatFormatting.YELLOW + "%.1f deg" + ChatFormatting.DARK_GRAY + ")", tilt)), false);
         return 1;
     }
 
     private static String frameText(LocalFrame frame, FrameGrid grid)
     {
         ServerSubLevel anchor = frame.anchor();
-        return String.format(ChatFormatting.WHITE + "frame #%d " + ChatFormatting.GRAY + "cell=" + ChatFormatting.AQUA + "(%d,%d) " + ChatFormatting.GRAY + "members=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "players=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "mass=" + ChatFormatting.GOLD + "%.1f " + ChatFormatting.GRAY + "anchor=" + ChatFormatting.DARK_GRAY + "%s " + ChatFormatting.GRAY + "parent=" + ChatFormatting.AQUA + "%s", frame.id, grid.ix(frame.cell()), grid.iz(frame.cell()), frame.memberCount(), frame.playerCount(), frame.mass(), anchor == null ? "-" : FrameAPI.name(anchor), parentText(frame));
+        return String.format(Locale.ROOT, ChatFormatting.WHITE + "frame #%d " + ChatFormatting.GRAY + "cell=" + ChatFormatting.AQUA + "(%d,%d) " + ChatFormatting.GRAY + "members=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "players=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "mass=" + ChatFormatting.GOLD + "%.1f " + ChatFormatting.GRAY + "anchor=" + ChatFormatting.DARK_GRAY + "%s " + ChatFormatting.GRAY + "parent=" + ChatFormatting.AQUA + "%s", frame.id, grid.ix(frame.cell()), grid.iz(frame.cell()), frame.memberCount(), frame.playerCount(), frame.mass(), anchor == null ? "-" : FrameAPI.name(anchor), parentText(frame));
     }
 
     private static String motionText(FrameMotion motion, long now)
     {
-        String text = String.format(ChatFormatting.GRAY + "speed=" + ChatFormatting.YELLOW + "%.1f u/s " + ChatFormatting.GRAY + "accel=" + ChatFormatting.YELLOW + "%.1f u/s2", motion.speedAt(now) * 20.0, motion.accel() * 400.0);
+        String text = String.format(Locale.ROOT, ChatFormatting.GRAY + "speed=" + ChatFormatting.YELLOW + "%.1f u/s " + ChatFormatting.GRAY + "accel=" + ChatFormatting.YELLOW + "%.1f u/s2", motion.speedAt(now) * 20.0, motion.accel() * 400.0);
         if (motion.rotated())
-            text += String.format(ChatFormatting.GRAY + " spin=" + ChatFormatting.YELLOW + "%.1f deg/s " + ChatFormatting.GRAY + "tilt=" + ChatFormatting.YELLOW + "%.1f deg", Math.toDegrees(motion.spinRate()) * 20.0, tiltDegrees(motion, now));
+            text += String.format(Locale.ROOT, ChatFormatting.GRAY + " spin=" + ChatFormatting.YELLOW + "%.1f deg/s " + ChatFormatting.GRAY + "tilt=" + ChatFormatting.YELLOW + "%.1f deg", Math.toDegrees(motion.spinRate()) * 20.0, tiltDegrees(motion, now));
         return text;
     }
 
@@ -665,7 +670,7 @@ public final class FrameDebugCommand
 
     private static String xyz(String label, double x, double y, double z)
     {
-        return String.format(ChatFormatting.GRAY + "%s=" + ChatFormatting.AQUA + "(%.2f, %.2f, %.2f)", label, x, y, z);
+        return String.format(Locale.ROOT, ChatFormatting.GRAY + "%s=" + ChatFormatting.AQUA + "(%.2f, %.2f, %.2f)", label, x, y, z);
     }
 
     private static double tiltDegrees(FrameMotion motion, long now)

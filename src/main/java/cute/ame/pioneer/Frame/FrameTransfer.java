@@ -71,7 +71,7 @@ public final class FrameTransfer
         {
             ServerPlayer player = players.get(i);
             SubLevel seat = Sable.HELPER.getVehicleSubLevel(player);
-            if (indexOf(subLevels, seat) >= 0)
+            if (contains(subLevels, seat))
             {
                 kind[i] = SEATED;
                 continue;
@@ -84,7 +84,7 @@ public final class FrameTransfer
                 {
                     kind[i] = MOUNTED;
                     if (mounts == null) mounts = new Entity[playerCount];
-                    if (indexOf(mounts, mountCount, mount) < 0) mounts[mountCount++] = mount;
+                    if (!contains(mounts, mountCount, mount)) mounts[mountCount++] = mount;
 
                     continue;
                 }
@@ -92,7 +92,7 @@ public final class FrameTransfer
                 player.stopRiding();
             }
 
-            kind[i] = indexOf(subLevels, Sable.HELPER.getTrackingSubLevel(player)) >= 0 ? RIDER : FREE;
+            kind[i] = contains(subLevels, Sable.HELPER.getTrackingSubLevel(player)) ? RIDER : FREE;
         }
 
         report.tick = container.trackingSystem().getInterpolationTick();
@@ -135,7 +135,7 @@ public final class FrameTransfer
 
         for (Entity entity : entities)
         {
-            if (entity.isRemoved() || entity.isPassenger() || indexOf(mounts, mountCount, entity) >= 0) continue;
+            if (entity.isRemoved() || entity.isPassenger() || contains(mounts, mountCount, entity)) continue;
 
             shifted[n++] = entity.getId();
         }
@@ -173,7 +173,7 @@ public final class FrameTransfer
 
         for (Entity entity : entities)
         {
-            if (entity.isRemoved() || entity.isPassenger() || indexOf(mounts, mountCount, entity) >= 0) continue;
+            if (entity.isRemoved() || entity.isPassenger() || contains(mounts, mountCount, entity)) continue;
 
             move(entity, shift, kick, p);
             report.entities++;
@@ -242,18 +242,18 @@ public final class FrameTransfer
         if (entity instanceof LivingEntity living) living.yBodyRot += delta;
     }
 
-    private static int indexOf(List<ServerSubLevel> subLevels, @Nullable SubLevel subLevel)
+    private static boolean contains(List<ServerSubLevel> subLevels, @Nullable SubLevel subLevel)
     {
-        if (subLevel == null) return -1;
-        for (int i = 0, n = subLevels.size(); i < n; i++) if (subLevels.get(i) == subLevel) return i;
+        if (subLevel == null) return false;
+        for (int i = 0, n = subLevels.size(); i < n; i++) if (subLevels.get(i) == subLevel) return true;
 
-        return -1;
+        return false;
     }
 
-    private static int indexOf(@Nullable Entity[] entities, int count, Entity entity)
+    private static boolean contains(@Nullable Entity[] entities, int count, Entity entity)
     {
-        for (int i = 0; i < count; i++) if (entities[i] == entity) return i;
+        for (int i = 0; i < count; i++) if (entities[i] == entity) return true;
 
-        return -1;
+        return false;
     }
 }

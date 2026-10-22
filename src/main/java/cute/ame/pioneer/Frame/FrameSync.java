@@ -1,6 +1,5 @@
 package cute.ame.pioneer.Frame;
 
-import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.Core.Frame.FrameGrid;
 import cute.ame.pioneer.Core.Frame.FrameMotion;
 import cute.ame.pioneer.Frame.Network.FrameSyncPayload;
@@ -22,7 +21,7 @@ public final class FrameSync
 
     public static void reset(ServerPlayer player, ServerLevel level)
     {
-        FrameManager manager = PioneerAPI.isSpaceDimension(level.dimension()) ? FrameManager.get(level) : null;
+        FrameManager manager = FrameManager.of(level);
         PacketDistributor.sendToPlayer(player, manager == null ? new FrameSyncPayload(true, 0, 1, 0, List.of(), NONE) : full(manager));
     }
 
@@ -38,7 +37,7 @@ public final class FrameSync
         PacketDistributor.sendToPlayersInDimension(level, new FrameSyncPayload(false, grid.radius(), grid.spacing(), grid.y(), List.of(), new int[]{cell}));
     }
 
-    public static FrameSyncPayload full(FrameManager manager)
+    private static FrameSyncPayload full(FrameManager manager)
     {
         FrameGrid grid = manager.grid();
         List<FrameSyncPayload.Entry> entries = new ArrayList<>(manager.frames().size());

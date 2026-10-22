@@ -7,7 +7,9 @@ import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
 import cute.ame.pioneer.SkyPlanet.Rendering.CelestialMath;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
+import org.joml.Vector3d;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -18,6 +20,7 @@ public final class FrameBodies
 {
     public static final String SUN = "sun";
 
+    private static final ThreadLocal<Vector3d> SCRATCH = ThreadLocal.withInitial(Vector3d::new);
     private static volatile Cache cache;
 
     @Nullable
@@ -64,12 +67,18 @@ public final class FrameBodies
     public static Body find(SolarSystemDefinition system, String name)
     {
         String key = name.toLowerCase(Locale.ROOT);
+        int colon = key.indexOf(':');
         for (Body body : bodies(system))
-        {
-            if (body.name().equals(key)) return body;
-            if (body.planet() != null && body.planet().id().toString().equals(key)) return body;
-        }
+            if (colon < 0 ? body.name().equals(key) : body.planet() != null && isId(body.planet().id(), key, colon))
+                return body;
+
         return null;
+    }
+
+    private static boolean isId(ResourceLocation id, String key, int colon)
+    {
+        String namespace = id.getNamespace(), path = id.getPath();
+        return colon == namespace.length() && key.length() == colon + 1 + path.length() && key.startsWith(namespace) && key.startsWith(path, colon + 1);
     }
 
     @Nullable
@@ -122,18 +131,16 @@ public final class FrameBodies
                 return out;
             }
 
-            double[] p = planet.currentWorldPosition(tick, partial);
-            out[0] = p[0];
-            out[1] = p[1];
-            out[2] = p[2];
-            if (parent != null)
-            {
-                double[] q = parent.currentWorldPosition(tick, partial);
-                out[0] += q[0];
-                out[1] += q[1];
-                out[2] += q[2];
-            }
+            Vector3d p = planet.elements().positionAt(tick, partial, SCRATCH.get());
+            out[0] = p.x;
+            out[1] = p.y;
+            out[2] = p.z;
+            if (parent == null) return out;
 
+            parent.elements().positionAt(tick, partial, p);
+            out[0] += p.x;
+            out[1] += p.y;
+            out[2] += p.z;
             return out;
         }
 
@@ -146,17 +153,16 @@ public final class FrameBodies
                 return out;
             }
 
-            double[] v = planet.currentWorldVelocity(tick, partial);
-            out[0] = v[0];
-            out[1] = v[1];
-            out[2] = v[2];
-            if (parent != null)
-            {
-                double[] w = parent.currentWorldVelocity(tick, partial);
-                out[0] += w[0];
-                out[1] += w[1];
-                out[2] += w[2];
-            }
+            Vector3d v = planet.elements().velocityAt(tick, partial, SCRATCH.get());
+            out[0] = v.x;
+            out[1] = v.y;
+            out[2] = v.z;
+            if (parent == null) return out;
+
+            parent.elements().velocityAt(tick, partial, v);
+            out[0] += v.x;
+            out[1] += v.y;
+            out[2] += v.z;
             return out;
         }
 
