@@ -5,11 +5,10 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 public class Variable<T> {
 
-    private Codec<T> codec;
     private T value;
     private boolean isAssigned;
 
-    Variable(Codec<T> codec) {
+    Variable() {
         value = null;
         isAssigned = false;
     }
