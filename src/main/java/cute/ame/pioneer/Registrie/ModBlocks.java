@@ -1,6 +1,8 @@
 package cute.ame.pioneer.Registrie;
 
 import cute.ame.pioneer.Block.CeramicTiles;
+import cute.ame.pioneer.Computer.Block.ComputerCoreBlock;
+import cute.ame.pioneer.Computer.Block.MagneticCoreMemoryBlock;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.Fluid.Block.BarometerBlock;
 import cute.ame.pioneer.Fluid.Block.MassSpectrometerBlock;
@@ -128,5 +130,15 @@ public final class ModBlocks
     public static final DeferredBlock<ThrusterBlock> THRUSTER = BLOCKS.register(
             "thruster",
             ThrusterBlock::new
+    );
+
+    public static final DeferredBlock<ComputerCoreBlock> COMPUTER_CORE = BLOCKS.register(
+            "computer_core",
+            ComputerCoreBlock::new
+    );
+
+    public static final DeferredBlock<MagneticCoreMemoryBlock> MAGNETIC_CORE_MEMORY = BLOCKS.register(
+            "magnetic_core_memory",
+            MagneticCoreMemoryBlock::new
     );
 }

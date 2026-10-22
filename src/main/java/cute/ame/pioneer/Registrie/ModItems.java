@@ -72,4 +72,9 @@ public final class ModItems
   public static final DeferredItem<BlockItem> SHIP_CONTROLLER = ITEMS.register("ship_controller",  () -> new BlockItem(ModBlocks.SHIP_CONTROLLER.get(), new Properties()));
 
   public static final DeferredItem<BlockItem> THRUSTER = ITEMS.register("thruster", () -> new BlockItem(ModBlocks.THRUSTER.get(), new Properties()));
+
+  public static final DeferredItem<BlockItem> COMPUTER_CORE = ITEMS.register("computer_core",  () -> new BlockItem(ModBlocks.COMPUTER_CORE.get(), new Properties()));
+
+  public static final DeferredItem<BlockItem> MAGNETIC_CORE_MEMORY = ITEMS.register("magnetic_core_memory", () -> new BlockItem(ModBlocks.MAGNETIC_CORE_MEMORY.get(), new Properties()));
+
 }
