@@ -25,8 +25,12 @@ public class UserFunctionAdapter implements JsonSerializer<UserFunction>, JsonDe
                 continue;
             json.add(key, obj.get(key));
         }
-        json.add("action", context.serialize(userFunction.getAction()));
-        json.add("condition", context.serialize(userFunction.getCondition()));
+        Action action = userFunction.getAction();
+        Condition condition = userFunction.getCondition();
+        if (action != null)
+            json.add("action", context.serialize(action));
+        if (condition != null)
+            json.add("condition", context.serialize(condition));
         return json;
     }
 
@@ -45,13 +49,19 @@ public class UserFunctionAdapter implements JsonSerializer<UserFunction>, JsonDe
                 start = true;
             if (!start)
                 continue;
-            functionObject.add(key, jsonObject.get(key));
             if (key.equals("action"))
                 break;
+            functionObject.add(key, jsonObject.get(key));
         }
         Function function = context.deserialize(functionObject, Function.class);
-        Action action = context.deserialize(jsonObject.get("action"), Action.class);
-        Condition condition = context.deserialize(jsonObject.get("condition"), Condition.class);
+        JsonElement jsonAction = jsonObject.get("action");
+        JsonElement jsonCondition = jsonObject.get("condition");
+        Action action = null;
+        Condition condition = null;
+        if (jsonAction != null)
+            action = context.deserialize(jsonAction, Action.class);
+        if (jsonCondition != null)
+            condition = context.deserialize(jsonCondition, Condition.class);
         function.setAction(action);
         function.setCondition(condition);
         function.setType(ResourceLocation.parse(functionType));

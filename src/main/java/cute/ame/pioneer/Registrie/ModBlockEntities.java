@@ -1,5 +1,7 @@
 package cute.ame.pioneer.Registrie;
 
+import cute.ame.pioneer.Computer.BlockEntity.ComputerCoreEntity;
+import cute.ame.pioneer.Computer.BlockEntity.MagneticCoreMemoryEntity;
 import cute.ame.pioneer.Fluid.BlockEntity.SensorBlockEntity;
 import cute.ame.pioneer.Fluid.BlockEntity.PioneerVesselBlockEntity;
 import cute.ame.pioneer.Pioneer;
@@ -36,5 +38,15 @@ public final class ModBlockEntities
     public static final Supplier<BlockEntityType<ThermalActuatorBlockEntity>> THERMAL_ACTUATOR = BLOCK_ENTITIES.register(
         "thermal_actuator",
         () -> BlockEntityType.Builder.of(ThermalActuatorBlockEntity::new, ModBlocks.HEATER.get(), ModBlocks.CHILLER.get()).build(null)
+    );
+
+    public static final Supplier<BlockEntityType<ComputerCoreEntity>> COMPUTER_CORE = BLOCK_ENTITIES.register(
+            "computer_core",
+            () -> BlockEntityType.Builder.of(ComputerCoreEntity::new, ModBlocks.COMPUTER_CORE.get()).build(null)
+    );
+
+    public static final Supplier<BlockEntityType<MagneticCoreMemoryEntity>> MAGNETIC_CORE_MEMORY = BLOCK_ENTITIES.register(
+            "magnetic_core_memory",
+            () -> BlockEntityType.Builder.of(MagneticCoreMemoryEntity::new, ModBlocks.MAGNETIC_CORE_MEMORY.get()).build(null)
     );
 }

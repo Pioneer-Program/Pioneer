@@ -23,6 +23,10 @@ public class AxiomAdapterFactory implements TypeAdapterFactory {
         return new TypeAdapter<>() {
             @Override
             public void write(JsonWriter out, T value) throws IOException {
+                if (value == null) {
+                    out.nullValue();
+                    return;
+                }
                 Axiom axiom = (Axiom) value;
                 TypeAdapter<T> delegate = gson.getDelegateAdapter(AxiomAdapterFactory.this, type);
                 JsonObject json = delegate.toJsonTree(value).getAsJsonObject();
@@ -41,7 +45,10 @@ public class AxiomAdapterFactory implements TypeAdapterFactory {
             public T read(JsonReader in) {
                 JsonElement element = Streams.parse(in);
                 JsonObject jsonObject = element.getAsJsonObject();
-                ResourceLocation axiomType = ResourceLocation.parse(jsonObject.get("type").getAsString());
+                JsonElement typeElement = jsonObject.get("type");
+                if (typeElement == null)
+                    return null;
+                ResourceLocation axiomType = ResourceLocation.parse(typeElement.getAsString());
                 jsonObject.remove("type");
                 Class<? extends Axiom> axiomClass = AxiomFactory.getAxiomClass(axiomType);
                 @SuppressWarnings("unchecked")

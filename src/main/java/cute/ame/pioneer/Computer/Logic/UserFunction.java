@@ -1,5 +1,7 @@
 package cute.ame.pioneer.Computer.Logic;
 
+import java.util.HashMap;
+
 public class UserFunction extends Function {
 
     private String name;
@@ -17,8 +19,8 @@ public class UserFunction extends Function {
     }
 
     @Override
-    public boolean execute() {
-        return function.execute();
+    public boolean execute(HashMap<String, Variable<?>> variables) {
+        return function.execute(variables);
     }
 
     public String getName() {

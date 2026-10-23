@@ -4,8 +4,11 @@ package cute.ame.pioneer.Computer.Logic.BuiltIn.Function;
 import cute.ame.pioneer.Computer.Logic.Action;
 import cute.ame.pioneer.Computer.Logic.Condition;
 import cute.ame.pioneer.Computer.Logic.Function;
+import cute.ame.pioneer.Computer.Logic.Variable;
 import cute.ame.pioneer.Pioneer;
 import net.minecraft.resources.ResourceLocation;
+
+import java.util.HashMap;
 
 public class ActionOverTime extends Function {
 
@@ -21,10 +24,10 @@ public class ActionOverTime extends Function {
     }
 
     @Override
-    public boolean execute() {
+    public boolean execute(HashMap<String, Variable<?>> variables) {
         if (tick >= interval) {
             tick = 0;
-            return super.execute();
+            return super.execute(variables);
         }
         ++tick;
         return false;

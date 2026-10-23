@@ -2,6 +2,8 @@ package cute.ame.pioneer.Computer.Logic;
 
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.HashMap;
+
 public class Function extends Axiom implements Executable  {
 
     protected Action action;
@@ -14,9 +16,11 @@ public class Function extends Axiom implements Executable  {
     }
 
     @Override
-    public boolean execute() {
+    public boolean execute(HashMap<String, Variable<?>> variables) {
+        if (action == null)
+            return false;
         if (condition == null || condition.isSatisfied())
-            action.execute();
+            action.execute(variables);
         return false;
     }
 

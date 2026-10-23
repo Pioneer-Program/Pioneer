@@ -2,21 +2,24 @@ package cute.ame.pioneer.Computer.Logic;
 
 public class Variable<T> {
 
+    private String name;
     private T value;
     private boolean isAssigned;
 
-    Variable() {
-        value = null;
-        isAssigned = false;
+    Variable(String name) {
+        this.name = name;
+        this.value = null;
+        this.isAssigned = false;
     }
 
-    Variable(T value) {
+    Variable(String name, T value) {
+        this.name = name;
         this.value = value;
         this.isAssigned = true;
     }
 
-    Variable(Variable<T> variable) {
-        this(variable.value);
+    Variable(String name, Variable<T> variable) {
+        this(name, variable.value);
     }
 
     public void assign(T value) {
@@ -31,6 +34,10 @@ public class Variable<T> {
     public void clear() {
         this.value = null;
         this.isAssigned = false;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public T getValue() {
