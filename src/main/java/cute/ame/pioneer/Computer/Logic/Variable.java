@@ -1,8 +1,5 @@
 package cute.ame.pioneer.Computer.Logic;
 
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
-
 public class Variable<T> {
 
     private T value;

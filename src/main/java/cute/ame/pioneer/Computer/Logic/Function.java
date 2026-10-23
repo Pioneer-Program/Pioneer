@@ -1,43 +1,39 @@
 package cute.ame.pioneer.Computer.Logic;
 
-public class Function extends Axiom {
+import net.minecraft.resources.ResourceLocation;
 
-    private String description;
-    private Action action;
-    private Conditional condition;
-    private int interval;
-    private int tickNumber;
+public class Function extends Axiom implements Executable  {
 
+    protected Action action;
+    protected Condition condition;
 
-    public Function(String name, String description, int interval, Action action, Conditional condition) {
-        super(name);
-        this.description = description;
-        this.interval = interval;
+    public Function(ResourceLocation type, Action action, Condition condition) {
+        super(type);
         this.action = action;
         this.condition = condition;
-        this.tickNumber = 0;
     }
 
-    public void tick() {
-        ++tickNumber;
+    @Override
+    public boolean execute() {
         if (condition == null || condition.isSatisfied())
             action.execute();
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public int getInterval() {
-        return interval;
+        return false;
     }
 
     public Action getAction() {
         return action;
     }
-    public Conditional getCondition() {
+
+    public Condition getCondition() {
         return condition;
     }
-}
 
+    public void setAction(Action action) {
+        this.action = action;
+    }
+
+    public void  setCondition(Condition condition) {
+        this.condition = condition;
+    }
+}
 

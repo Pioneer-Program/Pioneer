@@ -1,14 +1,10 @@
 package cute.ame.pioneer.Computer.Logic;
 
-import cute.ame.pioneer.Pioneer;
+import net.minecraft.resources.ResourceLocation;
 
 public abstract class Action extends Axiom implements Executable {
 
-    public Action(String type) {
+    public Action(ResourceLocation type) {
         super(type);
-    }
-
-    public Action(String modId, String name) {
-        super(modId, name);
     }
 }
