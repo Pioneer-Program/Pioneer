@@ -1,6 +1,6 @@
 package cute.ame.pioneer.Computer.Logic;
 
-import cute.ame.pioneer.Computer.Logic.BuiltIn.Action.ChangeVariable;
+import cute.ame.pioneer.Computer.Logic.BuiltIn.Action.IncrementVariable;
 import cute.ame.pioneer.Computer.Logic.BuiltIn.Condition.OrCondition;
 import cute.ame.pioneer.Computer.Logic.BuiltIn.Function.ActionOverTime;
 import net.minecraft.resources.ResourceLocation;
@@ -13,7 +13,7 @@ public class AxiomFactory {
     private static final HashMap<ResourceLocation, Class<? extends Axiom>> AXIOMS = new  HashMap<>(Map.ofEntries(
             Map.entry(OrCondition.TYPE, OrCondition.class),
             Map.entry(ActionOverTime.TYPE, ActionOverTime.class),
-            Map.entry(ChangeVariable.TYPE, ChangeVariable.class)
+            Map.entry(IncrementVariable.TYPE, IncrementVariable.class)
     ));
 
     public static Class<? extends Axiom> getAxiomClass(ResourceLocation type) {

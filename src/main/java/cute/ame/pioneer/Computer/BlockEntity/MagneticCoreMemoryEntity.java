@@ -5,8 +5,7 @@
     import com.google.gson.reflect.TypeToken;
     import cute.ame.pioneer.Computer.Logic.Adapater.AxiomAdapterFactory;
     import cute.ame.pioneer.Computer.Logic.Adapater.UserFunctionAdapter;
-    import cute.ame.pioneer.Computer.Logic.BuiltIn.Action.ChangeVariable;
-    import cute.ame.pioneer.Computer.Logic.BuiltIn.Condition.OrCondition;
+    import cute.ame.pioneer.Computer.Logic.BuiltIn.Action.IncrementVariable;
     import cute.ame.pioneer.Computer.Logic.BuiltIn.Function.ActionOverTime;
     import cute.ame.pioneer.Computer.Logic.UserFunction;
     import cute.ame.pioneer.Computer.Logic.Variable;
@@ -15,18 +14,13 @@
     import net.minecraft.core.BlockPos;
     import net.minecraft.core.HolderLookup;
     import net.minecraft.nbt.CompoundTag;
-    import net.minecraft.resources.ResourceLocation;
     import net.minecraft.world.level.Level;
     import net.minecraft.world.level.block.entity.BlockEntity;
-    import net.minecraft.world.level.block.entity.BlockEntityType;
     import net.minecraft.world.level.block.state.BlockState;
     import net.minecraft.world.level.storage.LevelResource;
     import org.jetbrains.annotations.NotNull;
 
-    import java.io.File;
-    import java.io.IOException;
-    import java.io.Reader;
-    import java.io.UncheckedIOException;
+    import java.io.*;
     import java.nio.charset.StandardCharsets;
     import java.nio.file.Files;
     import java.nio.file.Path;
@@ -65,6 +59,7 @@
                 return;
             loadRequireData();
             File functionsFile = dataFolder.resolve("functions.json").toFile();
+            File variablesFile =  dataFolder.resolve("variables.dat").toFile();
             Gson gson = new GsonBuilder()
                     .registerTypeAdapter(UserFunction.class, new UserFunctionAdapter())
                     .registerTypeAdapterFactory(new AxiomAdapterFactory())
@@ -76,9 +71,16 @@
                     Pioneer.LOGGER.warn("Could not read " + functionsFile.getPath(), error);
                 }
             } else {
-                ActionOverTime actionOverTime = new ActionOverTime(new ChangeVariable(), null, 40);
+                ActionOverTime actionOverTime = new ActionOverTime(new IncrementVariable(), null, 40);
                 UserFunction test = new UserFunction("Count up mission timer", null, actionOverTime);
                 userFunctions.add(test);
+            }
+            if (variablesFile.exists()) {
+                try (ObjectInputStream input = new ObjectInputStream(new FileInputStream(variablesFile.getPath()))) {
+                    variables = (HashMap<String, Variable<?>>) input.readObject();
+                } catch (IOException | ClassNotFoundException error) {
+                    Pioneer.LOGGER.warn("Could not read " + variablesFile.getPath(), error);
+                }
             }
             loaded = true;
         }
@@ -108,6 +110,7 @@
                 return;
             loadRequireData();
             File functionsFile = dataFolder.resolve("functions.json").toFile();
+            File variablesFile = dataFolder.resolve("variables.dat").toFile();
             try {
                 functionsFile.createNewFile();
             } catch (IOException error) {
@@ -121,6 +124,9 @@
                     .create();
             try {
                 Files.writeString(Path.of(functionsFile.getPath()), gson.toJson(userFunctions));
+                ObjectOutputStream stream = new ObjectOutputStream(Files.newOutputStream(variablesFile.toPath()));
+                stream.writeObject(variables);
+                stream.close();
             } catch (IOException error) {
                 Pioneer.LOGGER.error("Could not write " + functionsFile.getPath(), error);
             }

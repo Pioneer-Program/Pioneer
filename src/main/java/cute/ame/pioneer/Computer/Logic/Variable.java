@@ -22,8 +22,8 @@ public class Variable<T> {
         this(name, variable.value);
     }
 
-    public void assign(T value) {
-        this.value = value;
+    public void assign(Object value) {
+        this.value = (T) value;
         this.isAssigned = true;
     }
 
