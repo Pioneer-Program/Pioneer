@@ -36,8 +36,6 @@ public final class FrameWarp
 
     public static boolean toSpace(ServerPlayer player, ServerLevel space)
     {
-        if (!Config.WARP_THROUGH_FRAMES.get()) return false;
-
         PlanetDefinition planet = ObserverStates.surfaceHost(player.level()).orElse(null);
         SolarSystemDefinition system = FrameBodies.systemOf(space.dimension());
         FrameBodies.Body body = planet == null || system == null ? null : FrameBodies.of(system, planet);
@@ -63,7 +61,7 @@ public final class FrameWarp
             }
             catch (FrameError e)
             {
-                Pioneer.LOGGER.warn("frame warp of {} falls back to raw space: {}", player.getScoreboardName(), e.getMessage());
+                Pioneer.LOGGER.warn("frame warp of {} refused: {}", player.getScoreboardName(), e.getMessage());
                 return false;
             }
 
@@ -88,8 +86,6 @@ public final class FrameWarp
 
     public static boolean toSurface(ServerPlayer player, ServerLevel surface, PlanetDefinition planet)
     {
-        if (!Config.WARP_THROUGH_FRAMES.get()) return false;
-
         ServerLevel space = player.serverLevel();
         FrameManager manager = FrameManager.of(space);
         LocalFrame frame = manager == null ? null : manager.at(player.getX(), player.getZ());

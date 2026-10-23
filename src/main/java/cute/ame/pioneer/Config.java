@@ -8,7 +8,6 @@ public class Config
 
     public static ModConfigSpec.DoubleValue ORBIT_ENTRY_ALTITUDE_KM;
     public static ModConfigSpec.DoubleValue SHOW_OWN_PLANET_START_KM;
-    public static ModConfigSpec.BooleanValue WARP_THROUGH_FRAMES;
 
     public static ModConfigSpec.DoubleValue BREATHING_MIN_PRESSURE_P;
     public static ModConfigSpec.DoubleValue BREATHING_MOL_PER_TICK;
@@ -37,7 +36,6 @@ public class Config
         BUILDER.push("Transitions");
         ORBIT_ENTRY_ALTITUDE_KM = BUILDER.defineInRange("orbit_entry_altitude_km", 100.0, 0.1, 1_000_000.0);
         SHOW_OWN_PLANET_START_KM = BUILDER.defineInRange("show_own_planet_start_km", 1.0, 0.0, 1_000_000.0);
-        WARP_THROUGH_FRAMES = BUILDER.define("warp_through_frames", true);
         BUILDER.pop();
 
         BUILDER.push("Fluids");

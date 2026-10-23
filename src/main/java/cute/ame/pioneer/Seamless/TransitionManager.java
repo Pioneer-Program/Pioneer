@@ -3,25 +3,28 @@ package cute.ame.pioneer.Seamless;
 import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Core.API.Frame.FrameAPI;
 import cute.ame.pioneer.Core.API.PioneerAPI;
+import cute.ame.pioneer.Core.Frame.FrameBox;
 import cute.ame.pioneer.Core.Observer.ObserverState;
 import cute.ame.pioneer.Core.Observer.ObserverStates;
-import cute.ame.pioneer.Core.Observer.PlanetCube;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
-import net.minecraft.core.BlockPos;
+import dev.ryanhcode.sable.Sable;
+import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
+import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
+import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
+import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.levelgen.Heightmap;
-import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.AABB;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 public final class TransitionManager
@@ -29,27 +32,75 @@ public final class TransitionManager
     public enum State { IDLE, SWAPPING, SETTLING }
 
     private static final int SETTLE_TICKS = 10;
-    private static final int LANDING_PROBE_Y = 320;
     private static final Map<UUID, PlayerTransition> PLAYER_STATES = new HashMap<>();
+    private static final String HELD_TEXT = "ships and vehicles cannot change dimension yet";
+    private static final FrameBox PROBE = new FrameBox();
 
     private static void tickIdle(ServerPlayer player, PlayerTransition pt)
     {
         if (!SeamlessThresholdDetector.shouldCheck(player)) return;
 
         SeamlessThresholdDetector.ThresholdResult result = SeamlessThresholdDetector.evaluate(player);
-        if (result.kind() == SeamlessThresholdDetector.ThresholdKind.NONE) return;
-        if (!crossedHardThreshold(player, result)) return;
+        if (result.kind() == SeamlessThresholdDetector.ThresholdKind.NONE || !crossedHardThreshold(player, result))
+        {
+            pt.held = pt.refused = false;
+            return;
+        }
 
-        Optional<ResolvedTarget> targetOpt = resolveTarget(player, result);
+        if (pt.refused) return;
+
+        String aboard = aboard(player);
+        if (aboard != null)
+        {
+            hold(player, pt, result, aboard);
+            return;
+        }
+
+        Optional<ResourceKey<Level>> targetOpt = resolveTarget(player, result);
         if (targetOpt.isEmpty()) return;
 
         pt.kind = result.kind();
         pt.fromDim = player.level().dimension();
-        pt.targetDim = targetOpt.get().dimension();
-        pt.anchor = targetOpt.get().anchor();
+        pt.targetDim = targetOpt.get();
         pt.planet = result.targetPlanet().orElse(null);
 
         doSwap(player, pt);
+    }
+
+    @Nullable
+    private static String aboard(ServerPlayer player)
+    {
+        if (player.getVehicle() != null) return "riding";
+        if (Sable.HELPER.getTrackingSubLevel(player) != null) return "on a ship";
+
+        return nearShip(player) ? "near a ship" : null;
+    }
+
+    private static boolean nearShip(ServerPlayer player)
+    {
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(player.serverLevel());
+        if (container == null) return false;
+
+        double radius = Config.FRAME_CARRY_RADIUS.get();
+        AABB b = player.getBoundingBox();
+        PROBE.set(b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ);
+        for (ServerSubLevel ship : container.getAllSubLevels())
+        {
+            if (ship.isRemoved()) continue;
+
+            BoundingBox3dc s = ship.boundingBox();
+            if (PROBE.gap(s.minX(), s.minY(), s.minZ(), s.maxX(), s.maxY(), s.maxZ()) <= radius) return true;
+        }
+
+        return false;
+    }
+
+    private static void hold(ServerPlayer player, PlayerTransition pt, SeamlessThresholdDetector.ThresholdResult result, String aboard)
+    {
+        if (pt.held) return;
+
+        pt.held = true;
+        Pioneer.LOGGER.info("[Pioneer] {} not warped from {} ({}): {}, {}", player.getScoreboardName(), player.level().dimension().location(), result.kind(), aboard, HELD_TEXT);
     }
 
     public static void tick(ServerPlayer player)
@@ -72,29 +123,21 @@ public final class TransitionManager
 
         MinecraftServer server = player.getServer();
         ServerLevel targetLevel = server != null ? server.getLevel(pt.targetDim) : null;
-        if (targetLevel == null) { resetToIdle(pt); return; }
-
-        if (warpThroughFrames(player, pt, targetLevel))
+        if (targetLevel != null && warpThroughFrames(player, pt, targetLevel))
         {
             pt.state = State.SETTLING;
             pt.settleTicksRemaining = SETTLE_TICKS;
             return;
         }
 
-        BlockPos landing = pt.anchor;
+        refuse(player, pt);
+    }
 
-        if (pt.kind == SeamlessThresholdDetector.ThresholdKind.SPACE_APPROACHING_PLANET)
-        {
-            targetLevel.getChunk(landing.getX() >> 4, landing.getZ() >> 4);
-            int surfaceY = targetLevel.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, landing.getX(), landing.getZ());
-            landing = new BlockPos(landing.getX(), surfaceY + 1, landing.getZ());
-        }
-
-        player.teleportTo(targetLevel, landing.getX() + 0.5, landing.getY(), landing.getZ() + 0.5, Set.of(), player.getYRot(), player.getXRot());
-        Pioneer.LOGGER.debug("[Pioneer] {} SWAP {} -> {} @ {}", player.getScoreboardName(), pt.fromDim.location(), pt.targetDim.location(), landing.toShortString());
-
-        pt.state = State.SETTLING;
-        pt.settleTicksRemaining = SETTLE_TICKS;
+    private static void refuse(ServerPlayer player, PlayerTransition pt)
+    {
+        Pioneer.LOGGER.warn("[Pioneer] {} not warped from {} to {}: the frame warp refused", player.getScoreboardName(), pt.fromDim.location(), pt.targetDim.location());
+        resetToIdle(pt);
+        pt.refused = true;
     }
 
     private static boolean warpThroughFrames(ServerPlayer player, PlayerTransition pt, ServerLevel targetLevel)
@@ -114,9 +157,9 @@ public final class TransitionManager
         pt.state = State.IDLE;
         pt.fromDim = null;
         pt.targetDim = null;
-        pt.anchor = null;
         pt.planet = null;
         pt.settleTicksRemaining = 0;
+        pt.held = pt.refused = false;
     }
 
     private static void tickSettling(PlayerTransition pt)
@@ -124,15 +167,16 @@ public final class TransitionManager
         if (--pt.settleTicksRemaining <= 0) resetToIdle(pt);
     }
 
-    private static final class PlayerTransition
+    private static Optional<ResourceKey<Level>> resolveTarget(ServerPlayer player, SeamlessThresholdDetector.ThresholdResult result)
     {
-        SeamlessThresholdDetector.ThresholdKind kind;
-        State state = State.IDLE;
-        ResourceKey<Level> fromDim;
-        ResourceKey<Level> targetDim;
-        BlockPos anchor;
-        PlanetDefinition planet;
-        int settleTicksRemaining;
+        return switch (result.kind())
+        {
+            case SURFACE_APPROACHING_ORBIT -> orbitTarget(player);
+            case SPACE_APPROACHING_PLANET ->
+                result.targetPlanet().flatMap(planet -> planet.dimension().map(loc -> ResourceKey.create(Registries.DIMENSION, loc)));
+
+            default -> Optional.empty();
+        };
     }
 
     public static void onPlayerDisconnect(ServerPlayer player)
@@ -146,20 +190,7 @@ public final class TransitionManager
         return pt != null && pt.state != State.IDLE;
     }
 
-    private record ResolvedTarget(ResourceKey<Level> dimension, BlockPos anchor) {}
-
-    private static Optional<ResolvedTarget> resolveTarget(ServerPlayer player, SeamlessThresholdDetector.ThresholdResult result)
-    {
-        return switch (result.kind())
-        {
-            case SURFACE_APPROACHING_ORBIT -> orbitTarget(player);
-            case SPACE_APPROACHING_PLANET -> result.targetPlanet().flatMap(planet -> planet.dimension().map(loc -> ResourceKey.create(Registries.DIMENSION, loc)).map(dim -> new ResolvedTarget(dim, surfaceLandingColumn(player, planet))));
-
-            default -> Optional.empty();
-        };
-    }
-
-    private static Optional<ResolvedTarget> orbitTarget(ServerPlayer player)
+    private static Optional<ResourceKey<Level>> orbitTarget(ServerPlayer player)
     {
         var bindingOpt = PioneerAPI.getBindingForDimension(player.level().dimension());
         if (bindingOpt.isEmpty()) return Optional.empty();
@@ -171,29 +202,18 @@ public final class TransitionManager
         var spaceDimOpt = systemOpt.get().spaceDimension();
         if (planetOpt.isEmpty() || spaceDimOpt.isEmpty()) return Optional.empty();
 
-        PlanetDefinition planet = planetOpt.get();
-        double[] pos = planet.currentWorldPosition(player.level().getGameTime());
-        double clearance = planet.approachRadius() + Config.ORBIT_ENTRY_ALTITUDE_KM.get();
-
-        BlockPos anchor = new BlockPos((int) pos[0], (int) (pos[1] + clearance), (int) pos[2]);
-        return Optional.of(new ResolvedTarget(ResourceKey.create(Registries.DIMENSION, spaceDimOpt.get()), anchor));
+        return Optional.of(ResourceKey.create(Registries.DIMENSION, spaceDimOpt.get()));
     }
 
-    public static BlockPos surfaceLandingColumn(ServerPlayer player, PlanetDefinition planet)
+    private static final class PlayerTransition
     {
-        double[] center = planet.currentWorldPosition(player.level().getGameTime());
-        Vec3 rel = player.position().subtract(center[0], center[1], center[2]);
-
-        ObserverState obs = ObserverState.fromBodyKm(planet, rel.x, rel.y, rel.z, ObserverState.Origin.ORBITAL_STATE);
-
-        int x = (int) Math.round(obs.blockX());
-        int z = (int) Math.round(obs.blockZ());
-        return new BlockPos(x, LANDING_PROBE_Y, z);
-    }
-
-    public static BlockPos homeColumn(PlanetDefinition planet)
-    {
-        return new BlockPos((int) Math.round(PlanetCube.homeBlockX(planet)), LANDING_PROBE_Y, (int) Math.round(PlanetCube.homeBlockZ(planet)));
+        SeamlessThresholdDetector.ThresholdKind kind;
+        State state = State.IDLE;
+        ResourceKey<Level> fromDim;
+        ResourceKey<Level> targetDim;
+        PlanetDefinition planet;
+        int settleTicksRemaining;
+        boolean held, refused;
     }
 
     private static boolean crossedHardThreshold(ServerPlayer player, SeamlessThresholdDetector.ThresholdResult result)
