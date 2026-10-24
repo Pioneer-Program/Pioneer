@@ -3,6 +3,7 @@ package cute.ame.pioneer.Frame;
 import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Core.API.Frame.FrameError;
 import cute.ame.pioneer.Core.API.Frame.FrameEvent;
+import cute.ame.pioneer.Core.API.Frame.FrameMaintenance;
 import cute.ame.pioneer.Core.API.Frame.FrameReport;
 import cute.ame.pioneer.Core.API.Frame.FrameResult;
 import cute.ame.pioneer.Core.API.PioneerAPI;
@@ -20,6 +21,7 @@ import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
@@ -42,17 +44,21 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 public final class FrameManager extends SavedData
 {
     public static final String NAME = "pioneer_frames";
 
     private static final double TICKS_PER_SECOND = 20.0;
+    private static final long FORGET_TICKS = 200L;
 
     private static final SavedData.Factory<FrameManager> FACTORY = new SavedData.Factory<>(FrameManager::fromConfig, FrameManager::load, null);
     private final ArrayList<LocalFrame> frames = new ArrayList<>(8);
     private final List<LocalFrame> framesView = Collections.unmodifiableList(frames);
     private final FramePose pose = new FramePose();
+    private final FrameMaintenance passReport = new FrameMaintenance();
+    private final BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos();
     private FrameGrid grid;
     private LocalFrame[] byCell;
     private int[] strays;
@@ -134,6 +140,7 @@ public final class FrameManager extends SavedData
             f.attach(t.getString("parent"), t.getBoolean("fixed"));
             f.auto = t.getBoolean("auto");
             f.absent = t.getInt("absent");
+            loadRecords(f, t.getList("members", Tag.TAG_COMPOUND));
 
             manager.frames.add(f);
             manager.byCell[cell] = f;
@@ -144,6 +151,24 @@ public final class FrameManager extends SavedData
             Pioneer.LOGGER.warn("frame grid config changed, keeping saved grid (radius {}, spacing {}, y {}) until all frames are released", manager.grid.radius(), manager.grid.spacing(), manager.grid.y());
 
         return manager;
+    }
+
+    private static void loadRecords(LocalFrame f, ListTag list)
+    {
+        for (int i = 0, n = list.size(); i < n; ++i)
+        {
+            CompoundTag r = list.getCompound(i);
+            if (!r.hasUUID("id")) continue;
+
+            UUID id = r.getUUID("id");
+            if (f.record(id) != null) continue;
+
+            LocalFrame.Member m = f.addRecord(id);
+            m.mass = r.getDouble("mass");
+            m.box.set(r.getDouble("x0"), r.getDouble("y0"), r.getDouble("z0"), r.getDouble("x1"), r.getDouble("y1"), r.getDouble("z1"));
+        }
+
+        f.dormant = f.records.size();
     }
 
     private void adoptConfigGrid()
@@ -221,9 +246,40 @@ public final class FrameManager extends SavedData
         return poseOf(f, tick, partial, pose).toSystem(0.0, 0.0, 0.0, out);
     }
 
+    private static boolean loadedElsewhere(@Nullable ServerSubLevelContainer container, UUID id)
+    {
+        if (container == null) return false;
+
+        for (ServerSubLevel subLevel : container.getAllSubLevels())
+            if (!subLevel.isRemoved() && id.equals(subLevel.getUniqueId())) return true;
+
+        return false;
+    }
+
+    private static ListTag saveRecords(LocalFrame f)
+    {
+        ListTag list = new ListTag();
+        for (int i = 0, n = f.records.size(); i < n; ++i)
+        {
+            LocalFrame.Member m = f.records.get(i);
+            CompoundTag r = new CompoundTag();
+            r.putUUID("id", m.id);
+            r.putDouble("mass", m.mass);
+            r.putDouble("x0", m.box.minX);
+            r.putDouble("y0", m.box.minY);
+            r.putDouble("z0", m.box.minZ);
+            r.putDouble("x1", m.box.maxX);
+            r.putDouble("y1", m.box.maxY);
+            r.putDouble("z1", m.box.maxZ);
+            list.add(r);
+        }
+
+        return list;
+    }
+
     public void refresh(ServerLevel level)
     {
-        for (LocalFrame f : frames) f.clearMembers();
+        for (int i = 0, n = frames.size(); i < n; ++i) frames.get(i).clearMembers();
 
         Arrays.fill(strays, 0);
         ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
@@ -238,20 +294,67 @@ public final class FrameManager extends SavedData
                 if (cell < 0) continue;
 
                 LocalFrame f = byCell[cell];
-                if (f != null) f.addMember(subLevel, FrameTransfer.massOf(subLevel));
-                else strays[cell]++;
+                if (f == null) ++strays[cell];
+                else if (f.addMember(subLevel, FrameTransfer.massOf(subLevel))) setDirty();
             }
         }
 
-        for (ServerPlayer player : level.players())
+        List<ServerPlayer> players = level.players();
+        for (int i = 0, n = players.size(); i < n; ++i)
         {
+            ServerPlayer player = players.get(i);
             int cell = grid.cellAt(player.getX(), player.getZ());
             if (cell < 0) continue;
 
             LocalFrame f = byCell[cell];
             if (f != null) f.addPlayer(player);
-            else strays[cell]++;
+            else ++strays[cell];
         }
+
+        settleRecords(level, container);
+    }
+
+    private void settleRecords(ServerLevel level, @Nullable ServerSubLevelContainer container)
+    {
+        long now = level.getGameTime();
+        for (int i = 0, n = frames.size(); i < n; ++i)
+        {
+            LocalFrame f = frames.get(i);
+            int dormant = 0;
+            for (int r = f.records.size() - 1; r >= 0; --r)
+            {
+                LocalFrame.Member m = f.records.get(r);
+                if (m.loaded) continue;
+
+                String gone = gone(level, container, m, now);
+                if (gone == null)
+                {
+                    ++dormant;
+                    continue;
+                }
+
+                f.removeRecord(r);
+                setDirty();
+                Pioneer.LOGGER.info("frame #{} forgets member {}: {}", f.id, m.id.toString().substring(0, 8), gone);
+            }
+
+            f.dormant = dormant;
+        }
+    }
+
+    @Nullable
+    private String gone(ServerLevel level, @Nullable ServerSubLevelContainer container, LocalFrame.Member m, long now)
+    {
+        if (loadedElsewhere(container, m.id)) return "loaded outside its cell";
+        if (!areaTicking(level, m.box))
+        {
+            m.absentSince = -1L;
+            return null;
+        }
+
+        if (m.absentSince < 0L) m.absentSince = now;
+
+        return now - m.absentSince >= FORGET_TICKS ? "absent from its loaded area" : null;
     }
 
     public double[] velocityOf(LocalFrame f, long tick, double[] out)
@@ -341,19 +444,46 @@ public final class FrameManager extends SavedData
         remove(level, frame);
     }
 
+    private boolean areaTicking(ServerLevel level, FrameBox box)
+    {
+        int x0 = SectionPos.blockToSectionCoord(Mth.floor(box.minX)), x1 = SectionPos.blockToSectionCoord(Mth.floor(box.maxX));
+        int z0 = SectionPos.blockToSectionCoord(Mth.floor(box.minZ)), z1 = SectionPos.blockToSectionCoord(Mth.floor(box.maxZ));
+        for (int cx = x0; cx <= x1; ++cx)
+        {
+            for (int cz = z0; cz <= z1; ++cz)
+            {
+                if (!level.isPositionEntityTicking(probe.set(SectionPos.sectionToBlockCoord(cx), 0, SectionPos.sectionToBlockCoord(cz))))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
     public void sweep(ServerLevel level)
     {
         if (frames.isEmpty()) return;
 
         refresh(level);
-        int dropped = 0;
-        for (int i = frames.size() - 1; i >= 0; i--)
-        {
-            LocalFrame f = frames.get(i);
-            if (!f.auto || f.absent > 0 || !f.members.isEmpty() || !f.players.isEmpty()) continue;
+        sweepEmpty(level);
+    }
 
-            remove(level, f);
-        }
+    public void maintain(ServerLevel level)
+    {
+        maintain(level, passReport);
+    }
+
+    public FrameMaintenance maintain(ServerLevel level, FrameMaintenance out)
+    {
+        out.clear();
+        if (frames.isEmpty()) return out;
+
+        refresh(level);
+        out.swept = sweepEmpty(level);
+        out.frames = frames.size();
+        for (int i = 0, n = frames.size(); i < n; ++i) out.dormant += frames.get(i).dormant;
+
+        return out;
     }
 
     private void remove(ServerLevel level, LocalFrame frame)
@@ -650,6 +780,21 @@ public final class FrameManager extends SavedData
         return out;
     }
 
+    private int sweepEmpty(ServerLevel level)
+    {
+        int swept = 0;
+        for (int i = frames.size() - 1; i >= 0; --i)
+        {
+            LocalFrame f = frames.get(i);
+            if (!f.auto || f.absent > 0 || f.dormant > 0 || !f.members.isEmpty() || !f.players.isEmpty()) continue;
+
+            remove(level, f);
+            ++swept;
+        }
+
+        return swept;
+    }
+
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries)
     {
@@ -698,6 +843,8 @@ public final class FrameManager extends SavedData
                 t.putBoolean("auto", true);
                 t.putInt("absent", f.absent);
             }
+
+            if (!f.records.isEmpty()) t.put("members", saveRecords(f));
 
             list.add(t);
         }

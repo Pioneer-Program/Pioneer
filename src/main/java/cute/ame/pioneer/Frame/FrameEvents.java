@@ -1,11 +1,13 @@
 package cute.ame.pioneer.Frame;
 
+import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Pioneer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
 import javax.annotation.Nullable;
 
@@ -43,6 +45,18 @@ public final class FrameEvents
 
         FrameSync.reset(player);
         for (ServerLevel level : player.server.getAllLevels()) sweep(level);
+    }
+
+    @SubscribeEvent
+    public static void onLevelTick(LevelTickEvent.Post event)
+    {
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+
+        int period = Config.FRAME_MAINTAIN_PERIOD.get();
+        if (period <= 0 || level.getGameTime() % period != 0L) return;
+
+        FrameManager manager = FrameManager.of(level);
+        if (manager != null) manager.maintain(level);
     }
 
     private static void seat(ServerPlayer player, int delta)

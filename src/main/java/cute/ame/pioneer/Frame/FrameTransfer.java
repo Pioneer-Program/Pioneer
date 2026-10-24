@@ -1,5 +1,6 @@
 package cute.ame.pioneer.Frame;
 
+import cute.ame.pioneer.Core.API.Frame.FrameError;
 import cute.ame.pioneer.Core.API.Frame.FrameReport;
 import cute.ame.pioneer.Core.Frame.FrameShift;
 import cute.ame.pioneer.Frame.Network.FrameShiftPayload;
@@ -54,6 +55,15 @@ public final class FrameTransfer
         if (container == null || subLevel.isRemoved()) return dest.zero();
 
         return container.physicsSystem().getPipeline().getLinearVelocity(subLevel, dest);
+    }
+
+    public static void addVelocity(ServerLevel level, ServerSubLevel subLevel, double x, double y, double z)
+    {
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null) throw new FrameError("No Sable sub-levels in " + level.dimension().location());
+        if (subLevel.isRemoved()) throw new FrameError("Ship was removed");
+
+        container.physicsSystem().getPipeline().addLinearAndAngularVelocity(subLevel, new Vector3d(x, y, z), ZERO);
     }
 
     public static FrameReport carry(ServerLevel level, List<ServerSubLevel> subLevels, List<ServerPlayer> players, List<Entity> entities, FrameShift shift)

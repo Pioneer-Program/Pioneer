@@ -26,6 +26,7 @@ public class Config
     public static ModConfigSpec.DoubleValue FRAME_RELEASE_MAX_SPEED;
     public static ModConfigSpec.DoubleValue FRAME_CARRY_RADIUS;
     public static ModConfigSpec.DoubleValue FRAME_JOIN_RADIUS;
+    public static ModConfigSpec.IntValue FRAME_MAINTAIN_PERIOD;
 
     static final ModConfigSpec SPEC;
     static
@@ -61,6 +62,7 @@ public class Config
         FRAME_RELEASE_MAX_SPEED = BUILDER.defineInRange("frame_release_max_speed", 100.0, 0.0, 1.0e9);
         FRAME_CARRY_RADIUS = BUILDER.defineInRange("frame_carry_radius", 16.0, 0.0, 256.0);
         FRAME_JOIN_RADIUS = BUILDER.defineInRange("frame_join_radius", 256.0, 0.0, 2048.0);
+        FRAME_MAINTAIN_PERIOD = BUILDER.defineInRange("frame_maintain_period", 20, 0, 1200);
         BUILDER.pop();
 
         SPEC = BUILDER.build();

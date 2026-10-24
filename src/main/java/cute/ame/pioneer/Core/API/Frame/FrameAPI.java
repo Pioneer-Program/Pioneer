@@ -274,6 +274,18 @@ public final class FrameAPI
         return FrameTransfer.velocityOf(level, ship, dest);
     }
 
+    public static void addVelocity(ServerLevel level, ServerSubLevel ship, double perSecondX, double perSecondY, double perSecondZ)
+    {
+        FrameTransfer.addVelocity(level, ship, perSecondX, perSecondY, perSecondZ);
+    }
+
+    public static FrameMaintenance maintain(ServerLevel level)
+    {
+        FrameManager manager = FrameManager.of(level);
+        FrameMaintenance report = new FrameMaintenance();
+        return manager == null ? report : manager.maintain(level, report);
+    }
+
     public static String name(ServerSubLevel ship)
     {
         return FrameTransfer.shortId(ship);

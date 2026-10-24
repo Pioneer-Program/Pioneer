@@ -9,8 +9,10 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.exceptions.DynamicCommandExceptionType;
 import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
+import cute.ame.pioneer.Command.Frame.FrameWatch;
 import cute.ame.pioneer.Core.API.Frame.FrameAPI;
 import cute.ame.pioneer.Core.API.Frame.FrameError;
+import cute.ame.pioneer.Core.API.Frame.FrameMaintenance;
 import cute.ame.pioneer.Core.API.Frame.FrameReport;
 import cute.ame.pioneer.Core.API.Frame.FrameResult;
 import cute.ame.pioneer.Core.Frame.FrameBox;
@@ -41,6 +43,7 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static cute.ame.pioneer.Command.PioneerCommandFeedback.ERROR_PREFIX;
@@ -108,6 +111,13 @@ public final class FrameDebugCommand
                 .then(Commands.argument("x", DoubleArgumentType.doubleArg())
                     .then(Commands.argument("y", DoubleArgumentType.doubleArg())
                         .then(Commands.argument("z", DoubleArgumentType.doubleArg()).executes(FrameDebugCommand::executeSpin)))))
+            .then(Commands.literal("members").executes(FrameDebugCommand::executeMembers))
+            .then(Commands.literal("pass").executes(FrameDebugCommand::executePass))
+            .then(Commands.literal("kick")
+                .then(Commands.argument("x", DoubleArgumentType.doubleArg())
+                    .then(Commands.argument("y", DoubleArgumentType.doubleArg())
+                        .then(Commands.argument("z", DoubleArgumentType.doubleArg()).executes(FrameDebugCommand::executeKick)))))
+            .then(Commands.literal("watch").executes(FrameDebugCommand::executeWatch))
 
             ;
     }
@@ -599,6 +609,106 @@ public final class FrameDebugCommand
         return 1;
     }
 
+    private static int executeMembers(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
+    {
+        Space space = space(ctx);
+        CommandSourceStack source = ctx.getSource();
+        LocalFrame frame = FrameAPI.frameOf(space.player());
+        if (frame == null) throw NOT_IN_FRAME.create();
+
+        FrameAPI.refresh(space.level());
+        FrameGrid grid = FrameAPI.grid(space.level());
+        List<LocalFrame.Member> records = frame.records();
+        int loaded = records.size() - frame.dormantCount();
+        source.sendSuccess(() -> Component.literal(PREFIX + String.format(Locale.ROOT, ChatFormatting.WHITE + "frame #%d " + ChatFormatting.GRAY + "members: " + ChatFormatting.GREEN + "%d loaded" + ChatFormatting.GRAY + ", " + ChatFormatting.GOLD + "%d dormant", frame.id, loaded, frame.dormantCount())), false);
+        if (records.isEmpty())
+        {
+            source.sendSuccess(() -> Component.literal("  " + ChatFormatting.DARK_GRAY + "none"), false);
+            return 1;
+        }
+
+        double cx = grid.centerX(frame.cell()), cy = grid.centerY(), cz = grid.centerZ(frame.cell());
+        for (LocalFrame.Member m : records)
+        {
+            ServerSubLevel ship = m.loaded() ? memberShip(frame, m.id()) : null;
+            final String line;
+            if (ship != null)
+            {
+                Vector3d p = ship.logicalPose().position();
+                double speed = FrameAPI.velocity(space.level(), ship, new Vector3d()).length();
+                line = "  " + memberText(m, "loaded", ChatFormatting.GREEN) + xyz("offset", p.x - cx, p.y - cy, p.z - cz) + String.format(Locale.ROOT, ChatFormatting.GRAY + " speed=" + ChatFormatting.YELLOW + "%.1f", speed);
+            }
+            else
+            {
+                FrameBox b = m.box();
+                line = "  " + memberText(m, "dormant", ChatFormatting.GOLD) + xyz("offset", (b.minX + b.maxX) * 0.5 - cx, (b.minY + b.maxY) * 0.5 - cy, (b.minZ + b.maxZ) * 0.5 - cz) + ChatFormatting.GRAY + " speed=" + ChatFormatting.DARK_GRAY + "-";
+            }
+
+            source.sendSuccess(() -> Component.literal(line), false);
+        }
+
+        return 1;
+    }
+
+    @Nullable
+    private static ServerSubLevel memberShip(LocalFrame frame, UUID id)
+    {
+        for (ServerSubLevel ship : frame.members()) if (id.equals(ship.getUniqueId())) return ship;
+
+        return null;
+    }
+
+    private static String memberText(LocalFrame.Member m, String state, ChatFormatting colour)
+    {
+        return String.format(Locale.ROOT, ChatFormatting.DARK_GRAY + "%s " + colour + "%s " + ChatFormatting.GRAY + "mass=" + ChatFormatting.GOLD + "%.1f ", m.id().toString().substring(0, 8), state, m.mass());
+    }
+
+    private static int executePass(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
+    {
+        Space space = space(ctx);
+        CommandSourceStack source = ctx.getSource();
+        FrameMaintenance report = FrameAPI.maintain(space.level());
+        source.sendSuccess(() -> Component.literal(PREFIX + String.format(Locale.ROOT, ChatFormatting.WHITE + "pass: " + ChatFormatting.GRAY + "frames=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "dormant=" + ChatFormatting.GOLD + "%d " + ChatFormatting.GRAY + "swept=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "recentered=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "split=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "merged=" + ChatFormatting.GREEN + "%d", report.frames, report.dormant, report.swept, report.recentered, report.split, report.merged)), false);
+        for (String reason : report.waiting)
+            source.sendSuccess(() -> Component.literal("  " + ChatFormatting.GOLD + reason), false);
+
+        return 1;
+    }
+
+    private static int executeKick(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
+    {
+        Space space = space(ctx);
+        CommandSourceStack source = ctx.getSource();
+        ServerSubLevel ship = shipOf(space.player(), space.level());
+        if (ship == null)
+        {
+            source.sendFailure(Component.literal(ERROR_PREFIX + ChatFormatting.RED + "no ship under you - stand on one (within " + (int) SHIP_REACH + " blocks)"));
+            return 0;
+        }
+
+        double x = DoubleArgumentType.getDouble(ctx, "x"), y = DoubleArgumentType.getDouble(ctx, "y"), z = DoubleArgumentType.getDouble(ctx, "z");
+        try
+        {
+            FrameAPI.addVelocity(space.level(), ship, x, y, z);
+        }
+        catch (FrameError e)
+        {
+            source.sendFailure(Component.literal(ERROR_PREFIX + ChatFormatting.RED + e.getMessage()));
+            return 0;
+        }
+
+        source.sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.GREEN + "kicked " + ChatFormatting.WHITE + FrameAPI.name(ship) + " " + ChatFormatting.GRAY + "by " + ChatFormatting.AQUA + String.format(Locale.ROOT, "(%.2f, %.2f, %.2f) u/s", x, y, z)), false);
+        return 1;
+    }
+
+    private static int executeWatch(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException
+    {
+        Space space = space(ctx);
+        boolean on = FrameWatch.toggle(space.player());
+        ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + (on ? ChatFormatting.GREEN + "watching frame events" : ChatFormatting.GRAY + "no longer watching frame events")), false);
+        return 1;
+    }
+
     private static String parentText(LocalFrame frame)
     {
         String text = frame.parentName().isEmpty() ? "none" : frame.parentName() + (frame.fixed() ? " (fixed)" : "");
@@ -648,7 +758,8 @@ public final class FrameDebugCommand
     private static String frameText(LocalFrame frame, FrameGrid grid)
     {
         ServerSubLevel anchor = frame.anchor();
-        return String.format(Locale.ROOT, ChatFormatting.WHITE + "frame #%d " + ChatFormatting.GRAY + "cell=" + ChatFormatting.AQUA + "(%d,%d) " + ChatFormatting.GRAY + "members=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "players=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "mass=" + ChatFormatting.GOLD + "%.1f " + ChatFormatting.GRAY + "anchor=" + ChatFormatting.DARK_GRAY + "%s " + ChatFormatting.GRAY + "parent=" + ChatFormatting.AQUA + "%s", frame.id, grid.ix(frame.cell()), grid.iz(frame.cell()), frame.memberCount(), frame.playerCount(), frame.mass(), anchor == null ? "-" : FrameAPI.name(anchor), parentText(frame));
+        String dormant = frame.dormantCount() == 0 ? "" : String.format(Locale.ROOT, ChatFormatting.GRAY + "dormant=" + ChatFormatting.GOLD + "%d ", frame.dormantCount());
+        return String.format(Locale.ROOT, ChatFormatting.WHITE + "frame #%d " + ChatFormatting.GRAY + "cell=" + ChatFormatting.AQUA + "(%d,%d) " + ChatFormatting.GRAY + "members=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "players=" + ChatFormatting.GREEN + "%d " + dormant + ChatFormatting.GRAY + "mass=" + ChatFormatting.GOLD + "%.1f " + ChatFormatting.GRAY + "anchor=" + ChatFormatting.DARK_GRAY + "%s " + ChatFormatting.GRAY + "parent=" + ChatFormatting.AQUA + "%s", frame.id, grid.ix(frame.cell()), grid.iz(frame.cell()), frame.memberCount(), frame.playerCount(), frame.mass(), anchor == null ? "-" : FrameAPI.name(anchor), parentText(frame));
     }
 
     private static String motionText(FrameMotion motion, long now)

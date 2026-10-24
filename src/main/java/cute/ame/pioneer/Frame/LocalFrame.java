@@ -13,6 +13,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 public final class LocalFrame
 {
@@ -22,9 +23,13 @@ public final class LocalFrame
     final FrameMotion motion = new FrameMotion();
     final ArrayList<ServerSubLevel> members = new ArrayList<>(4);
     final ArrayList<ServerPlayer> players = new ArrayList<>(2);
+    final ArrayList<Member> records = new ArrayList<>(4);
 
+    private final ArrayList<UUID> ids = new ArrayList<>(4);
     private final List<ServerSubLevel> membersView = Collections.unmodifiableList(members);
     private final List<ServerPlayer> playersView = Collections.unmodifiableList(players);
+    private final List<Member> recordsView = Collections.unmodifiableList(records);
+    private final List<UUID> idsView = Collections.unmodifiableList(ids);
 
     final int cell;
     double mass;
@@ -35,6 +40,7 @@ public final class LocalFrame
     boolean fixed;
     boolean auto;
     int absent;
+    int dormant;
     @Nullable
     private FrameParent parent;
     @Nullable
@@ -131,6 +137,21 @@ public final class LocalFrame
         return box;
     }
 
+    public int dormantCount()
+    {
+        return dormant;
+    }
+
+    public List<UUID> memberIds()
+    {
+        return idsView;
+    }
+
+    public List<Member> records()
+    {
+        return recordsView;
+    }
+
     void clearMembers()
     {
         members.clear();
@@ -139,9 +160,10 @@ public final class LocalFrame
         mass = 0.0;
         anchor = null;
         anchorMass = -1.0;
+        for (int i = 0, n = records.size(); i < n; ++i) records.get(i).loaded = false;
     }
 
-    void addMember(ServerSubLevel subLevel, double subMass)
+    boolean addMember(ServerSubLevel subLevel, double subMass)
     {
         members.add(subLevel);
         mass += subMass;
@@ -152,6 +174,51 @@ public final class LocalFrame
             anchorMass = subMass;
             anchor = subLevel;
         }
+
+        return see(subLevel.getUniqueId(), subMass, b);
+    }
+
+    private boolean see(UUID id, double subMass, BoundingBox3dc b)
+    {
+        Member m = record(id);
+        boolean added = m == null;
+        if (added) m = addRecord(id);
+
+        m.loaded = true;
+        m.absentSince = -1L;
+        FrameBox r = m.box;
+        if (!added && m.mass == subMass && r.minX == b.minX() && r.minY == b.minY() && r.minZ == b.minZ() && r.maxX == b.maxX() && r.maxY == b.maxY() && r.maxZ == b.maxZ())
+            return false;
+
+        m.mass = subMass;
+        r.set(b.minX(), b.minY(), b.minZ(), b.maxX(), b.maxY(), b.maxZ());
+        return true;
+    }
+
+    @Nullable
+    Member record(UUID id)
+    {
+        for (int i = 0, n = records.size(); i < n; ++i)
+        {
+            Member m = records.get(i);
+            if (m.id.equals(id)) return m;
+        }
+
+        return null;
+    }
+
+    Member addRecord(UUID id)
+    {
+        Member m = new Member(id);
+        records.add(m);
+        ids.add(id);
+        return m;
+    }
+
+    void removeRecord(int index)
+    {
+        records.remove(index);
+        ids.remove(index);
     }
 
     void addPlayer(ServerPlayer player)
@@ -159,5 +226,39 @@ public final class LocalFrame
         players.add(player);
         AABB b = player.getBoundingBox();
         box.include(b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ);
+    }
+
+    public static final class Member
+    {
+        final UUID id;
+        final FrameBox box = new FrameBox();
+        double mass;
+        boolean loaded;
+        long absentSince = -1L;
+
+        Member(UUID id)
+        {
+            this.id = id;
+        }
+
+        public UUID id()
+        {
+            return id;
+        }
+
+        public boolean loaded()
+        {
+            return loaded;
+        }
+
+        public double mass()
+        {
+            return mass;
+        }
+
+        public FrameBox box()
+        {
+            return box;
+        }
     }
 }
