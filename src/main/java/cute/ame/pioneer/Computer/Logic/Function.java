@@ -1,5 +1,6 @@
 package cute.ame.pioneer.Computer.Logic;
 
+import cute.ame.pioneer.Computer.BlockEntity.MagneticCoreMemoryEntity;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.HashMap;
@@ -16,11 +17,11 @@ public class Function extends Axiom implements Executable  {
     }
 
     @Override
-    public boolean execute(HashMap<String, Variable<?>> variables) {
+    public boolean execute(MagneticCoreMemoryEntity memory) {
         if (action == null)
             return false;
         if (condition == null || condition.isSatisfied())
-            action.execute(variables);
+            action.execute(memory);
         return false;
     }
 

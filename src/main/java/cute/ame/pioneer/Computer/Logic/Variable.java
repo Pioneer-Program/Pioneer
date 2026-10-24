@@ -1,24 +1,27 @@
 package cute.ame.pioneer.Computer.Logic;
 
-public class Variable<T> {
+import java.io.Serializable;
+
+public class Variable<T> implements Serializable {
+
 
     private String name;
     private T value;
     private boolean isAssigned;
 
-    Variable(String name) {
+    public Variable(String name) {
         this.name = name;
         this.value = null;
         this.isAssigned = false;
     }
 
-    Variable(String name, T value) {
+    public Variable(String name, T value) {
         this.name = name;
         this.value = value;
         this.isAssigned = true;
     }
 
-    Variable(String name, Variable<T> variable) {
+    public Variable(String name, Variable<T> variable) {
         this(name, variable.value);
     }
 

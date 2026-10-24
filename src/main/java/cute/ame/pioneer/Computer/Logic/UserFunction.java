@@ -1,5 +1,7 @@
 package cute.ame.pioneer.Computer.Logic;
 
+import cute.ame.pioneer.Computer.BlockEntity.MagneticCoreMemoryEntity;
+
 import java.util.HashMap;
 
 public class UserFunction extends Function {
@@ -19,8 +21,8 @@ public class UserFunction extends Function {
     }
 
     @Override
-    public boolean execute(HashMap<String, Variable<?>> variables) {
-        return function.execute(variables);
+    public boolean execute(MagneticCoreMemoryEntity memory) {
+        return function.execute(memory);
     }
 
     public String getName() {

@@ -71,7 +71,7 @@
                     Pioneer.LOGGER.warn("Could not read " + functionsFile.getPath(), error);
                 }
             } else {
-                ActionOverTime actionOverTime = new ActionOverTime(new IncrementVariable(), null, 40);
+                ActionOverTime actionOverTime = new ActionOverTime(new IncrementVariable("mission_timer", 1), null, 40);
                 UserFunction test = new UserFunction("Count up mission timer", null, actionOverTime);
                 userFunctions.add(test);
             }
@@ -81,6 +81,8 @@
                 } catch (IOException | ClassNotFoundException error) {
                     Pioneer.LOGGER.warn("Could not read " + variablesFile.getPath(), error);
                 }
+            } else {
+                variables.put("mission_timer", new Variable<Integer>("mission_timer", 0));
             }
             loaded = true;
         }
@@ -155,8 +157,16 @@
         public static void tick(Level level, BlockPos pos, BlockState state, MagneticCoreMemoryEntity memory) {
             if (level.isClientSide || !memory.loaded) return;
             memory.userFunctions.forEach(userFunction -> {
-                userFunction.execute(memory.variables);
+                userFunction.execute(memory);
             });
+        }
+
+        public HashMap<String, Variable<?>> getVariables() {
+            return variables;
+        }
+
+        public List<UserFunction> getUserFunctions() {
+            return userFunctions;
         }
 
     }
