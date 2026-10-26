@@ -41,6 +41,8 @@ public final class LocalFrame
     boolean auto;
     int absent;
     int dormant;
+    int waitKey;
+    String waitText = "";
     @Nullable
     private FrameParent parent;
     @Nullable

@@ -4,8 +4,11 @@ import cute.ame.pioneer.Config;
 import cute.ame.pioneer.Pioneer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 
@@ -57,6 +60,26 @@ public final class FrameEvents
 
         FrameManager manager = FrameManager.of(level);
         if (manager != null) manager.maintain(level);
+    }
+
+    @SubscribeEvent
+    public static void onEntityJoin(EntityJoinLevelEvent event)
+    {
+        if (!event.loadedFromDisk() || !(event.getLevel() instanceof ServerLevel level)) return;
+
+        Entity entity = event.getEntity();
+        if (entity instanceof Player || entity.isPassenger()) return;
+
+        FrameManager manager = FrameManager.of(level);
+        if (manager != null) manager.restore(entity);
+    }
+
+    public static void stamp(Entity entity)
+    {
+        if (!(entity.level() instanceof ServerLevel level) || entity instanceof Player || entity.isPassenger()) return;
+
+        FrameManager manager = FrameManager.of(level);
+        if (manager != null) manager.stamp(entity);
     }
 
     private static void seat(ServerPlayer player, int delta)

@@ -68,6 +68,114 @@ public final class FrameShift
         return this;
     }
 
+    public FrameShift identity()
+    {
+        return translation(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    }
+
+    public FrameShift set(FrameShift o)
+    {
+        tx = o.tx;
+        ty = o.ty;
+        tz = o.tz;
+        qx = o.qx;
+        qy = o.qy;
+        qz = o.qz;
+        qw = o.qw;
+        lx = o.lx;
+        ly = o.ly;
+        lz = o.lz;
+        wx = o.wx;
+        wy = o.wy;
+        wz = o.wz;
+        cx = o.cx;
+        cy = o.cy;
+        cz = o.cz;
+        rotated = o.rotated;
+        return this;
+    }
+
+    public FrameShift markRotation()
+    {
+        rotated = !FrameQuat.isIdentity(qx, qy, qz);
+        return this;
+    }
+
+    public boolean sameAs(FrameShift o)
+    {
+        return tx == o.tx && ty == o.ty && tz == o.tz && qx == o.qx && qy == o.qy && qz == o.qz && qw == o.qw
+            && lx == o.lx && ly == o.ly && lz == o.lz && wx == o.wx && wy == o.wy && wz == o.wz && cx == o.cx && cy == o.cy && cz == o.cz;
+    }
+
+    public boolean isIdentity()
+    {
+        return tx == 0.0 && ty == 0.0 && tz == 0.0 && !rotated && !kicks();
+    }
+
+    public FrameShift then(FrameShift next)
+    {
+        next.direction(tx, ty, tz, v);
+        double ntx = v[0] + next.tx, nty = v[1] + next.ty, ntz = v[2] + next.tz;
+        next.direction(wx, wy, wz, v);
+        double rwx = v[0], rwy = v[1], rwz = v[2];
+        next.direction(cx, cy, cz, v);
+        double ex = next.cx - next.tx - v[0], ey = next.cy - next.ty - v[1], ez = next.cz - next.tz - v[2];
+        next.direction(lx, ly, lz, v);
+        lx = v[0] + next.lx + rwy * ez - rwz * ey;
+        ly = v[1] + next.ly + rwz * ex - rwx * ez;
+        lz = v[2] + next.lz + rwx * ey - rwy * ex;
+        wx = rwx + next.wx;
+        wy = rwy + next.wy;
+        wz = rwz + next.wz;
+        cx = next.cx;
+        cy = next.cy;
+        cz = next.cz;
+        tx = ntx;
+        ty = nty;
+        tz = ntz;
+        if (!next.rotated) return this;
+
+        a[0] = next.qx;
+        a[1] = next.qy;
+        a[2] = next.qz;
+        a[3] = next.qw;
+        q[0] = qx;
+        q[1] = qy;
+        q[2] = qz;
+        q[3] = qw;
+        FrameQuat.normalize(FrameQuat.mul(a, q, q));
+        qx = q[0];
+        qy = q[1];
+        qz = q[2];
+        qw = q[3];
+        return markRotation();
+    }
+
+    public FrameShift invert()
+    {
+        double ox = tx, oy = ty, oz = tz;
+        qx = -qx;
+        qy = -qy;
+        qz = -qz;
+        direction(cx - ox, cy - oy, cz - oz, v);
+        cx = v[0];
+        cy = v[1];
+        cz = v[2];
+        direction(ox, oy, oz, v);
+        tx = -v[0];
+        ty = -v[1];
+        tz = -v[2];
+        direction(lx, ly, lz, v);
+        lx = -v[0];
+        ly = -v[1];
+        lz = -v[2];
+        direction(wx, wy, wz, v);
+        wx = -v[0];
+        wy = -v[1];
+        wz = -v[2];
+        return this;
+    }
+
     public FrameShift scaleKick(double factor)
     {
         lx *= factor;

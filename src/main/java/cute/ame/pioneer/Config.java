@@ -27,6 +27,8 @@ public class Config
     public static ModConfigSpec.DoubleValue FRAME_CARRY_RADIUS;
     public static ModConfigSpec.DoubleValue FRAME_JOIN_RADIUS;
     public static ModConfigSpec.IntValue FRAME_MAINTAIN_PERIOD;
+    public static ModConfigSpec.DoubleValue FRAME_RECENTER_DISTANCE;
+    public static ModConfigSpec.DoubleValue FRAME_RECENTER_SPEED;
 
     static final ModConfigSpec SPEC;
     static
@@ -63,6 +65,8 @@ public class Config
         FRAME_CARRY_RADIUS = BUILDER.defineInRange("frame_carry_radius", 16.0, 0.0, 256.0);
         FRAME_JOIN_RADIUS = BUILDER.defineInRange("frame_join_radius", 256.0, 0.0, 2048.0);
         FRAME_MAINTAIN_PERIOD = BUILDER.defineInRange("frame_maintain_period", 20, 0, 1200);
+        FRAME_RECENTER_DISTANCE = BUILDER.defineInRange("frame_recenter_distance", 1024.0, 16.0, 3584.0);
+        FRAME_RECENTER_SPEED = BUILDER.defineInRange("frame_recenter_speed", 64.0, 1.0, 1.0e6);
         BUILDER.pop();
 
         SPEC = BUILDER.build();

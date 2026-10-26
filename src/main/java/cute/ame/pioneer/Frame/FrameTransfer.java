@@ -236,6 +236,23 @@ public final class FrameTransfer
         if (kick || shift.rotated) push(entity, shift, x, y, z, p);
     }
 
+    static void settle(Entity entity, FrameShift shift, double[] p)
+    {
+        shift.position(entity.getX(), entity.getY(), entity.getZ(), p);
+        double x = p[0], y = p[1], z = p[2];
+        float yaw = entity.getYRot(), pitch = entity.getXRot();
+        if (shift.rotated)
+        {
+            shift.look(yaw, pitch, p);
+            turnHead(entity, (float) p[0] - yaw);
+            yaw = (float) p[0];
+            pitch = (float) p[1];
+        }
+
+        entity.moveTo(x, y, z, yaw, pitch);
+        if (shift.kicks() || shift.rotated) push(entity, shift, x, y, z, p);
+    }
+
     private static void push(Entity entity, FrameShift shift, double x, double y, double z, double[] p)
     {
         Vec3 d = entity.getDeltaMovement();
