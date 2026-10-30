@@ -12,6 +12,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -47,6 +48,13 @@ public final class FrameWatch
     public static void onJoined(FrameEvent.Joined event)
     {
         if (!WATCHERS.isEmpty()) tell(event, "JOINED " + FrameAPI.name(event.ship()));
+    }
+
+    @SubscribeEvent
+    public static void onSplit(FrameEvent.Split event)
+    {
+        if (!WATCHERS.isEmpty())
+            tell(event, "SPLIT into #" + event.into().id + " ships=" + event.ships().size() + " players=" + event.players() + " (" + event.reason().name().toLowerCase(Locale.ROOT) + ")");
     }
 
     @SubscribeEvent

@@ -1,6 +1,7 @@
 package cute.ame.pioneer.Frame;
 
 import cute.ame.pioneer.Config;
+import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.Pioneer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -17,6 +18,8 @@ import javax.annotation.Nullable;
 @EventBusSubscriber(modid = Pioneer.MODID)
 public final class FrameEvents
 {
+    private static boolean passOffWarned;
+
     @SubscribeEvent
     public static void onLogin(PlayerEvent.PlayerLoggedInEvent event)
     {
@@ -24,6 +27,7 @@ public final class FrameEvents
 
         FrameSync.reset(player);
         seat(player, -1);
+        adopt(player.serverLevel());
     }
 
     @SubscribeEvent
@@ -39,6 +43,7 @@ public final class FrameEvents
 
         FrameSync.reset(player);
         sweep(player.server.getLevel(event.getFrom()));
+        adopt(player.serverLevel());
     }
 
     @SubscribeEvent
@@ -48,6 +53,8 @@ public final class FrameEvents
 
         FrameSync.reset(player);
         for (ServerLevel level : player.server.getAllLevels()) sweep(level);
+
+        adopt(player.serverLevel());
     }
 
     @SubscribeEvent
@@ -56,10 +63,37 @@ public final class FrameEvents
         if (!(event.getLevel() instanceof ServerLevel level)) return;
 
         int period = Config.FRAME_MAINTAIN_PERIOD.get();
-        if (period <= 0 || level.getGameTime() % period != 0L) return;
+        if (period <= 0)
+        {
+            warnPassOff(level);
+            return;
+        }
+
+        passOffWarned = false;
+        if (level.getGameTime() % period != 0L) return;
 
         FrameManager manager = FrameManager.of(level);
+        if (manager == null && !level.players().isEmpty() && PioneerAPI.isSpaceDimension(level.dimension()))
+            manager = FrameManager.getOrCreate(level);
         if (manager != null) manager.maintain(level);
+    }
+
+    private static void warnPassOff(ServerLevel level)
+    {
+        if (passOffWarned || level.getGameTime() % 20L != 0L) return;
+
+        FrameManager manager = FrameManager.of(level);
+        if (manager == null || manager.frames().isEmpty()) return;
+
+        passOffWarned = true;
+        Pioneer.LOGGER.warn("frame_maintain_period is 0: no pass runs, ships and players in {} may leave their frames", level.dimension().location());
+    }
+
+    private static void adopt(ServerLevel level)
+    {
+        if (!PioneerAPI.isSpaceDimension(level.dimension())) return;
+
+        FrameManager.getOrCreate(level).adopt(level);
     }
 
     @SubscribeEvent

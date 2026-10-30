@@ -8,6 +8,7 @@
     "Player.DebugSpectatorFlightSpeedMixin",
     "Player.SpaceFallDamageMixin",
     "Player.SwimPoseMixin",
+    "World.SpaceChunkSaveMixin",
     "World.TimeOfDayMixin"
   ],
   "client": [

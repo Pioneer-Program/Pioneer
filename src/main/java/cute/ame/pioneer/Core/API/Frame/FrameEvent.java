@@ -5,6 +5,8 @@ import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.bus.api.Event;
 
+import java.util.List;
+
 public abstract class FrameEvent extends Event
 {
     private final ServerLevel level;
@@ -34,6 +36,50 @@ public abstract class FrameEvent extends Event
         PARENT,
         RECENTER,
         STATE
+    }
+
+    public enum Reason
+    {
+        DISTANCE,
+        EDGE,
+        DORMANT
+    }
+
+    public static final class Split extends FrameEvent
+    {
+        private final LocalFrame into;
+        private final List<ServerSubLevel> ships;
+        private final int players;
+        private final Reason reason;
+
+        public Split(ServerLevel level, LocalFrame frame, LocalFrame into, List<ServerSubLevel> ships, int players, Reason reason)
+        {
+            super(level, frame);
+            this.into = into;
+            this.ships = ships;
+            this.players = players;
+            this.reason = reason;
+        }
+
+        public LocalFrame into()
+        {
+            return into;
+        }
+
+        public List<ServerSubLevel> ships()
+        {
+            return ships;
+        }
+
+        public int players()
+        {
+            return players;
+        }
+
+        public Reason reason()
+        {
+            return reason;
+        }
     }
 
     public static final class Created extends FrameEvent

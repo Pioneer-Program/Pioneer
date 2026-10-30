@@ -55,6 +55,7 @@ public final class FrameManager extends SavedData
     private static final long FORGET_TICKS = 200L;
     private static final int WAIT_NONE = 0, WAIT_CELL = 1, WAIT_HEIGHT = 2, WAIT_DORMANT = 3;
     private static final String STAMP = "pioneer_frame_cell";
+    private static final int ADOPT_NONE = 0;
 
     private static final SavedData.Factory<FrameManager> FACTORY = new SavedData.Factory<>(FrameManager::fromConfig, FrameManager::load, null);
     private final ArrayList<LocalFrame> frames = new ArrayList<>(8);
@@ -63,9 +64,14 @@ public final class FrameManager extends SavedData
     private final FrameMaintenance passReport = new FrameMaintenance();
     private final BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos();
     private final Vector3d linear = new Vector3d();
+    private final FrameGroups groups = new FrameGroups();
     private final FrameShift stampShift = new FrameShift();
-    private final double[] stampPoint = new double[4];
+    private final ArrayList<ServerSubLevel> strayShips = new ArrayList<>(4);
+    private final ArrayList<ServerPlayer> strayPlayers = new ArrayList<>(2);
     private double centerX, centerY, centerZ, driftX, driftY, driftZ;
+    private int adoptWaitKey;
+    private String adoptWaitText = "";
+    private final double[] stampPoint = new double[4];
     private FrameShift[] cellShift;
     private long shiftEpoch;
     private FrameGrid grid;
@@ -103,6 +109,20 @@ public final class FrameManager extends SavedData
         if (manager != null) manager.level = level;
 
         return manager;
+    }
+
+    private static List<Entity> entitiesNear(ServerLevel level, List<ServerSubLevel> ships)
+    {
+        if (ships.size() == 1) return entitiesNear(level, ships.get(0));
+
+        List<Entity> all = new ArrayList<>();
+        for (int i = 0, n = ships.size(); i < n; ++i)
+        {
+            List<Entity> near = entitiesNear(level, ships.get(i));
+            for (int k = 0, m = near.size(); k < m; ++k) if (!all.contains(near.get(k))) all.add(near.get(k));
+        }
+
+        return all;
     }
 
     private static List<Entity> entitiesNear(ServerLevel level, ServerSubLevel ship)
@@ -221,20 +241,6 @@ public final class FrameManager extends SavedData
         return t;
     }
 
-    static boolean due(double ox, double oy, double oz, double ux, double uy, double uz, double distance, double speed, double ahead, double room)
-    {
-        if (ux * ux + uy * uy + uz * uz > speed * speed) return true;
-
-        double limit = distance * distance;
-        if (ox * ox + oy * oy + oz * oz > limit) return true;
-
-        double fx = ox + ux * ahead, fy = oy + uy * ahead, fz = oz + uz * ahead;
-        if (fx * fx + fy * fy + fz * fz > limit) return true;
-
-        double height = Math.min(0.5 * room, distance);
-        return Math.abs(oy) > height || Math.abs(fy) > height;
-    }
-
     public void stamp(Entity entity)
     {
         CompoundTag data = entity.getPersistentData();
@@ -279,6 +285,12 @@ public final class FrameManager extends SavedData
         FrameTransfer.settle(entity, stampShift, stampPoint);
         stamp(entity);
         return true;
+    }
+
+    private static double halfDiagonal(double minX, double minY, double minZ, double maxX, double maxY, double maxZ)
+    {
+        double dx = maxX - minX, dy = maxY - minY, dz = maxZ - minZ;
+        return 0.5 * Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
     private static void loadRecords(LocalFrame f, ListTag list)
@@ -351,13 +363,18 @@ public final class FrameManager extends SavedData
         if (!live(frame)) throw new FrameError("Frame #" + frame.id + " no longer exists");
     }
 
-    private void shiftCell(int cell, FrameShift shift)
+    static boolean due(double ox, double oy, double oz, double ux, double uy, double uz, double distance, double speed, double ahead, double room)
     {
-        FrameShift total = cellShift[cell];
-        if (total == null) cellShift[cell] = total = new FrameShift().identity();
+        if (ux * ux + uy * uy + uz * uz > speed * speed) return true;
 
-        total.then(shift);
-        setDirty();
+        double limit = distance * distance;
+        if (ox * ox + oy * oy + oz * oz > limit) return true;
+
+        double fx = ox + ux * ahead, fy = oy + uy * ahead, fz = oz + uz * ahead;
+        if (fx * fx + fy * fy + fz * fz > limit) return true;
+
+        double height = Math.min(0.5 * room, distance);
+        return Math.abs(oy) > height || Math.abs(fy) > height;
     }
 
     @Nullable
@@ -407,41 +424,13 @@ public final class FrameManager extends SavedData
         return list;
     }
 
-    public void refresh(ServerLevel level)
+    private void shiftCell(int cell, FrameShift shift)
     {
-        for (int i = 0, n = frames.size(); i < n; ++i) frames.get(i).clearMembers();
+        FrameShift total = cellShift[cell];
+        if (total == null) cellShift[cell] = total = new FrameShift().identity();
 
-        Arrays.fill(strays, 0);
-        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
-        if (container != null)
-        {
-            for (ServerSubLevel subLevel : container.getAllSubLevels())
-            {
-                if (subLevel.isRemoved()) continue;
-
-                Vector3d p = subLevel.logicalPose().position();
-                int cell = grid.cellAt(p.x, p.z);
-                if (cell < 0) continue;
-
-                LocalFrame f = byCell[cell];
-                if (f == null) ++strays[cell];
-                else if (f.addMember(subLevel, FrameTransfer.massOf(subLevel))) setDirty();
-            }
-        }
-
-        List<ServerPlayer> players = level.players();
-        for (int i = 0, n = players.size(); i < n; ++i)
-        {
-            ServerPlayer player = players.get(i);
-            int cell = grid.cellAt(player.getX(), player.getZ());
-            if (cell < 0) continue;
-
-            LocalFrame f = byCell[cell];
-            if (f != null) f.addPlayer(player);
-            else ++strays[cell];
-        }
-
-        settleRecords(level, container);
+        total.then(shift);
+        setDirty();
     }
 
     private void settleRecords(ServerLevel level, @Nullable ServerSubLevelContainer container)
@@ -691,22 +680,6 @@ public final class FrameManager extends SavedData
         return report;
     }
 
-    public FrameMaintenance maintain(ServerLevel level, FrameMaintenance out)
-    {
-        out.clear();
-        if (frames.isEmpty()) return out;
-
-        refresh(level);
-        out.recentered = recenterDrifting(level, out);
-        if (out.recentered > 0) refresh(level);
-
-        out.swept = sweepEmpty(level);
-        out.frames = frames.size();
-        for (int i = 0, n = frames.size(); i < n; ++i) out.dormant += frames.get(i).dormant;
-
-        return out;
-    }
-
     public FrameReport recenter(ServerLevel level, LocalFrame frame)
     {
         requireLive(frame);
@@ -725,12 +698,83 @@ public final class FrameManager extends SavedData
         return report;
     }
 
+    public void refresh(ServerLevel level)
+    {
+        for (int i = 0, n = frames.size(); i < n; ++i) frames.get(i).clearMembers();
+
+        Arrays.fill(strays, 0);
+        strayShips.clear();
+        strayPlayers.clear();
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container != null)
+        {
+            for (ServerSubLevel subLevel : container.getAllSubLevels())
+            {
+                if (subLevel.isRemoved()) continue;
+
+                Vector3d p = subLevel.logicalPose().position();
+                int cell = grid.cellAt(p.x, p.z);
+                LocalFrame f = cell < 0 ? null : byCell[cell];
+                if (f != null)
+                {
+                    if (f.addMember(subLevel, FrameTransfer.massOf(subLevel))) setDirty();
+
+                    continue;
+                }
+
+                strayShips.add(subLevel);
+                if (cell >= 0) ++strays[cell];
+            }
+        }
+
+        List<ServerPlayer> players = level.players();
+        for (int i = 0, n = players.size(); i < n; ++i)
+        {
+            ServerPlayer player = players.get(i);
+            int cell = grid.cellAt(player.getX(), player.getZ());
+            LocalFrame f = cell < 0 ? null : byCell[cell];
+            if (f != null)
+            {
+                f.addPlayer(player);
+                continue;
+            }
+
+            if (player.isAlive()) strayPlayers.add(player);
+            if (cell >= 0) ++strays[cell];
+        }
+
+        settleRecords(level, container);
+    }
+
+    public FrameMaintenance maintain(ServerLevel level, FrameMaintenance out)
+    {
+        out.clear();
+        refresh(level);
+        if (frames.isEmpty() && strayShips.isEmpty() && strayPlayers.isEmpty()) return out;
+
+        out.adopted = adoptStrays(level, out);
+        if (out.adopted > 0) refresh(level);
+
+        out.split = splitFrames(level, out);
+        if (out.split > 0) refresh(level);
+
+        out.recentered = recenterDrifting(level, out);
+        if (out.recentered > 0) refresh(level);
+
+        out.swept = sweepEmpty(level);
+        out.frames = frames.size();
+        for (int i = 0, n = frames.size(); i < n; ++i) out.dormant += frames.get(i).dormant;
+
+        return out;
+    }
+
     private int recenterDrifting(ServerLevel level, FrameMaintenance out)
     {
         ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
         if (container == null) return 0;
 
-        double distance = Config.FRAME_RECENTER_DISTANCE.get(), speed = Config.FRAME_RECENTER_SPEED.get();
+        double distance = Math.min(Config.FRAME_RECENTER_DISTANCE.get(), Math.max(16.0, grid.halfCell() - Config.FRAME_EDGE_MARGIN.get()));
+        double speed = Config.FRAME_RECENTER_SPEED.get();
         int period = Config.FRAME_MAINTAIN_PERIOD.get();
         double ahead = period > 0 ? period / TICKS_PER_SECOND : 1.0;
         double cy = grid.centerY(), room = Math.min(level.getMaxBuildHeight() - cy, cy - level.getMinBuildHeight());
@@ -738,7 +782,9 @@ public final class FrameManager extends SavedData
         for (int i = 0; i < frames.size(); ++i)
         {
             LocalFrame f = frames.get(i);
-            if (!barycenter(f, container) || !due(centerX, centerY, centerZ, driftX, driftY, driftZ, distance, speed, ahead, room))
+            boolean edge = f.edgeRecenter;
+            f.edgeRecenter = false;
+            if (!barycenter(f, container) || !(edge || due(centerX, centerY, centerZ, driftX, driftY, driftZ, distance, speed, ahead, room)))
             {
                 f.waitKey = WAIT_NONE;
                 continue;
@@ -759,6 +805,340 @@ public final class FrameManager extends SavedData
         }
 
         return moved;
+    }
+
+    public void adopt(ServerLevel level)
+    {
+        refresh(level);
+        if (strayShips.isEmpty() && strayPlayers.isEmpty()) return;
+
+        if (adoptStrays(level, passReport.clear()) > 0) refresh(level);
+    }
+
+    private int adoptStrays(ServerLevel level, FrameMaintenance out)
+    {
+        int ships = strayShips.size(), people = strayPlayers.size();
+        if (ships + people == 0)
+        {
+            adoptWaitKey = ADOPT_NONE;
+            return 0;
+        }
+
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        PhysicsPipeline pipeline = container == null ? null : container.physicsSystem().getPipeline();
+        groups.clear();
+        for (int i = 0; i < ships; ++i) addShip(strayShips.get(i), pipeline);
+
+        for (int i = 0; i < people; ++i) addPlayer(strayPlayers.get(i));
+
+        groups.link(Config.FRAME_CLUSTER_LINK.get());
+        int adopted = 0;
+        long now = level.getGameTime();
+        for (int g = 0; g < groups.groups; ++g)
+        {
+            List<ServerSubLevel> groupShips = new ArrayList<>(groups.groupShips[g]);
+            List<ServerPlayer> groupPlayers = new ArrayList<>(groups.groupPlayers[g]);
+            gather(g, strayShips, strayPlayers, groupShips, groupPlayers);
+            LocalFrame near = nearFrame(g, now);
+            if (near != null && joinGroup(level, near, groupShips, groupPlayers, now))
+            {
+                ++adopted;
+                continue;
+            }
+
+            if (openGroup(level, g, groupShips, groupPlayers, now, out)) ++adopted;
+        }
+
+        return adopted;
+    }
+
+    private void addShip(ServerSubLevel ship, @Nullable PhysicsPipeline pipeline)
+    {
+        BoundingBox3dc b = ship.boundingBox();
+        Vector3d p = ship.logicalPose().position();
+        if (pipeline == null) linear.zero();
+        else pipeline.getLinearVelocity(ship, linear);
+
+        groups.add(b.minX(), b.minY(), b.minZ(), b.maxX(), b.maxY(), b.maxZ(), FrameTransfer.massOf(ship), p.x, p.y, p.z, linear.x, linear.y, linear.z, true);
+    }
+
+    private void addPlayer(ServerPlayer player)
+    {
+        AABB b = player.getBoundingBox();
+        groups.add(b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ, 0.0, player.getX(), player.getY(), player.getZ(), 0.0, 0.0, 0.0, false);
+    }
+
+    private void gather(int g, List<ServerSubLevel> ships, List<ServerPlayer> players, List<ServerSubLevel> shipsOut, List<ServerPlayer> playersOut)
+    {
+        for (int i = 0; i < groups.count; ++i)
+        {
+            if (groups.group[i] != g) continue;
+
+            if (i < groups.ships) shipsOut.add(ships.get(i));
+            else playersOut.add(players.get(i - groups.ships));
+        }
+    }
+
+    @Nullable
+    private LocalFrame nearFrame(int g, long now)
+    {
+        double link = Config.FRAME_CLUSTER_LINK.get();
+        int b = g * 6;
+        double gx = 0.5 * (groups.groupBox[b] + groups.groupBox[b + 3]), gy = 0.5 * (groups.groupBox[b + 1] + groups.groupBox[b + 4]), gz = 0.5 * (groups.groupBox[b + 2] + groups.groupBox[b + 5]);
+        double gr = halfDiagonal(groups.groupBox[b], groups.groupBox[b + 1], groups.groupBox[b + 2], groups.groupBox[b + 3], groups.groupBox[b + 4], groups.groupBox[b + 5]);
+        double[] c = new double[3];
+        LocalFrame best = null;
+        double bestGap = link;
+        for (int i = 0, n = frames.size(); i < n; ++i)
+        {
+            LocalFrame f = frames.get(i);
+            FrameBox box = f.box;
+            if (box.isEmpty()) continue;
+
+            virtualOf(f, 0.5 * (box.minX + box.maxX), 0.5 * (box.minY + box.maxY), 0.5 * (box.minZ + box.maxZ), now, 0.0, c);
+            double dx = c[0] - gx, dy = c[1] - gy, dz = c[2] - gz;
+            double gap = Math.sqrt(dx * dx + dy * dy + dz * dz) - gr - halfDiagonal(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
+            if (gap > bestGap) continue;
+
+            bestGap = gap;
+            best = f;
+        }
+
+        return best;
+    }
+
+    private boolean joinGroup(ServerLevel level, LocalFrame frame, List<ServerSubLevel> ships, List<ServerPlayer> players, long now)
+    {
+        FrameShift shift = shift(null, frame, now);
+        if (!fits(level, frame.cell, groupBounds(ships, players, shift, new double[6]))) return false;
+
+        FrameTransfer.carry(level, ships, players, entitiesNear(level, ships), shift);
+        Pioneer.LOGGER.info("frame #{} adopts ships={} players={}", frame.id, ships.size(), players.size());
+        for (int i = 0, n = ships.size(); i < n; ++i)
+            NeoForge.EVENT_BUS.post(new FrameEvent.Joined(level, frame, ships.get(i)));
+
+        return true;
+    }
+
+    private double[] groupBounds(List<ServerSubLevel> ships, List<ServerPlayer> players, FrameShift shift, double[] out)
+    {
+        FrameBox all = new FrameBox();
+        double[] one = new double[6];
+        for (int i = 0, n = ships.size(); i < n; ++i)
+        {
+            BoundingBox3dc b = ships.get(i).boundingBox();
+            shift.bounds(b.minX(), b.minY(), b.minZ(), b.maxX(), b.maxY(), b.maxZ(), one);
+            all.include(one[0], one[1], one[2], one[3], one[4], one[5]);
+        }
+
+        for (int i = 0, n = players.size(); i < n; ++i)
+        {
+            AABB b = players.get(i).getBoundingBox();
+            shift.bounds(b.minX, b.minY, b.minZ, b.maxX, b.maxY, b.maxZ, one);
+            all.include(one[0], one[1], one[2], one[3], one[4], one[5]);
+        }
+
+        out[0] = all.minX;
+        out[1] = all.minY;
+        out[2] = all.minZ;
+        out[3] = all.maxX;
+        out[4] = all.maxY;
+        out[5] = all.maxZ;
+        return out;
+    }
+
+    private boolean fits(ServerLevel level, int cell, double[] box)
+    {
+        double cx = grid.centerX(cell), cz = grid.centerZ(cell), half = grid.halfCell();
+        if (box[0] < cx - half || box[3] > cx + half || box[2] < cz - half || box[5] > cz + half) return false;
+
+        return box[1] >= level.getMinBuildHeight() && box[4] <= level.getMaxBuildHeight();
+    }
+
+    private boolean openGroup(ServerLevel level, int g, List<ServerSubLevel> ships, List<ServerPlayer> players, long now, FrameMaintenance out)
+    {
+        int cell = grid.nearestFree(c -> byCell[c] == null && strays[c] == itemsIn(g, c));
+        if (cell < 0)
+        {
+            adoptWaiting(out);
+            return false;
+        }
+
+        adoptWaitKey = ADOPT_NONE;
+        int p = g * 3;
+        double x = groups.groupPos[p], y = groups.groupPos[p + 1], z = groups.groupPos[p + 2];
+        double ux = groups.groupVel[p], uy = groups.groupVel[p + 1], uz = groups.groupVel[p + 2];
+        LocalFrame frame = new LocalFrame(nextId++, cell);
+        frame.motion.set(now, x, y, z, ux / TICKS_PER_SECOND, uy / TICKS_PER_SECOND, uz / TICKS_PER_SECOND, 0.0, 0.0, 0.0);
+        frame.auto = true;
+        frames.add(frame);
+        byCell[cell] = frame;
+        setDirty();
+        FrameSync.upsert(level, this, frame);
+        FrameShift shift = new FrameShift().translation(grid.centerX(cell) - x, grid.centerY() - y, grid.centerZ(cell) - z, -ux, -uy, -uz);
+        FrameTransfer.carry(level, ships, players, entitiesNear(level, ships), shift);
+        Pioneer.LOGGER.info("frame adopted #{} at ({},{}): ships={} players={}", frame.id, grid.ix(cell), grid.iz(cell), ships.size(), players.size());
+        NeoForge.EVENT_BUS.post(new FrameEvent.Created(level, frame));
+        return true;
+    }
+
+    private int itemsIn(int g, int cell)
+    {
+        int n = 0;
+        for (int i = 0; i < groups.count; ++i)
+        {
+            if (groups.group[i] == g && grid.cellAt(groups.pos[i * 3], groups.pos[i * 3 + 2]) == cell) ++n;
+        }
+
+        return n;
+    }
+
+    private void adoptWaiting(FrameMaintenance out)
+    {
+        int key = 1 + frames.size();
+        if (adoptWaitKey != key)
+        {
+            adoptWaitKey = key;
+            adoptWaitText = "adopt waiting: grid full " + frames.size() + "/" + grid.cellCount();
+            Pioneer.LOGGER.warn("frame {}", adoptWaitText);
+        }
+
+        out.waiting.add(adoptWaitText);
+    }
+
+    private int splitFrames(ServerLevel level, FrameMaintenance out)
+    {
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        PhysicsPipeline pipeline = container == null ? null : container.physicsSystem().getPipeline();
+        double link = Config.FRAME_CLUSTER_LINK.get(), apart = Config.FRAME_SPLIT_DISTANCE.get(), margin = Config.FRAME_EDGE_MARGIN.get();
+        double distance = Math.min(Config.FRAME_RECENTER_DISTANCE.get(), Math.max(16.0, grid.halfCell() - margin)), speed = Config.FRAME_RECENTER_SPEED.get();
+        int period = Config.FRAME_MAINTAIN_PERIOD.get();
+        double ahead = period > 0 ? period / TICKS_PER_SECOND : 1.0;
+        double cy = grid.centerY(), room = Math.min(level.getMaxBuildHeight() - cy, cy - level.getMinBuildHeight());
+        long now = level.getGameTime();
+        int split = 0;
+        for (int i = 0, n = frames.size(); i < n; ++i)
+        {
+            LocalFrame f = frames.get(i);
+            f.edgeRecenter = false;
+            int ships = f.members.size(), people = f.players.size();
+            if (ships + people == 0) continue;
+
+            groups.clear();
+            for (int s = 0; s < ships; ++s) addShip(f.members.get(s), pipeline);
+
+            for (int s = 0; s < people; ++s) addPlayer(f.players.get(s));
+
+            groups.link(link);
+            int main = mainGroup(f);
+            if (crosses(level, f, main, 2.0 * ahead, margin)) f.edgeRecenter = true;
+            if (groups.groups == 1 && f.dormant == 0) continue;
+
+            for (int g = 0; g < groups.groups; ++g)
+            {
+                FrameEvent.Reason reason = reason(level, f, g, main, apart, margin, 2.0 * ahead, distance, speed, ahead, room);
+                if (reason == null) continue;
+
+                List<ServerSubLevel> groupShips = new ArrayList<>(groups.groupShips[g]);
+                List<ServerPlayer> groupPlayers = new ArrayList<>(groups.groupPlayers[g]);
+                gather(g, f.members, f.players, groupShips, groupPlayers);
+                if (splitGroup(level, f, g, groupShips, groupPlayers, reason, now, out)) ++split;
+            }
+        }
+
+        return split;
+    }
+
+    private int mainGroup(LocalFrame f)
+    {
+        int anchor = f.anchor == null ? -1 : groups.group[f.members.indexOf(f.anchor)];
+        int best = 0;
+        for (int g = 1; g < groups.groups; ++g)
+        {
+            double dm = groups.groupMass[g] - groups.groupMass[best];
+            if (dm > 0.0)
+            {
+                best = g;
+                continue;
+            }
+
+            if (dm < 0.0 || best == anchor) continue;
+            if (g == anchor || groups.groupShips[g] > groups.groupShips[best] || (groups.groupShips[g] == groups.groupShips[best] && groups.groupPlayers[g] > groups.groupPlayers[best]))
+                best = g;
+        }
+
+        return best;
+    }
+
+    @Nullable
+    private FrameEvent.Reason reason(ServerLevel level, LocalFrame f, int g, int main, double apart, double margin, double horizon, double distance, double speed, double ahead, double room)
+    {
+        if (g != main && groups.groupGap(g, main) > apart) return FrameEvent.Reason.DISTANCE;
+        if (g != main && crosses(level, f, g, horizon, margin)) return FrameEvent.Reason.EDGE;
+        if (f.dormant == 0) return null;
+
+        int p = g * 3;
+        double ox = groups.groupPos[p] - grid.centerX(f.cell), oy = groups.groupPos[p + 1] - grid.centerY(), oz = groups.groupPos[p + 2] - grid.centerZ(f.cell);
+        return due(ox, oy, oz, groups.groupVel[p], groups.groupVel[p + 1], groups.groupVel[p + 2], distance, speed, ahead, room) ? FrameEvent.Reason.DORMANT : null;
+    }
+
+    private boolean crosses(ServerLevel level, LocalFrame f, int g, double horizon, double margin)
+    {
+        int b = g * 6, p = g * 3;
+        double[] box = groups.groupBox;
+        double vx = groups.groupVel[p] * horizon, vy = groups.groupVel[p + 1] * horizon, vz = groups.groupVel[p + 2] * horizon;
+        double cx = grid.centerX(f.cell), cz = grid.centerZ(f.cell), half = grid.halfCell() - margin;
+        if (box[b] + Math.min(0.0, vx) < cx - half || box[b + 3] + Math.max(0.0, vx) > cx + half) return true;
+        if (box[b + 2] + Math.min(0.0, vz) < cz - half || box[b + 5] + Math.max(0.0, vz) > cz + half) return true;
+
+        return box[b + 1] + Math.min(0.0, vy) < level.getMinBuildHeight() || box[b + 4] + Math.max(0.0, vy) > level.getMaxBuildHeight();
+    }
+
+    private boolean splitGroup(ServerLevel level, LocalFrame f, int g, List<ServerSubLevel> ships, List<ServerPlayer> players, FrameEvent.Reason reason, long now, FrameMaintenance out)
+    {
+        int cell = grid.nearestFree(c -> byCell[c] == null && strays[c] == 0);
+        if (cell < 0)
+        {
+            splitWaiting(f, out);
+            return false;
+        }
+
+        f.splitWaitKey = 0;
+        int p = g * 3;
+        double ox = groups.groupPos[p] - grid.centerX(f.cell), oy = groups.groupPos[p + 1] - grid.centerY(), oz = groups.groupPos[p + 2] - grid.centerZ(f.cell);
+        double ux = groups.groupVel[p], uy = groups.groupVel[p + 1], uz = groups.groupVel[p + 2];
+        LocalFrame into = new LocalFrame(nextId++, cell);
+        into.motion.set(f.motion);
+        into.motion.recenter(now, ox, oy, oz, ux / TICKS_PER_SECOND, uy / TICKS_PER_SECOND, uz / TICKS_PER_SECOND);
+        into.attach(f.parentName, f.fixed);
+        into.auto = true;
+        for (int i = 0, n = ships.size(); i < n; ++i) f.forget(ships.get(i).getUniqueId());
+
+        frames.add(into);
+        byCell[cell] = into;
+        setDirty();
+        FrameSync.upsert(level, this, into);
+        double dx = grid.centerX(cell) - grid.centerX(f.cell), dz = grid.centerZ(cell) - grid.centerZ(f.cell);
+        FrameShift shift = new FrameShift().translation(dx - ox, -oy, dz - oz, -ux, -uy, -uz);
+        FrameTransfer.carry(level, ships, players, entitiesNear(level, ships), shift);
+        String why = reason.name().toLowerCase(Locale.ROOT);
+        Pioneer.LOGGER.info("frame #{} split into #{} at ({},{}) ({}): ships={} players={}", f.id, into.id, grid.ix(cell), grid.iz(cell), why, ships.size(), players.size());
+        NeoForge.EVENT_BUS.post(new FrameEvent.Created(level, into));
+        NeoForge.EVENT_BUS.post(new FrameEvent.Split(level, f, into, List.copyOf(ships), players.size(), reason));
+        return true;
+    }
+
+    private void splitWaiting(LocalFrame f, FrameMaintenance out)
+    {
+        int key = 1 + frames.size();
+        if (f.splitWaitKey != key)
+        {
+            f.splitWaitKey = key;
+            f.splitWaitText = "split #" + f.id + " waiting: grid full " + frames.size() + "/" + grid.cellCount();
+            Pioneer.LOGGER.warn("frame {}", f.splitWaitText);
+        }
+
+        out.waiting.add(f.splitWaitText);
     }
 
     private boolean barycenter(LocalFrame f, @Nullable ServerSubLevelContainer container)

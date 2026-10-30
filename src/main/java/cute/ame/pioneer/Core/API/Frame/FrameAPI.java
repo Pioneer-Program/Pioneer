@@ -281,9 +281,8 @@ public final class FrameAPI
 
     public static FrameMaintenance maintain(ServerLevel level)
     {
-        FrameManager manager = FrameManager.of(level);
         FrameMaintenance report = new FrameMaintenance();
-        return manager == null ? report : manager.maintain(level, report);
+        return supports(level) ? FrameManager.getOrCreate(level).maintain(level, report) : report;
     }
 
     public static String name(ServerSubLevel ship)

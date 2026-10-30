@@ -6,11 +6,11 @@ import java.util.List;
 public final class FrameMaintenance
 {
     public final List<String> waiting = new ArrayList<>(2);
-    public int frames, dormant, swept, recentered, split, merged;
+    public int frames, dormant, swept, adopted, recentered, split, merged;
 
     public FrameMaintenance clear()
     {
-        frames = dormant = swept = recentered = split = merged = 0;
+        frames = dormant = swept = adopted = recentered = split = merged = 0;
         waiting.clear();
         return this;
     }

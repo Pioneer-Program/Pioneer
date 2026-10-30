@@ -43,6 +43,9 @@ public final class LocalFrame
     int dormant;
     int waitKey;
     String waitText = "";
+    int splitWaitKey;
+    String splitWaitText = "";
+    boolean edgeRecenter;
     @Nullable
     private FrameParent parent;
     @Nullable
@@ -215,6 +218,11 @@ public final class LocalFrame
         records.add(m);
         ids.add(id);
         return m;
+    }
+
+    void forget(UUID id)
+    {
+        for (int i = records.size() - 1; i >= 0; --i) if (records.get(i).id.equals(id)) removeRecord(i);
     }
 
     void removeRecord(int index)

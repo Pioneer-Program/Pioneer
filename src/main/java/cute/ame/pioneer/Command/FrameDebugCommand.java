@@ -668,7 +668,7 @@ public final class FrameDebugCommand
         Space space = space(ctx);
         CommandSourceStack source = ctx.getSource();
         FrameMaintenance report = FrameAPI.maintain(space.level());
-        source.sendSuccess(() -> Component.literal(PREFIX + String.format(Locale.ROOT, ChatFormatting.WHITE + "pass: " + ChatFormatting.GRAY + "frames=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "dormant=" + ChatFormatting.GOLD + "%d " + ChatFormatting.GRAY + "swept=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "recentered=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "split=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "merged=" + ChatFormatting.GREEN + "%d", report.frames, report.dormant, report.swept, report.recentered, report.split, report.merged)), false);
+        source.sendSuccess(() -> Component.literal(PREFIX + String.format(Locale.ROOT, ChatFormatting.WHITE + "pass: " + ChatFormatting.GRAY + "frames=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "dormant=" + ChatFormatting.GOLD + "%d " + ChatFormatting.GRAY + "swept=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "adopted=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "recentered=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "split=" + ChatFormatting.GREEN + "%d " + ChatFormatting.GRAY + "merged=" + ChatFormatting.GREEN + "%d", report.frames, report.dormant, report.swept, report.adopted, report.recentered, report.split, report.merged)), false);
         for (String reason : report.waiting)
             source.sendSuccess(() -> Component.literal("  " + ChatFormatting.GOLD + reason), false);
 
