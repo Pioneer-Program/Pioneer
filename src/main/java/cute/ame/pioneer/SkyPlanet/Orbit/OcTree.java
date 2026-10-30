@@ -2,6 +2,7 @@ package cute.ame.pioneer.SkyPlanet.Orbit;
 
 import cute.ame.pioneer.SkyPlanet.Orbit.MassList;
 import cute.ame.pioneer.SkyPlanet.Orbit.TreeNode;
+import cute.ame.pioneer.SkyPlanet.Physics.Constants;
 
 import org.joml.Vector3d;
 import java.lang.String;
@@ -264,11 +265,87 @@ public class OcTree {
     public Vector3d nBodyGravity(MassObject point, String root, Double theta)
     {
         /* get gravitational acceleration for a single location due to the whole tree */
+        // if l/D < theta, use node average mass and skip its children
+        
+        Vector3d a = new Vector3d(0.0d, 0.0d, 0.0d);
+
+        if (root == point.getId())
+        {
+            // node is the current particle, skip it
+            return a;
+        }
+        else
+        {
+            // evaluate against threshold theta
+            // or if this is a leaf, we have to use it
+            Vector3d rp = point.getR();
+            TreeNode node = ocTree.get(root);
+
+            // width of current cell
+            Double l = node.bBox().get(1) - node.bBox().get(0);
+
+            // distance to node's center of mass
+            Vector3d r = node.com().sub(rp);
+
+            Double D = r.length();
+        
+            Boolean useNode = (l.div(D) < theta) | (node.children().size() == 0);
+
+            if (useNode)
+            {
+                // compute this node's average force
+                // then skip all its children
+
+                // a_12 = G * m2 * rvec / r^3
+                // where rvec = x2 - x1 and r = ||rvec||
+                a = r.mul(node.mu()).div(D * D * D);
+
+                return a;
+            }
+            else
+            {
+                // process this node's children
+                
+                for (String key : node.children())
+                {
+                    a.add(this.nBodyGravity(
+                        point,
+                        key, 
+                        theta
+                    ));
+                }
+            }
+        }
+
+        return a;
     }
 
-    public ArrayList<Vector3d> ensembleGravity(MassList m, Double theta)
+    public void ensembleGravity(MassList m, Double theta)
     {
         /* calculate gravitational acceleration at all locations in the input list */
+        
+        String root = "root"; // root node of ocTree
+
+        // calculate force on each particle from the entire octree
+        for (Integer i=0; i < m.size(); i++)
+        {
+            // if a particle has fix = True, don't apply gravitational acceleration
+            if !m.get(i).getFix()
+            {
+                // loop over every octree entry
+                // if l/D < theta, use node average mass and skip its children
+            
+                m.get(i).setA(this.nBodyGravity(
+                    m.get(i),
+                    root,
+                    theta
+                ));
+            }
+            else
+            {
+                m.get(i).setA(new Vector3d(0.0, 0.0, 0.0));
+            }
+        }
     }
 }
 
