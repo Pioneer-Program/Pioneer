@@ -1,5 +1,8 @@
 package cute.ame.pioneer.Core.Frame;
 
+import org.joml.Quaterniond;
+import org.joml.Vector3d;
+
 public final class FrameMotion
 {
     public long epoch;
@@ -62,23 +65,16 @@ public final class FrameMotion
         return Math.sqrt(wx * wx + wy * wy + wz * wz);
     }
 
-    public double[] orientationAt(long tick, double partial, double[] out)
+    public Quaterniond orientationAt(long tick, double partial, Quaterniond dest)
     {
-        out[0] = qx;
-        out[1] = qy;
-        out[2] = qz;
-        out[3] = qw;
-        if (!spinning()) return out;
+        if (!spinning()) return dest.set(qx, qy, qz, qw);
 
         double rate = spinRate();
         double half = 0.5 * rate * dt(tick, partial);
         double s = Math.sin(half) / rate, c = Math.cos(half);
         double rx = wx * s, ry = wy * s, rz = wz * s;
-        out[0] = c * qx + rx * qw + ry * qz - rz * qy;
-        out[1] = c * qy - rx * qz + ry * qw + rz * qx;
-        out[2] = c * qz + rx * qy - ry * qx + rz * qw;
-        out[3] = c * qw - rx * qx - ry * qy - rz * qz;
-        return FrameQuat.normalize(out);
+        dest.set(c * qx + rx * qw + ry * qz - rz * qy, c * qy - rx * qz + ry * qw + rz * qx, c * qz + rx * qy - ry * qx + rz * qw, c * qw - rx * qx - ry * qy - rz * qz);
+        return FrameQuat.normalize(dest);
     }
 
     public double dt(long tick, double partial)
@@ -101,22 +97,16 @@ public final class FrameMotion
         return pz + dt * (vz + 0.5 * az * dt);
     }
 
-    public double[] positionAt(long tick, double partial, double[] out)
+    public Vector3d positionAt(long tick, double partial, Vector3d dest)
     {
         double dt = dt(tick, partial);
-        out[0] = x(dt);
-        out[1] = y(dt);
-        out[2] = z(dt);
-        return out;
+        return dest.set(x(dt), y(dt), z(dt));
     }
 
-    public double[] velocityAt(long tick, double partial, double[] out)
+    public Vector3d velocityAt(long tick, double partial, Vector3d dest)
     {
         double dt = dt(tick, partial);
-        out[0] = vx + ax * dt;
-        out[1] = vy + ay * dt;
-        out[2] = vz + az * dt;
-        return out;
+        return dest.set(vx + ax * dt, vy + ay * dt, vz + az * dt);
     }
 
     public double speedAt(long tick)
@@ -137,8 +127,8 @@ public final class FrameMotion
 
         if (spinning())
         {
-            double[] q = orientationAt(tick, 0.0, new double[4]);
-            orient(q[0], q[1], q[2], q[3]);
+            Quaterniond q = orientationAt(tick, 0.0, new Quaterniond());
+            orient(q.x, q.y, q.z, q.w);
         }
 
         double dt = tick - epoch;
@@ -181,15 +171,14 @@ public final class FrameMotion
         rebase(tick);
         if (rotated())
         {
-            double[] q = {qx, qy, qz, qw}, o = new double[3], u = new double[3];
-            FrameQuat.rotate(q, ox, oy, oz, o);
-            FrameQuat.rotate(q, ux, uy, uz, u);
-            ox = o[0];
-            oy = o[1];
-            oz = o[2];
-            ux = u[0] + wy * oz - wz * oy;
-            uy = u[1] + wz * ox - wx * oz;
-            uz = u[2] + wx * oy - wy * ox;
+            Quaterniond q = new Quaterniond(qx, qy, qz, qw);
+            Vector3d o = FrameQuat.rotate(q, ox, oy, oz, new Vector3d()), u = FrameQuat.rotate(q, ux, uy, uz, new Vector3d());
+            ox = o.x;
+            oy = o.y;
+            oz = o.z;
+            ux = u.x + wy * oz - wz * oy;
+            uy = u.y + wz * ox - wx * oz;
+            uz = u.z + wx * oy - wy * ox;
         }
 
         return translate(ox, oy, oz).addVelocity(ux, uy, uz);

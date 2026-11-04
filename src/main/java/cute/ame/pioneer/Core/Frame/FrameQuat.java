@@ -1,114 +1,79 @@
 package cute.ame.pioneer.Core.Frame;
 
+import org.joml.Quaterniond;
+import org.joml.Quaterniondc;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
+
 public final class FrameQuat
 {
     public static final double IDENTITY_EPSILON = 1.0e-12;
 
-    public static double[] identity(double[] q)
-    {
-        q[0] = 0.0;
-        q[1] = 0.0;
-        q[2] = 0.0;
-        q[3] = 1.0;
-        return q;
-    }
-
-    public static double[] axisAngle(double ax, double ay, double az, double angle, double[] out)
+    public static Quaterniond axisAngle(double ax, double ay, double az, double angle, Quaterniond dest)
     {
         double len = Math.sqrt(ax * ax + ay * ay + az * az);
-        if (len < IDENTITY_EPSILON || angle == 0.0) return identity(out);
+        if (len < IDENTITY_EPSILON || angle == 0.0) return dest.identity();
 
         double s = Math.sin(angle * 0.5) / len;
-        out[0] = ax * s;
-        out[1] = ay * s;
-        out[2] = az * s;
-        out[3] = Math.cos(angle * 0.5);
-        return out;
+        return dest.set(ax * s, ay * s, az * s, Math.cos(angle * 0.5));
     }
 
-    public static double[] fromAxes(double[] x, double[] y, double[] z, double[] out)
+    public static Quaterniond fromAxes(Vector3dc x, Vector3dc y, Vector3dc z, Quaterniond dest)
     {
-        double trace = x[0] + y[1] + z[2];
+        double trace = x.x() + y.y() + z.z();
         if (trace > 0.0)
         {
             double s = Math.sqrt(trace + 1.0) * 2.0;
-            out[0] = (y[2] - z[1]) / s;
-            out[1] = (z[0] - x[2]) / s;
-            out[2] = (x[1] - y[0]) / s;
-            out[3] = 0.25 * s;
+            dest.set((y.z() - z.y()) / s, (z.x() - x.z()) / s, (x.y() - y.x()) / s, 0.25 * s);
         }
-        else if (x[0] > y[1] && x[0] > z[2])
+        else if (x.x() > y.y() && x.x() > z.z())
         {
-            double s = Math.sqrt(1.0 + x[0] - y[1] - z[2]) * 2.0;
-            out[0] = 0.25 * s;
-            out[1] = (y[0] + x[1]) / s;
-            out[2] = (z[0] + x[2]) / s;
-            out[3] = (y[2] - z[1]) / s;
+            double s = Math.sqrt(1.0 + x.x() - y.y() - z.z()) * 2.0;
+            dest.set(0.25 * s, (y.x() + x.y()) / s, (z.x() + x.z()) / s, (y.z() - z.y()) / s);
         }
-        else if (y[1] > z[2])
+        else if (y.y() > z.z())
         {
-            double s = Math.sqrt(1.0 + y[1] - x[0] - z[2]) * 2.0;
-            out[0] = (y[0] + x[1]) / s;
-            out[1] = 0.25 * s;
-            out[2] = (z[1] + y[2]) / s;
-            out[3] = (z[0] - x[2]) / s;
+            double s = Math.sqrt(1.0 + y.y() - x.x() - z.z()) * 2.0;
+            dest.set((y.x() + x.y()) / s, 0.25 * s, (z.y() + y.z()) / s, (z.x() - x.z()) / s);
         }
         else
         {
-            double s = Math.sqrt(1.0 + z[2] - x[0] - y[1]) * 2.0;
-            out[0] = (z[0] + x[2]) / s;
-            out[1] = (z[1] + y[2]) / s;
-            out[2] = 0.25 * s;
-            out[3] = (x[1] - y[0]) / s;
+            double s = Math.sqrt(1.0 + z.z() - x.x() - y.y()) * 2.0;
+            dest.set((z.x() + x.z()) / s, (z.y() + y.z()) / s, 0.25 * s, (x.y() - y.x()) / s);
         }
 
-        return normalize(out);
+        return normalize(dest);
     }
 
-    public static double[] mul(double[] a, double[] b, double[] out)
+    public static Quaterniond mul(Quaterniondc a, Quaterniondc b, Quaterniond dest)
     {
-        double x = a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1];
-        double y = a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0];
-        double z = a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3];
-        double w = a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2];
-        out[0] = x;
-        out[1] = y;
-        out[2] = z;
-        out[3] = w;
-        return out;
+        double x = a.w() * b.x() + a.x() * b.w() + a.y() * b.z() - a.z() * b.y();
+        double y = a.w() * b.y() - a.x() * b.z() + a.y() * b.w() + a.z() * b.x();
+        double z = a.w() * b.z() + a.x() * b.y() - a.y() * b.x() + a.z() * b.w();
+        double w = a.w() * b.w() - a.x() * b.x() - a.y() * b.y() - a.z() * b.z();
+        return dest.set(x, y, z, w);
     }
 
-    public static double[] conjugate(double[] q, double[] out)
+    public static Quaterniond normalize(Quaterniond q)
     {
-        out[0] = -q[0];
-        out[1] = -q[1];
-        out[2] = -q[2];
-        out[3] = q[3];
-        return out;
-    }
-
-    public static double[] normalize(double[] q)
-    {
-        double len = Math.sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
-        if (len < IDENTITY_EPSILON) return identity(q);
+        double len = Math.sqrt(q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
+        if (len < IDENTITY_EPSILON) return q.identity();
 
         double inv = 1.0 / len;
-        q[0] *= inv;
-        q[1] *= inv;
-        q[2] *= inv;
-        q[3] *= inv;
+        q.x *= inv;
+        q.y *= inv;
+        q.z *= inv;
+        q.w *= inv;
         return q;
     }
 
-    public static double[] rotate(double[] q, double vx, double vy, double vz, double[] out)
+    public static Vector3d rotate(Quaterniondc q, double vx, double vy, double vz, Vector3d dest)
     {
-        double tx = 2.0 * (q[1] * vz - q[2] * vy);
-        double ty = 2.0 * (q[2] * vx - q[0] * vz);
-        double tz = 2.0 * (q[0] * vy - q[1] * vx);
-        out[0] = vx + q[3] * tx + (q[1] * tz - q[2] * ty);
-        out[1] = vy + q[3] * ty + (q[2] * tx - q[0] * tz);
-        out[2] = vz + q[3] * tz + (q[0] * ty - q[1] * tx);
-        return out;
+        double qx = q.x(), qy = q.y(), qz = q.z(), qw = q.w();
+        double tx = 2.0 * (qy * vz - qz * vy);
+        double ty = 2.0 * (qz * vx - qx * vz);
+        double tz = 2.0 * (qx * vy - qy * vx);
+        return dest.set(vx + qw * tx + (qy * tz - qz * ty), vy + qw * ty + (qz * tx - qx * tz), vz + qw * tz + (qx * ty - qy * tx));
     }
 
     public static boolean isIdentity(double qx, double qy, double qz)

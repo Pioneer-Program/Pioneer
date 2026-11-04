@@ -10,13 +10,10 @@ import dev.ryanhcode.sable.sublevel.ClientSubLevel;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(value = ClientSubLevel.class, remap = false)
 public abstract class ClientSubLevelShiftMixin implements ShiftableSubLevel
 {
-    @Unique private final double[] pioneer$scratch = new double[4];
-
     @Shadow
     @Final
     private SubLevelSnapshotInterpolator interpolator;
@@ -27,8 +24,8 @@ public abstract class ClientSubLevelShiftMixin implements ShiftableSubLevel
     public void pioneer$shift(int tick, FrameShift shift)
     {
         ClientSubLevel self = (ClientSubLevel) (Object) this;
-        ShiftPoses.apply(self.logicalPose(), shift, pioneer$scratch);
-        ShiftPoses.apply((Pose3d) self.lastPose(), shift, pioneer$scratch);
+        ShiftPoses.apply(self.logicalPose(), shift);
+        ShiftPoses.apply((Pose3d) self.lastPose(), shift);
         ((ShiftableInterpolator) interpolator).pioneer$shift(tick, shift);
         lastRenderPosePartialTick = -1.0f;
         self.forceUpdateBounds();

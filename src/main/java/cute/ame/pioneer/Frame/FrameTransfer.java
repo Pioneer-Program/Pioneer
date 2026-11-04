@@ -2,6 +2,7 @@ package cute.ame.pioneer.Frame;
 
 import cute.ame.pioneer.Core.API.Frame.FrameError;
 import cute.ame.pioneer.Core.API.Frame.FrameReport;
+import cute.ame.pioneer.Core.Frame.FrameLook;
 import cute.ame.pioneer.Core.Frame.FrameShift;
 import cute.ame.pioneer.Frame.Network.FrameShiftPayload;
 import dev.ryanhcode.sable.Sable;
@@ -20,7 +21,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import org.joml.Quaterniond;
-import org.joml.Quaterniondc;
 import org.joml.Vector3d;
 
 import javax.annotation.Nullable;
@@ -106,7 +106,7 @@ public final class FrameTransfer
         }
 
         report.tick = container.trackingSystem().getInterpolationTick();
-        double[] p = new double[4];
+        Vector3d p = new Vector3d();
         Vector3d target = new Vector3d();
         Quaterniond turn = new Quaterniond();
         Vector3d linear = new Vector3d(), angular = new Vector3d();
@@ -118,11 +118,8 @@ public final class FrameTransfer
             if (subLevel.isRemoved()) continue;
 
             Vector3d at = subLevel.logicalPose().position();
-            shift.position(at.x, at.y, at.z, p);
-            target.set(p[0], p[1], p[2]);
-            Quaterniondc o = subLevel.logicalPose().orientation();
-            shift.orientation(o.x(), o.y(), o.z(), o.w(), p);
-            turn.set(p[0], p[1], p[2], p[3]);
+            shift.position(at.x, at.y, at.z, target);
+            shift.orientation(subLevel.logicalPose().orientation(), turn);
             pipeline.teleport(subLevel, target, turn);
 
             subLevel.updateLastPose();
@@ -165,12 +162,13 @@ public final class FrameTransfer
             }
 
             shift.position(player.getX(), player.getY(), player.getZ(), p);
-            double x = p[0], y = p[1], z = p[2];
+            double x = p.x, y = p.y, z = p.z;
             if (shift.rotated && kind[i] != RIDER) turn(player, shift, x, y, z, p);
             else player.absMoveTo(x, y, z);
 
             if (kind[i] == RIDER)
             {
+                ((HeldMoves) player.connection).pioneer$hold();
                 report.riders++;
                 continue;
             }
@@ -198,68 +196,71 @@ public final class FrameTransfer
         return report;
     }
 
-    private static void turnVelocity(PhysicsPipeline pipeline, ServerSubLevel subLevel, FrameShift shift, Vector3d at, Vector3d linear, Vector3d angular, double[] p)
+    private static void turnVelocity(PhysicsPipeline pipeline, ServerSubLevel subLevel, FrameShift shift, Vector3d at, Vector3d linear, Vector3d angular, Vector3d p)
     {
         pipeline.getLinearVelocity(subLevel, linear);
         pipeline.getAngularVelocity(subLevel, angular);
         shift.direction(linear.x, linear.y, linear.z, p);
-        double vx = p[0], vy = p[1], vz = p[2];
+        double vx = p.x, vy = p.y, vz = p.z;
         shift.kick(at.x, at.y, at.z, p);
-        linear.set(vx + p[0] - linear.x, vy + p[1] - linear.y, vz + p[2] - linear.z);
+        linear.set(vx + p.x - linear.x, vy + p.y - linear.y, vz + p.z - linear.z);
         shift.direction(angular.x, angular.y, angular.z, p);
-        angular.set(p[0] + shift.wx - angular.x, p[1] + shift.wy - angular.y, p[2] + shift.wz - angular.z);
+        angular.set(p.x + shift.wx - angular.x, p.y + shift.wy - angular.y, p.z + shift.wz - angular.z);
         pipeline.addLinearAndAngularVelocity(subLevel, linear, angular);
     }
 
-    private static void turn(ServerPlayer player, FrameShift shift, double x, double y, double z, double[] p)
+    private static void turn(ServerPlayer player, FrameShift shift, double x, double y, double z, Vector3d p)
     {
         float yaw = player.getYRot();
         shift.look(yaw, player.getXRot(), p);
-        turnHead(player, (float) p[0] - yaw);
-        player.absMoveTo(x, y, z, (float) p[0], (float) p[1]);
+        float turnedYaw = FrameLook.yaw(p, yaw);
+        turnHead(player, turnedYaw - yaw);
+        player.absMoveTo(x, y, z, turnedYaw, FrameLook.pitch(p));
     }
 
-    private static void move(Entity entity, FrameShift shift, boolean kick, double[] p)
+    private static void move(Entity entity, FrameShift shift, boolean kick, Vector3d p)
     {
         shift.position(entity.getX(), entity.getY(), entity.getZ(), p);
-        double x = p[0], y = p[1], z = p[2];
+        double x = p.x, y = p.y, z = p.z;
         if (shift.rotated)
         {
             float yaw = entity.getYRot();
             shift.look(yaw, entity.getXRot(), p);
-            turnHead(entity, (float) p[0] - yaw);
-            entity.setYRot((float) p[0]);
-            entity.setXRot((float) p[1]);
+            float turnedYaw = FrameLook.yaw(p, yaw);
+            turnHead(entity, turnedYaw - yaw);
+            entity.setYRot(turnedYaw);
+            entity.setXRot(FrameLook.pitch(p));
         }
 
         entity.teleportTo(x, y, z);
         if (kick || shift.rotated) push(entity, shift, x, y, z, p);
     }
 
-    static void settle(Entity entity, FrameShift shift, double[] p)
+    static void settle(Entity entity, FrameShift shift, Vector3d p)
     {
         shift.position(entity.getX(), entity.getY(), entity.getZ(), p);
-        double x = p[0], y = p[1], z = p[2];
+        double x = p.x, y = p.y, z = p.z;
         float yaw = entity.getYRot(), pitch = entity.getXRot();
         if (shift.rotated)
         {
             shift.look(yaw, pitch, p);
-            turnHead(entity, (float) p[0] - yaw);
-            yaw = (float) p[0];
-            pitch = (float) p[1];
+            float turnedYaw = FrameLook.yaw(p, yaw);
+            turnHead(entity, turnedYaw - yaw);
+            pitch = FrameLook.pitch(p);
+            yaw = turnedYaw;
         }
 
         entity.moveTo(x, y, z, yaw, pitch);
         if (shift.kicks() || shift.rotated) push(entity, shift, x, y, z, p);
     }
 
-    private static void push(Entity entity, FrameShift shift, double x, double y, double z, double[] p)
+    private static void push(Entity entity, FrameShift shift, double x, double y, double z, Vector3d p)
     {
         Vec3 d = entity.getDeltaMovement();
         shift.direction(d.x, d.y, d.z, p);
-        double vx = p[0], vy = p[1], vz = p[2];
+        double vx = p.x, vy = p.y, vz = p.z;
         shift.kick(x, y, z, p);
-        entity.setDeltaMovement(vx + p[0] / TICKS_PER_SECOND, vy + p[1] / TICKS_PER_SECOND, vz + p[2] / TICKS_PER_SECOND);
+        entity.setDeltaMovement(vx + p.x / TICKS_PER_SECOND, vy + p.y / TICKS_PER_SECOND, vz + p.z / TICKS_PER_SECOND);
         entity.hurtMarked = true;
     }
 

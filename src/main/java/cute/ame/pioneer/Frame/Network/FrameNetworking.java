@@ -2,7 +2,10 @@ package cute.ame.pioneer.Frame.Network;
 
 import cute.ame.pioneer.Frame.Client.ClientFrames;
 import cute.ame.pioneer.Frame.Client.FrameShiftClient;
+import cute.ame.pioneer.Frame.HeldMoves;
 import cute.ame.pioneer.Pioneer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -17,5 +20,11 @@ public final class FrameNetworking
         PayloadRegistrar registrar = event.registrar(Pioneer.MODID).versioned("1");
         registrar.commonToClient(FrameShiftPayload.TYPE, FrameShiftPayload.CODEC, (payload, context) -> FrameShiftClient.apply(payload));
         registrar.commonToClient(FrameSyncPayload.TYPE, FrameSyncPayload.CODEC, (payload, context) -> ClientFrames.apply(payload));
+        registrar.playToServer(FrameShiftAckPayload.TYPE, FrameShiftAckPayload.CODEC, (payload, context) -> confirm(context.player()));
+    }
+
+    private static void confirm(Player player)
+    {
+        if (player instanceof ServerPlayer server) ((HeldMoves) server.connection).pioneer$confirm();
     }
 }

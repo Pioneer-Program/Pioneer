@@ -24,7 +24,6 @@ public abstract class SnapshotInterpolatorShiftMixin implements ShiftableInterpo
 
     @Unique private final int[] pioneer$tick = new int[PIONEER$SHIFTS];
     @Unique private final double[] pioneer$shifts = new double[PIONEER$SHIFTS * 7];
-    @Unique private final double[] pioneer$scratch = new double[4];
 
     @Shadow @Final public ObjectArrayList<SubLevelSnapshotInterpolator.Snapshot> buffer;
 
@@ -49,11 +48,11 @@ public abstract class SnapshotInterpolatorShiftMixin implements ShiftableInterpo
                 SubLevelSnapshotInterpolator.Snapshot s = buffer.get(i);
                 if (s.gameTick() >= tick) continue;
 
-                buffer.set(i, new SubLevelSnapshotInterpolator.Snapshot(s.gameTick(), ShiftPoses.apply(new Pose3d(s.pose()), shift, pioneer$scratch)));
+                buffer.set(i, new SubLevelSnapshotInterpolator.Snapshot(s.gameTick(), ShiftPoses.apply(new Pose3d(s.pose()), shift)));
             }
         }
 
-        ShiftPoses.apply(runningSnapshot, shift, pioneer$scratch);
+        ShiftPoses.apply(runningSnapshot, shift);
         int slot = pioneer$next;
         pioneer$tick[slot] = tick;
         ShiftPoses.store(shift, pioneer$shifts, slot);
@@ -70,7 +69,6 @@ public abstract class SnapshotInterpolatorShiftMixin implements ShiftableInterpo
         int start = pioneer$count < PIONEER$SHIFTS ? 0 : pioneer$next;
         Pose3d moved = null;
         FrameShift shift = null;
-        double[] scratch = null;
         for (int k = 0; k < pioneer$count; ++k)
         {
             int slot = (start + k) % PIONEER$SHIFTS;
@@ -80,10 +78,9 @@ public abstract class SnapshotInterpolatorShiftMixin implements ShiftableInterpo
             {
                 moved = new Pose3d(data);
                 shift = new FrameShift();
-                scratch = new double[4];
             }
 
-            ShiftPoses.apply(moved, ShiftPoses.load(pioneer$shifts, slot, shift), scratch);
+            ShiftPoses.apply(moved, ShiftPoses.load(pioneer$shifts, slot, shift));
         }
 
         if (moved == null) return;

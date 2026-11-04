@@ -36,6 +36,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.common.NeoForge;
+import org.joml.Quaterniond;
 import org.joml.Vector2i;
 import org.joml.Vector3d;
 
@@ -64,14 +65,14 @@ public final class FrameManager extends SavedData
     private final FrameMaintenance passReport = new FrameMaintenance();
     private final BlockPos.MutableBlockPos probe = new BlockPos.MutableBlockPos();
     private final Vector3d linear = new Vector3d();
-    private final FrameGroups groups = new FrameGroups();
     private final FrameShift stampShift = new FrameShift();
+    private final Vector3d stampPoint = new Vector3d();
+    private final FrameGroups groups = new FrameGroups();
     private final ArrayList<ServerSubLevel> strayShips = new ArrayList<>(4);
     private final ArrayList<ServerPlayer> strayPlayers = new ArrayList<>(2);
-    private double centerX, centerY, centerZ, driftX, driftY, driftZ;
     private int adoptWaitKey;
     private String adoptWaitText = "";
-    private final double[] stampPoint = new double[4];
+    private double centerX, centerY, centerZ, driftX, driftY, driftZ;
     private FrameShift[] cellShift;
     private long shiftEpoch;
     private FrameGrid grid;
@@ -164,8 +165,8 @@ public final class FrameManager extends SavedData
             f.motion.set(t.getLong("epoch"), t.getDouble("px"), t.getDouble("py"), t.getDouble("pz"), t.getDouble("vx"), t.getDouble("vy"), t.getDouble("vz"), t.getDouble("ax"), t.getDouble("ay"), t.getDouble("az"));
             if (t.contains("qw"))
             {
-                double[] q = FrameQuat.normalize(new double[]{t.getDouble("qx"), t.getDouble("qy"), t.getDouble("qz"), t.getDouble("qw")});
-                f.motion.orient(q[0], q[1], q[2], q[3]).spin(t.getDouble("wx"), t.getDouble("wy"), t.getDouble("wz"));
+                Quaterniond q = FrameQuat.normalize(new Quaterniond(t.getDouble("qx"), t.getDouble("qy"), t.getDouble("qz"), t.getDouble("qw")));
+                f.motion.orient(q.x, q.y, q.z, q.w).spin(t.getDouble("wx"), t.getDouble("wy"), t.getDouble("wz"));
             }
 
             f.attach(t.getString("parent"), t.getBoolean("fixed"));
@@ -388,9 +389,13 @@ public final class FrameManager extends SavedData
         return out.set(f.motion, f.parent(system()), f.fixed, tick, partial);
     }
 
-    public double[] originOf(LocalFrame f, long tick, double partial, double[] out)
+    private void shiftCell(int cell, FrameShift shift)
     {
-        return poseOf(f, tick, partial, pose).toSystem(0.0, 0.0, 0.0, out);
+        FrameShift total = cellShift[cell];
+        if (total == null) cellShift[cell] = total = new FrameShift().identity();
+
+        total.then(shift);
+        setDirty();
     }
 
     private static boolean loadedElsewhere(@Nullable ServerSubLevelContainer container, UUID id)
@@ -424,13 +429,13 @@ public final class FrameManager extends SavedData
         return list;
     }
 
-    private void shiftCell(int cell, FrameShift shift)
+    private void setGrid(FrameGrid grid)
     {
-        FrameShift total = cellShift[cell];
-        if (total == null) cellShift[cell] = total = new FrameShift().identity();
-
-        total.then(shift);
-        setDirty();
+        this.grid = grid;
+        this.byCell = new LocalFrame[grid.cellCount()];
+        this.strays = new int[grid.cellCount()];
+        this.cellShift = new FrameShift[grid.cellCount()];
+        ++shiftEpoch;
     }
 
     private void settleRecords(ServerLevel level, @Nullable ServerSubLevelContainer container)
@@ -476,60 +481,62 @@ public final class FrameManager extends SavedData
         return now - m.absentSince >= FORGET_TICKS ? "absent from its loaded area" : null;
     }
 
-    public double[] velocityOf(LocalFrame f, long tick, double[] out)
+    public Vector3d originOf(LocalFrame f, long tick, double partial, Vector3d out)
     {
-        return pose.velocity(f.motion, f.parent(system()), f.fixed, tick, 0.0, out);
+        return poseOf(f, tick, partial, pose).toSystem(0.0, 0.0, 0.0, out);
     }
 
-    public double[] virtualOf(LocalFrame f, double x, double y, double z, long tick, double partial, double[] out)
+    public void refresh(ServerLevel level)
     {
-        return poseOf(f, tick, partial, pose).toSystem(x - grid.centerX(f.cell), y - grid.centerY(), z - grid.centerZ(f.cell), out);
-    }
+        for (int i = 0, n = frames.size(); i < n; ++i) frames.get(i).clearMembers();
 
-    public FrameResult create(ServerLevel level, @Nullable ServerPlayer source, ServerSubLevel ship, @Nullable FrameBodies.Body body)
-    {
-        adoptConfigGrid();
-        refresh(level);
-        if (ship.isRemoved()) throw new FrameError("Ship was removed");
-
-        ship.updateBoundingBox();
-        Vector3d anchor = new Vector3d(ship.logicalPose().position());
-        LocalFrame existing = at(anchor.x, anchor.z);
-        if (existing != null) throw new FrameError("Ship is already in frame #" + existing.id);
-
-        LocalFrame own = source == null ? null : at(source.getX(), source.getZ());
-        if (own != null) throw new FrameError("You are in frame #" + own.id + ", release it first");
-
-        List<ServerSubLevel> subLevels = List.of(ship);
-        List<ServerPlayer> players = crewOf(level, source, ship);
-        List<Entity> entities = entitiesNear(level, ship);
-        int cell = grid.nearestFree(c -> byCell[c] == null && strays[c] == carriedIn(c, anchor, players));
-        if (cell < 0) throw new FrameError("No free cell (" + frames.size() + "/" + grid.cellCount() + " used)");
-
-        long now = level.getGameTime();
-        Vector3d shipVelocity = FrameTransfer.velocityOf(level, ship, new Vector3d());
-        LocalFrame frame = new LocalFrame(nextId++, cell);
-        if (body == null)
-            frame.motion.set(now, anchor.x, anchor.y, anchor.z, shipVelocity.x / 20.0, shipVelocity.y / 20.0, shipVelocity.z / 20.0, 0.0, 0.0, 0.0);
-        else
+        Arrays.fill(strays, 0);
+        strayShips.clear();
+        strayPlayers.clear();
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container != null)
         {
-            double[] p = body.parkingPoint(anchor.x, anchor.y, anchor.z, now, new double[3]);
-            double[] b = body.positionAt(now, 0.0, new double[3]);
-            frame.motion.set(now, p[0] - b[0], p[1] - b[1], p[2] - b[2], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-            frame.attach(body.name(), false);
+            for (ServerSubLevel subLevel : container.getAllSubLevels())
+            {
+                if (subLevel.isRemoved()) continue;
+
+                Vector3d p = subLevel.logicalPose().position();
+                int cell = grid.cellAt(p.x, p.z);
+                LocalFrame f = cell < 0 ? null : byCell[cell];
+                if (f != null)
+                {
+                    if (f.addMember(subLevel, FrameTransfer.massOf(subLevel))) setDirty();
+
+                    continue;
+                }
+
+                strayShips.add(subLevel);
+                if (cell >= 0) ++strays[cell];
+            }
         }
 
-        frames.add(frame);
-        byCell[cell] = frame;
-        setDirty();
-        FrameSync.upsert(level, this, frame);
-        FrameShift shift = new FrameShift().translation(grid.centerX(cell) - anchor.x, grid.centerY() - anchor.y, grid.centerZ(cell) - anchor.z, -shipVelocity.x, -shipVelocity.y, -shipVelocity.z);
-        FrameReport report = FrameTransfer.carry(level, subLevels, players, entities, shift);
+        List<ServerPlayer> players = level.players();
+        for (int i = 0, n = players.size(); i < n; ++i)
+        {
+            ServerPlayer player = players.get(i);
+            int cell = grid.cellAt(player.getX(), player.getZ());
+            LocalFrame f = cell < 0 ? null : byCell[cell];
+            if (f != null)
+            {
+                f.addPlayer(player);
+                continue;
+            }
 
-        refresh(level);
-        Pioneer.LOGGER.info("frame created #{} at ({},{})", frame.id, grid.ix(cell), grid.iz(cell));
-        NeoForge.EVENT_BUS.post(new FrameEvent.Created(level, frame));
-        return new FrameResult(frame, report);
+            if (player.isAlive()) strayPlayers.add(player);
+            if (cell >= 0) ++strays[cell];
+        }
+
+        settleRecords(level, container);
+    }
+
+    public Vector3d velocityOf(LocalFrame f, long tick, Vector3d out)
+    {
+        return pose.velocity(f.motion, f.parent(system()), f.fixed, tick, 0.0, out);
     }
 
     public LocalFrame open(ServerLevel level, FrameMotion motion, @Nullable FrameParent parent, boolean fixed, boolean auto)
@@ -592,13 +599,9 @@ public final class FrameManager extends SavedData
         maintain(level, passReport);
     }
 
-    private void setGrid(FrameGrid grid)
+    public Vector3d virtualOf(LocalFrame f, double x, double y, double z, long tick, double partial, Vector3d out)
     {
-        this.grid = grid;
-        this.byCell = new LocalFrame[grid.cellCount()];
-        this.strays = new int[grid.cellCount()];
-        this.cellShift = new FrameShift[grid.cellCount()];
-        ++shiftEpoch;
+        return poseOf(f, tick, partial, pose).toSystem(x - grid.centerX(f.cell), y - grid.centerY(), z - grid.centerZ(f.cell), out);
     }
 
     private void remove(ServerLevel level, LocalFrame frame)
@@ -621,25 +624,50 @@ public final class FrameManager extends SavedData
         setDirty();
     }
 
-    @Nullable
-    public LocalFrame nearest(double x, double y, double z, long tick, double radius, double[] offsetOut)
+    public FrameResult create(ServerLevel level, @Nullable ServerPlayer source, ServerSubLevel ship, @Nullable FrameBodies.Body body)
     {
-        LocalFrame best = null;
-        double bestD = radius * radius;
-        double[] o = new double[3];
-        for (LocalFrame f : frames)
-        {
-            poseOf(f, tick, 0.0, pose).toLocal(x, y, z, o);
-            double d = o[0] * o[0] + o[1] * o[1] + o[2] * o[2];
-            if (d > bestD) continue;
+        adoptConfigGrid();
+        refresh(level);
+        if (ship.isRemoved()) throw new FrameError("Ship was removed");
 
-            bestD = d;
-            best = f;
-            offsetOut[0] = o[0];
-            offsetOut[1] = o[1];
-            offsetOut[2] = o[2];
+        ship.updateBoundingBox();
+        Vector3d anchor = new Vector3d(ship.logicalPose().position());
+        LocalFrame existing = at(anchor.x, anchor.z);
+        if (existing != null) throw new FrameError("Ship is already in frame #" + existing.id);
+
+        LocalFrame own = source == null ? null : at(source.getX(), source.getZ());
+        if (own != null) throw new FrameError("You are in frame #" + own.id + ", release it first");
+
+        List<ServerSubLevel> subLevels = List.of(ship);
+        List<ServerPlayer> players = crewOf(level, source, ship);
+        List<Entity> entities = entitiesNear(level, ship);
+        int cell = grid.nearestFree(c -> byCell[c] == null && strays[c] == carriedIn(c, anchor, players));
+        if (cell < 0) throw new FrameError("No free cell (" + frames.size() + "/" + grid.cellCount() + " used)");
+
+        long now = level.getGameTime();
+        Vector3d shipVelocity = FrameTransfer.velocityOf(level, ship, new Vector3d());
+        LocalFrame frame = new LocalFrame(nextId++, cell);
+        if (body == null)
+            frame.motion.set(now, anchor.x, anchor.y, anchor.z, shipVelocity.x / 20.0, shipVelocity.y / 20.0, shipVelocity.z / 20.0, 0.0, 0.0, 0.0);
+        else
+        {
+            Vector3d p = body.parkingPoint(anchor.x, anchor.y, anchor.z, now, new Vector3d());
+            Vector3d b = body.positionAt(now, 0.0, new Vector3d());
+            frame.motion.set(now, p.x - b.x, p.y - b.y, p.z - b.z, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+            frame.attach(body.name(), false);
         }
-        return best;
+
+        frames.add(frame);
+        byCell[cell] = frame;
+        setDirty();
+        FrameSync.upsert(level, this, frame);
+        FrameShift shift = new FrameShift().translation(grid.centerX(cell) - anchor.x, grid.centerY() - anchor.y, grid.centerZ(cell) - anchor.z, -shipVelocity.x, -shipVelocity.y, -shipVelocity.z);
+        FrameReport report = FrameTransfer.carry(level, subLevels, players, entities, shift);
+
+        refresh(level);
+        Pioneer.LOGGER.info("frame created #{} at ({},{})", frame.id, grid.ix(cell), grid.iz(cell));
+        NeoForge.EVENT_BUS.post(new FrameEvent.Created(level, frame));
+        return new FrameResult(frame, report);
     }
 
     private static boolean overlapsPlotGrid(SubLevelContainer container, double minX, double minZ, double maxX, double maxZ)
@@ -648,102 +676,6 @@ public final class FrameManager extends SavedData
         Vector2i origin = container.getOrigin();
         return (Mth.floor(maxX) >> shift) >= origin.x && (Mth.floor(minX) >> shift) < origin.x + side
             && (Mth.floor(maxZ) >> shift) >= origin.y && (Mth.floor(minZ) >> shift) < origin.y + side;
-    }
-
-    public FrameReport join(ServerLevel level, LocalFrame frame, ServerSubLevel ship)
-    {
-        refresh(level);
-        if (ship.isRemoved()) throw new FrameError("Ship was removed");
-        requireLive(frame);
-
-        ship.updateBoundingBox();
-        Vector3d at = new Vector3d(ship.logicalPose().position());
-        LocalFrame existing = at(at.x, at.z);
-        if (existing != null) throw new FrameError("Ship is already in frame #" + existing.id);
-
-        int cell = frame.cell;
-        double cx = grid.centerX(cell), cy = grid.centerY(), cz = grid.centerZ(cell), half = grid.halfCell();
-        FrameShift shift = shift(null, frame, level.getGameTime());
-        double[] o = shift.position(at.x, at.y, at.z, new double[3]);
-        BoundingBox3dc b = ship.boundingBox();
-        double[] box = shift.bounds(b.minX(), b.minY(), b.minZ(), b.maxX(), b.maxY(), b.maxZ(), new double[6]);
-        if (box[0] - cx < -half || box[3] - cx > half || box[2] - cz < -half || box[5] - cz > half)
-            throw new FrameError(String.format(Locale.ROOT, "Ship is %.0f from frame #%d, outside its cell (half %.0f)", Math.sqrt((o[0] - cx) * (o[0] - cx) + (o[1] - cy) * (o[1] - cy) + (o[2] - cz) * (o[2] - cz)), frame.id, half));
-        if (box[1] < level.getMinBuildHeight() || box[4] > level.getMaxBuildHeight())
-            throw new FrameError("Ship would land outside the height limits of frame #" + frame.id);
-
-        FrameReport report = FrameTransfer.carry(level, List.of(ship), crewOf(level, null, ship), entitiesNear(level, ship), shift);
-
-        refresh(level);
-        Pioneer.LOGGER.info("frame {} joined #{}", FrameTransfer.shortId(ship), frame.id);
-        NeoForge.EVENT_BUS.post(new FrameEvent.Joined(level, frame, ship));
-        return report;
-    }
-
-    public FrameReport recenter(ServerLevel level, LocalFrame frame)
-    {
-        requireLive(frame);
-        refresh(level);
-        if (!barycenter(frame, SubLevelContainer.getContainer(level)))
-            throw new FrameError("Frame #" + frame.id + " has no ship to center on");
-        if (frame.dormant > 0)
-            throw new FrameError("Frame #" + frame.id + " has " + frame.dormant + " dormant member(s), they cannot be moved");
-
-        int fit = fit(level, frame);
-        if (fit == WAIT_CELL) throw new FrameError("Frame #" + frame.id + " content would leave its cell");
-        if (fit == WAIT_HEIGHT) throw new FrameError("Frame #" + frame.id + " content would leave the height limits");
-
-        FrameReport report = move(level, frame);
-        refresh(level);
-        return report;
-    }
-
-    public void refresh(ServerLevel level)
-    {
-        for (int i = 0, n = frames.size(); i < n; ++i) frames.get(i).clearMembers();
-
-        Arrays.fill(strays, 0);
-        strayShips.clear();
-        strayPlayers.clear();
-        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
-        if (container != null)
-        {
-            for (ServerSubLevel subLevel : container.getAllSubLevels())
-            {
-                if (subLevel.isRemoved()) continue;
-
-                Vector3d p = subLevel.logicalPose().position();
-                int cell = grid.cellAt(p.x, p.z);
-                LocalFrame f = cell < 0 ? null : byCell[cell];
-                if (f != null)
-                {
-                    if (f.addMember(subLevel, FrameTransfer.massOf(subLevel))) setDirty();
-
-                    continue;
-                }
-
-                strayShips.add(subLevel);
-                if (cell >= 0) ++strays[cell];
-            }
-        }
-
-        List<ServerPlayer> players = level.players();
-        for (int i = 0, n = players.size(); i < n; ++i)
-        {
-            ServerPlayer player = players.get(i);
-            int cell = grid.cellAt(player.getX(), player.getZ());
-            LocalFrame f = cell < 0 ? null : byCell[cell];
-            if (f != null)
-            {
-                f.addPlayer(player);
-                continue;
-            }
-
-            if (player.isAlive()) strayPlayers.add(player);
-            if (cell >= 0) ++strays[cell];
-        }
-
-        settleRecords(level, container);
     }
 
     public FrameMaintenance maintain(ServerLevel level, FrameMaintenance out)
@@ -766,6 +698,24 @@ public final class FrameManager extends SavedData
         for (int i = 0, n = frames.size(); i < n; ++i) out.dormant += frames.get(i).dormant;
 
         return out;
+    }
+
+    public FrameReport recenter(ServerLevel level, LocalFrame frame)
+    {
+        requireLive(frame);
+        refresh(level);
+        if (!barycenter(frame, SubLevelContainer.getContainer(level)))
+            throw new FrameError("Frame #" + frame.id + " has no ship to center on");
+        if (frame.dormant > 0)
+            throw new FrameError("Frame #" + frame.id + " has " + frame.dormant + " dormant member(s), they cannot be moved");
+
+        int fit = fit(level, frame);
+        if (fit == WAIT_CELL) throw new FrameError("Frame #" + frame.id + " content would leave its cell");
+        if (fit == WAIT_HEIGHT) throw new FrameError("Frame #" + frame.id + " content would leave the height limits");
+
+        FrameReport report = move(level, frame);
+        refresh(level);
+        return report;
     }
 
     private int recenterDrifting(ServerLevel level, FrameMaintenance out)
@@ -880,31 +830,52 @@ public final class FrameManager extends SavedData
     }
 
     @Nullable
-    private LocalFrame nearFrame(int g, long now)
+    public LocalFrame nearest(double x, double y, double z, long tick, double radius, Vector3d offsetOut)
     {
-        double link = Config.FRAME_CLUSTER_LINK.get();
-        int b = g * 6;
-        double gx = 0.5 * (groups.groupBox[b] + groups.groupBox[b + 3]), gy = 0.5 * (groups.groupBox[b + 1] + groups.groupBox[b + 4]), gz = 0.5 * (groups.groupBox[b + 2] + groups.groupBox[b + 5]);
-        double gr = halfDiagonal(groups.groupBox[b], groups.groupBox[b + 1], groups.groupBox[b + 2], groups.groupBox[b + 3], groups.groupBox[b + 4], groups.groupBox[b + 5]);
-        double[] c = new double[3];
         LocalFrame best = null;
-        double bestGap = link;
-        for (int i = 0, n = frames.size(); i < n; ++i)
+        double bestD = radius * radius;
+        Vector3d o = new Vector3d();
+        for (LocalFrame f : frames)
         {
-            LocalFrame f = frames.get(i);
-            FrameBox box = f.box;
-            if (box.isEmpty()) continue;
+            poseOf(f, tick, 0.0, pose).toLocal(x, y, z, o);
+            double d = o.x * o.x + o.y * o.y + o.z * o.z;
+            if (d > bestD) continue;
 
-            virtualOf(f, 0.5 * (box.minX + box.maxX), 0.5 * (box.minY + box.maxY), 0.5 * (box.minZ + box.maxZ), now, 0.0, c);
-            double dx = c[0] - gx, dy = c[1] - gy, dz = c[2] - gz;
-            double gap = Math.sqrt(dx * dx + dy * dy + dz * dz) - gr - halfDiagonal(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
-            if (gap > bestGap) continue;
-
-            bestGap = gap;
+            bestD = d;
             best = f;
+            offsetOut.set(o);
         }
-
         return best;
+    }
+
+    public FrameReport join(ServerLevel level, LocalFrame frame, ServerSubLevel ship)
+    {
+        refresh(level);
+        if (ship.isRemoved()) throw new FrameError("Ship was removed");
+        requireLive(frame);
+
+        ship.updateBoundingBox();
+        Vector3d at = new Vector3d(ship.logicalPose().position());
+        LocalFrame existing = at(at.x, at.z);
+        if (existing != null) throw new FrameError("Ship is already in frame #" + existing.id);
+
+        int cell = frame.cell;
+        double cx = grid.centerX(cell), cy = grid.centerY(), cz = grid.centerZ(cell), half = grid.halfCell();
+        FrameShift shift = shift(null, frame, level.getGameTime());
+        Vector3d o = shift.position(at.x, at.y, at.z, new Vector3d());
+        BoundingBox3dc b = ship.boundingBox();
+        double[] box = shift.bounds(b.minX(), b.minY(), b.minZ(), b.maxX(), b.maxY(), b.maxZ(), new double[6]);
+        if (box[0] - cx < -half || box[3] - cx > half || box[2] - cz < -half || box[5] - cz > half)
+            throw new FrameError(String.format(Locale.ROOT, "Ship is %.0f from frame #%d, outside its cell (half %.0f)", Math.sqrt((o.x - cx) * (o.x - cx) + (o.y - cy) * (o.y - cy) + (o.z - cz) * (o.z - cz)), frame.id, half));
+        if (box[1] < level.getMinBuildHeight() || box[4] > level.getMaxBuildHeight())
+            throw new FrameError("Ship would land outside the height limits of frame #" + frame.id);
+
+        FrameReport report = FrameTransfer.carry(level, List.of(ship), crewOf(level, null, ship), entitiesNear(level, ship), shift);
+
+        refresh(level);
+        Pioneer.LOGGER.info("frame {} joined #{}", FrameTransfer.shortId(ship), frame.id);
+        NeoForge.EVENT_BUS.post(new FrameEvent.Joined(level, frame, ship));
+        return report;
     }
 
     private boolean joinGroup(ServerLevel level, LocalFrame frame, List<ServerSubLevel> ships, List<ServerPlayer> players, long now)
@@ -1141,6 +1112,34 @@ public final class FrameManager extends SavedData
         out.waiting.add(f.splitWaitText);
     }
 
+    @Nullable
+    private LocalFrame nearFrame(int g, long now)
+    {
+        double link = Config.FRAME_CLUSTER_LINK.get();
+        int b = g * 6;
+        double gx = 0.5 * (groups.groupBox[b] + groups.groupBox[b + 3]), gy = 0.5 * (groups.groupBox[b + 1] + groups.groupBox[b + 4]), gz = 0.5 * (groups.groupBox[b + 2] + groups.groupBox[b + 5]);
+        double gr = halfDiagonal(groups.groupBox[b], groups.groupBox[b + 1], groups.groupBox[b + 2], groups.groupBox[b + 3], groups.groupBox[b + 4], groups.groupBox[b + 5]);
+        Vector3d c = new Vector3d();
+        LocalFrame best = null;
+        double bestGap = link;
+        for (int i = 0, n = frames.size(); i < n; ++i)
+        {
+            LocalFrame f = frames.get(i);
+            FrameBox box = f.box;
+            if (box.isEmpty()) continue;
+
+            virtualOf(f, 0.5 * (box.minX + box.maxX), 0.5 * (box.minY + box.maxY), 0.5 * (box.minZ + box.maxZ), now, 0.0, c);
+            double dx = c.x - gx, dy = c.y - gy, dz = c.z - gz;
+            double gap = Math.sqrt(dx * dx + dy * dy + dz * dz) - gr - halfDiagonal(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ);
+            if (gap > bestGap) continue;
+
+            bestGap = gap;
+            best = f;
+        }
+
+        return best;
+    }
+
     private boolean barycenter(LocalFrame f, @Nullable ServerSubLevelContainer container)
     {
         List<ServerSubLevel> ships = f.members;
@@ -1270,16 +1269,16 @@ public final class FrameManager extends SavedData
     public void orient(LocalFrame frame, long now, double qx, double qy, double qz, double qw)
     {
         requireLive(frame);
-        double[] q = FrameQuat.normalize(new double[]{qx, qy, qz, qw});
-        frame.motion.rebase(now).orient(q[0], q[1], q[2], q[3]);
+        Quaterniond q = FrameQuat.normalize(new Quaterniond(qx, qy, qz, qw));
+        frame.motion.rebase(now).orient(q.x, q.y, q.z, q.w);
         changed(frame, FrameEvent.Cause.ORIENTATION);
     }
 
     public void assign(LocalFrame frame, FrameMotion motion, @Nullable FrameParent parent, boolean fixed)
     {
         requireLive(frame);
-        double[] q = FrameQuat.normalize(new double[]{motion.qx, motion.qy, motion.qz, motion.qw});
-        frame.motion.set(motion).orient(q[0], q[1], q[2], q[3]);
+        Quaterniond q = FrameQuat.normalize(new Quaterniond(motion.qx, motion.qy, motion.qz, motion.qw));
+        frame.motion.set(motion).orient(q.x, q.y, q.z, q.w);
         frame.attach(parent == null ? "" : parent.name(), fixed);
         changed(frame, FrameEvent.Cause.STATE);
     }
@@ -1317,8 +1316,8 @@ public final class FrameManager extends SavedData
         refresh(level);
 
         long now = level.getGameTime();
-        double[] v = velocityOf(frame, now, new double[3]);
-        double speed = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) * 20.0;
+        Vector3d v = velocityOf(frame, now, new Vector3d());
+        double speed = Math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z) * 20.0;
         double limit = Config.FRAME_RELEASE_MAX_SPEED.get();
         if (!force && speed > limit)
             throw new FrameError(String.format(Locale.ROOT, "Frame #%d is too fast (%.1f u/s, max %.1f)", frame.id, speed, limit));
@@ -1365,7 +1364,7 @@ public final class FrameManager extends SavedData
 
     private FrameShift shift(@Nullable LocalFrame from, @Nullable LocalFrame to, long now)
     {
-        double[] fromVelocity = new double[3], fromSpin = new double[3], toVelocity = new double[3], toSpin = new double[3];
+        Vector3d fromVelocity = new Vector3d(), fromSpin = new Vector3d(), toVelocity = new Vector3d(), toSpin = new Vector3d();
         FramePose a = state(from, now, new FramePose(), fromVelocity, fromSpin);
         FramePose b = state(to, now, new FramePose(), toVelocity, toSpin);
         double fx = from == null ? 0.0 : grid.centerX(from.cell), fy = from == null ? 0.0 : grid.centerY(), fz = from == null ? 0.0 : grid.centerZ(from.cell);
@@ -1373,7 +1372,7 @@ public final class FrameManager extends SavedData
         return new FrameShift().between(a, fx, fy, fz, fromVelocity, fromSpin, b, tx, ty, tz, toVelocity, toSpin).scaleKick(TICKS_PER_SECOND);
     }
 
-    private FramePose state(@Nullable LocalFrame frame, long now, FramePose out, double[] velocity, double[] spin)
+    private FramePose state(@Nullable LocalFrame frame, long now, FramePose out, Vector3d velocity, Vector3d spin)
     {
         if (frame == null) return out.identity();
 

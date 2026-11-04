@@ -37,6 +37,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.AABB;
+import org.joml.Quaterniond;
 import org.joml.Vector3d;
 
 import javax.annotation.Nullable;
@@ -142,12 +143,12 @@ public final class FrameDebugCommand
         }
 
         FrameAPI.refresh(space.level());
-        double[] virtual = FrameAPI.toSystem(space.level(), frame, player.getX(), player.getY(), player.getZ(), now, 0.0, new double[3]);
+        Vector3d virtual = FrameAPI.toSystem(space.level(), frame, player.getX(), player.getY(), player.getZ(), now, 0.0, new Vector3d());
 
         source.sendSuccess(() -> Component.literal(PREFIX + frameText(frame, grid)), false);
-        source.sendSuccess(() -> Component.literal("  " + xyz("virtual", virtual[0], virtual[1], virtual[2]) + " " + xyz("raw", player.getX(), player.getY(), player.getZ()) + " " + offsetText(player, frame, grid)), false);
+        source.sendSuccess(() -> Component.literal("  " + xyz("virtual", virtual.x, virtual.y, virtual.z) + " " + xyz("raw", player.getX(), player.getY(), player.getZ()) + " " + offsetText(player, frame, grid)), false);
         source.sendSuccess(() -> Component.literal("  " + motionText(frame.motion(), now)), false);
-        source.sendSuccess(() -> Component.literal("  " + ChatFormatting.GRAY + FrameAPI.nearestBody(space.level(), virtual[0], virtual[1], virtual[2])), false);
+        source.sendSuccess(() -> Component.literal("  " + ChatFormatting.GRAY + FrameAPI.nearestBody(space.level(), virtual.x, virtual.y, virtual.z)), false);
         return 1;
     }
 
@@ -163,12 +164,12 @@ public final class FrameDebugCommand
 
         FrameAPI.refresh(space.level());
         long now = space.level().getGameTime();
-        double[] position = new double[3];
+        Vector3d position = new Vector3d();
 
         for (LocalFrame frame : frames)
         {
             FrameAPI.origin(space.level(), frame, now, 0.0, position);
-            final String line = "  " + frameText(frame, grid) + " " + ChatFormatting.GRAY + "speed=" + ChatFormatting.YELLOW + String.format(Locale.ROOT, "%.1f u/s ", frame.motion().speedAt(now) * 20.0) + xyz("virtual", position[0], position[1], position[2]);
+            final String line = "  " + frameText(frame, grid) + " " + ChatFormatting.GRAY + "speed=" + ChatFormatting.YELLOW + String.format(Locale.ROOT, "%.1f u/s ", frame.motion().speedAt(now) * 20.0) + xyz("virtual", position.x, position.y, position.z);
             source.sendSuccess(() -> Component.literal(line), false);
         }
         return 1;
@@ -257,13 +258,13 @@ public final class FrameDebugCommand
         LocalFrame frame = created.frame();
         var report = created.report();
         long now = space.level().getGameTime();
-        double[] virtual = FrameAPI.toSystem(space.level(), frame, player.getX(), player.getY(), player.getZ(), now, 0.0, new double[3]);
+        Vector3d virtual = FrameAPI.toSystem(space.level(), frame, player.getX(), player.getY(), player.getZ(), now, 0.0, new Vector3d());
 
         source.sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.GREEN + "created " + frameText(frame, FrameAPI.grid(space.level()))), false);
         source.sendSuccess(() -> Component.literal("  " + carriedText("carried", report)), false);
-        source.sendSuccess(() -> Component.literal("  " + xyz("virtual", virtual[0], virtual[1], virtual[2]) + " " + xyz("raw", player.getX(), player.getY(), player.getZ())), false);
+        source.sendSuccess(() -> Component.literal("  " + xyz("virtual", virtual.x, virtual.y, virtual.z) + " " + xyz("raw", player.getX(), player.getY(), player.getZ())), false);
         source.sendSuccess(() -> Component.literal("  " + motionText(frame.motion(), now)), false);
-        source.sendSuccess(() -> Component.literal("  " + ChatFormatting.GRAY + FrameAPI.nearestBody(space.level(), virtual[0], virtual[1], virtual[2])), false);
+        source.sendSuccess(() -> Component.literal("  " + ChatFormatting.GRAY + FrameAPI.nearestBody(space.level(), virtual.x, virtual.y, virtual.z)), false);
         return 1;
     }
 
@@ -409,8 +410,8 @@ public final class FrameDebugCommand
         }
 
         long now = space.level().getGameTime();
-        double[] q = FrameQuat.axisAngle(x, y, z, Math.toRadians(degrees), new double[4]);
-        FrameAPI.orient(space.level(), frame, q[0], q[1], q[2], q[3]);
+        Quaterniond q = FrameQuat.axisAngle(x, y, z, Math.toRadians(degrees), new Quaterniond());
+        FrameAPI.orient(space.level(), frame, q.x, q.y, q.z, q.w);
 
         ctx.getSource().sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.WHITE + "frame #" + frame.id + " " + ChatFormatting.GRAY + "oriented | " + motionText(frame.motion(), now)), false);
         return 1;
@@ -426,8 +427,8 @@ public final class FrameDebugCommand
         long now = space.level().getGameTime();
         FrameGrid grid = FrameAPI.grid(space.level());
         FramePose mine = FrameAPI.pose(space.level(), frame, 0.0, new FramePose());
-        double[] velocity = FrameAPI.velocity(space.level(), frame, now, new double[3]);
-        double[] origin = new double[3], offset = new double[3], other = new double[3];
+        Vector3d velocity = FrameAPI.velocity(space.level(), frame, now, new Vector3d());
+        Vector3d origin = new Vector3d(), offset = new Vector3d(), other = new Vector3d();
         int found = 0;
 
         FrameAPI.refresh(space.level());
@@ -437,13 +438,13 @@ public final class FrameDebugCommand
             if (f == frame) continue;
 
             FrameAPI.origin(space.level(), f, now, 0.0, origin);
-            mine.toLocal(origin[0], origin[1], origin[2], offset);
-            double distance = Math.sqrt(offset[0] * offset[0] + offset[1] * offset[1] + offset[2] * offset[2]);
+            mine.toLocal(origin.x, origin.y, origin.z, offset);
+            double distance = Math.sqrt(offset.x * offset.x + offset.y * offset.y + offset.z * offset.z);
             if (distance > radius) continue;
 
             FrameAPI.velocity(space.level(), f, now, other);
-            double dx = other[0] - velocity[0], dy = other[1] - velocity[1], dz = other[2] - velocity[2];
-            final String line = "  " + frameText(f, grid) + " " + ChatFormatting.GRAY + String.format(Locale.ROOT, "d=" + ChatFormatting.YELLOW + "%.1f " + ChatFormatting.GRAY + "dv=" + ChatFormatting.YELLOW + "%.1f u/s ", distance, Math.sqrt(dx * dx + dy * dy + dz * dz)) + xyz("offset", offset[0], offset[1], offset[2]);
+            double dx = other.x - velocity.x, dy = other.y - velocity.y, dz = other.z - velocity.z;
+            final String line = "  " + frameText(f, grid) + " " + ChatFormatting.GRAY + String.format(Locale.ROOT, "d=" + ChatFormatting.YELLOW + "%.1f " + ChatFormatting.GRAY + "dv=" + ChatFormatting.YELLOW + "%.1f u/s ", distance, Math.sqrt(dx * dx + dy * dy + dz * dz)) + xyz("offset", offset.x, offset.y, offset.z);
             source.sendSuccess(() -> Component.literal(line), false);
             found++;
         }
@@ -501,7 +502,7 @@ public final class FrameDebugCommand
         if (frame == null) throw NOT_IN_FRAME.create();
 
         long now = space.level().getGameTime();
-        double[] before = FrameAPI.toSystem(space.level(), frame, player.getX(), player.getY(), player.getZ(), now, 0.0, new double[3]);
+        Vector3d before = FrameAPI.toSystem(space.level(), frame, player.getX(), player.getY(), player.getZ(), now, 0.0, new Vector3d());
         FrameReport report;
         try
         {
@@ -513,8 +514,8 @@ public final class FrameDebugCommand
             return 0;
         }
 
-        double[] after = FrameAPI.toSystem(space.level(), frame, player.getX(), player.getY(), player.getZ(), now, 0.0, new double[3]);
-        double drift = Math.sqrt((after[0] - before[0]) * (after[0] - before[0]) + (after[1] - before[1]) * (after[1] - before[1]) + (after[2] - before[2]) * (after[2] - before[2]));
+        Vector3d after = FrameAPI.toSystem(space.level(), frame, player.getX(), player.getY(), player.getZ(), now, 0.0, new Vector3d());
+        double drift = Math.sqrt((after.x - before.x) * (after.x - before.x) + (after.y - before.y) * (after.y - before.y) + (after.z - before.z) * (after.z - before.z));
         source.sendSuccess(() -> Component.literal(PREFIX + ChatFormatting.GREEN + "recentered " + frameText(frame, FrameAPI.grid(space.level()))), false);
         source.sendSuccess(() -> Component.literal("  " + carriedText("moved", report)), false);
         source.sendSuccess(() -> Component.literal("  " + motionText(frame.motion(), now) + String.format(Locale.ROOT, ChatFormatting.GRAY + " | virtual drift=" + ChatFormatting.YELLOW + "%.4f", drift)), false);
@@ -786,8 +787,8 @@ public final class FrameDebugCommand
 
     private static double tiltDegrees(FrameMotion motion, long now)
     {
-        double[] q = motion.orientationAt(now, 0.0, new double[4]);
-        return FrameQuat.angleDegrees(q[0], q[1], q[2], q[3]);
+        Quaterniond q = motion.orientationAt(now, 0.0, new Quaterniond());
+        return FrameQuat.angleDegrees(q.x, q.y, q.z, q.w);
     }
 
     @Nullable

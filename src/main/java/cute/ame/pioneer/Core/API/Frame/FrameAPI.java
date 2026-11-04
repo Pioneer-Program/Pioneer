@@ -111,37 +111,35 @@ public final class FrameAPI
         return owner(level).poseOf(frame, tick, partial, out);
     }
 
-    public static double[] origin(ServerLevel level, LocalFrame frame, long tick, double partial, double[] out)
+    public static Vector3d origin(ServerLevel level, LocalFrame frame, long tick, double partial, Vector3d dest)
     {
-        return owner(level).originOf(frame, tick, partial, out);
+        return owner(level).originOf(frame, tick, partial, dest);
     }
 
-    public static double[] velocity(ServerLevel level, LocalFrame frame, long tick, double[] out)
+    public static Vector3d velocity(ServerLevel level, LocalFrame frame, long tick, Vector3d dest)
     {
-        owner(level).velocityOf(frame, tick, out);
-        out[0] *= 20.0;
-        out[1] *= 20.0;
-        out[2] *= 20.0;
-        return out;
+        owner(level).velocityOf(frame, tick, dest);
+        dest.x *= 20.0;
+        dest.y *= 20.0;
+        dest.z *= 20.0;
+        return dest;
     }
 
-    public static double[] toSystem(ServerLevel level, LocalFrame frame, double x, double y, double z, long tick, double partial, double[] out)
+    public static Vector3d toSystem(ServerLevel level, LocalFrame frame, double x, double y, double z, long tick, double partial, Vector3d dest)
     {
-        return owner(level).virtualOf(frame, x, y, z, tick, partial, out);
+        return owner(level).virtualOf(frame, x, y, z, tick, partial, dest);
     }
 
-    public static boolean systemPosition(Entity entity, double[] out)
+    public static boolean systemPosition(Entity entity, Vector3d dest)
     {
-        out[0] = entity.getX();
-        out[1] = entity.getY();
-        out[2] = entity.getZ();
+        dest.set(entity.getX(), entity.getY(), entity.getZ());
         if (!(entity.level() instanceof ServerLevel level)) return false;
 
         FrameManager manager = FrameManager.of(level);
-        LocalFrame frame = manager == null ? null : manager.at(out[0], out[2]);
+        LocalFrame frame = manager == null ? null : manager.at(dest.x, dest.z);
         if (frame == null) return false;
 
-        manager.virtualOf(frame, out[0], out[1], out[2], level.getGameTime(), 0.0, out);
+        manager.virtualOf(frame, dest.x, dest.y, dest.z, level.getGameTime(), 0.0, dest);
         return true;
     }
 

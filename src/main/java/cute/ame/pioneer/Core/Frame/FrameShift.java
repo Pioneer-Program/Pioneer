@@ -1,10 +1,15 @@
 package cute.ame.pioneer.Core.Frame;
 
+import org.joml.Quaterniond;
+import org.joml.Quaterniondc;
+import org.joml.Vector3d;
+import org.joml.Vector3dc;
+
 public final class FrameShift
 {
-    private final double[] q = new double[4];
-    private final double[] a = new double[4];
-    private final double[] v = new double[3];
+    private final Quaterniond q = new Quaterniond();
+    private final Quaterniond a = new Quaterniond();
+    private final Vector3d v = new Vector3d();
     public double tx, ty, tz;
     public double qx, qy, qz, qw = 1.0;
     public double lx, ly, lz;
@@ -28,40 +33,39 @@ public final class FrameShift
         return this;
     }
 
-    public FrameShift between(FramePose from, double fromX, double fromY, double fromZ, double[] fromVelocity, double[] fromSpin, FramePose to, double toX, double toY, double toZ, double[] toVelocity, double[] toSpin)
+    public FrameShift between(FramePose from, double fromX, double fromY, double fromZ, Vector3dc fromVelocity, Vector3dc fromSpin, FramePose to, double toX, double toY, double toZ, Vector3dc toVelocity, Vector3dc toSpin)
     {
         double dx = from.px - to.px, dy = from.py - to.py, dz = from.pz - to.pz;
-        to.orientation(a);
-        FrameQuat.conjugate(a, a);
+        to.orientation(a).conjugate(a);
         FrameQuat.normalize(FrameQuat.mul(a, from.orientation(q), q));
-        qx = q[0];
-        qy = q[1];
-        qz = q[2];
-        qw = q[3];
+        qx = q.x;
+        qy = q.y;
+        qz = q.z;
+        qw = q.w;
         rotated = !FrameQuat.isIdentity(qx, qy, qz);
 
         FrameQuat.rotate(a, dx, dy, dz, v);
-        tx = toX + v[0];
-        ty = toY + v[1];
-        tz = toZ + v[2];
+        tx = toX + v.x;
+        ty = toY + v.y;
+        tz = toZ + v.z;
         direction(fromX, fromY, fromZ, v);
-        tx -= v[0];
-        ty -= v[1];
-        tz -= v[2];
+        tx -= v.x;
+        ty -= v.y;
+        tz -= v.z;
 
-        double sx = fromSpin[0], sy = fromSpin[1], sz = fromSpin[2];
-        double kx = fromVelocity[0] - toVelocity[0] - (sy * dz - sz * dy);
-        double ky = fromVelocity[1] - toVelocity[1] - (sz * dx - sx * dz);
-        double kz = fromVelocity[2] - toVelocity[2] - (sx * dy - sy * dx);
+        double sx = fromSpin.x(), sy = fromSpin.y(), sz = fromSpin.z();
+        double kx = fromVelocity.x() - toVelocity.x() - (sy * dz - sz * dy);
+        double ky = fromVelocity.y() - toVelocity.y() - (sz * dx - sx * dz);
+        double kz = fromVelocity.z() - toVelocity.z() - (sx * dy - sy * dx);
         FrameQuat.rotate(a, kx, ky, kz, v);
-        lx = v[0];
-        ly = v[1];
-        lz = v[2];
+        lx = v.x;
+        ly = v.y;
+        lz = v.z;
 
-        FrameQuat.rotate(a, sx - toSpin[0], sy - toSpin[1], sz - toSpin[2], v);
-        wx = v[0];
-        wy = v[1];
-        wz = v[2];
+        FrameQuat.rotate(a, sx - toSpin.x(), sy - toSpin.y(), sz - toSpin.z(), v);
+        wx = v.x;
+        wy = v.y;
+        wz = v.z;
         cx = toX;
         cy = toY;
         cz = toZ;
@@ -115,15 +119,15 @@ public final class FrameShift
     public FrameShift then(FrameShift next)
     {
         next.direction(tx, ty, tz, v);
-        double ntx = v[0] + next.tx, nty = v[1] + next.ty, ntz = v[2] + next.tz;
+        double ntx = v.x + next.tx, nty = v.y + next.ty, ntz = v.z + next.tz;
         next.direction(wx, wy, wz, v);
-        double rwx = v[0], rwy = v[1], rwz = v[2];
+        double rwx = v.x, rwy = v.y, rwz = v.z;
         next.direction(cx, cy, cz, v);
-        double ex = next.cx - next.tx - v[0], ey = next.cy - next.ty - v[1], ez = next.cz - next.tz - v[2];
+        double ex = next.cx - next.tx - v.x, ey = next.cy - next.ty - v.y, ez = next.cz - next.tz - v.z;
         next.direction(lx, ly, lz, v);
-        lx = v[0] + next.lx + rwy * ez - rwz * ey;
-        ly = v[1] + next.ly + rwz * ex - rwx * ez;
-        lz = v[2] + next.lz + rwx * ey - rwy * ex;
+        lx = v.x + next.lx + rwy * ez - rwz * ey;
+        ly = v.y + next.ly + rwz * ex - rwx * ez;
+        lz = v.z + next.lz + rwx * ey - rwy * ex;
         wx = rwx + next.wx;
         wy = rwy + next.wy;
         wz = rwz + next.wz;
@@ -135,19 +139,13 @@ public final class FrameShift
         tz = ntz;
         if (!next.rotated) return this;
 
-        a[0] = next.qx;
-        a[1] = next.qy;
-        a[2] = next.qz;
-        a[3] = next.qw;
-        q[0] = qx;
-        q[1] = qy;
-        q[2] = qz;
-        q[3] = qw;
+        a.set(next.qx, next.qy, next.qz, next.qw);
+        q.set(qx, qy, qz, qw);
         FrameQuat.normalize(FrameQuat.mul(a, q, q));
-        qx = q[0];
-        qy = q[1];
-        qz = q[2];
-        qw = q[3];
+        qx = q.x;
+        qy = q.y;
+        qz = q.z;
+        qw = q.w;
         return markRotation();
     }
 
@@ -158,21 +156,21 @@ public final class FrameShift
         qy = -qy;
         qz = -qz;
         direction(cx - ox, cy - oy, cz - oz, v);
-        cx = v[0];
-        cy = v[1];
-        cz = v[2];
+        cx = v.x;
+        cy = v.y;
+        cz = v.z;
         direction(ox, oy, oz, v);
-        tx = -v[0];
-        ty = -v[1];
-        tz = -v[2];
+        tx = -v.x;
+        ty = -v.y;
+        tz = -v.z;
         direction(lx, ly, lz, v);
-        lx = -v[0];
-        ly = -v[1];
-        lz = -v[2];
+        lx = -v.x;
+        ly = -v.y;
+        lz = -v.z;
         direction(wx, wy, wz, v);
-        wx = -v[0];
-        wy = -v[1];
-        wz = -v[2];
+        wx = -v.x;
+        wy = -v.y;
+        wz = -v.z;
         return this;
     }
 
@@ -197,54 +195,34 @@ public final class FrameShift
         return wx != 0.0 || wy != 0.0 || wz != 0.0;
     }
 
-    public double[] position(double x, double y, double z, double[] out)
+    public Vector3d position(double x, double y, double z, Vector3d dest)
     {
-        direction(x, y, z, out);
-        out[0] += tx;
-        out[1] += ty;
-        out[2] += tz;
-        return out;
+        direction(x, y, z, dest);
+        dest.x += tx;
+        dest.y += ty;
+        dest.z += tz;
+        return dest;
     }
 
-    public double[] direction(double x, double y, double z, double[] out)
+    public Vector3d direction(double x, double y, double z, Vector3d dest)
     {
-        if (!rotated)
-        {
-            out[0] = x;
-            out[1] = y;
-            out[2] = z;
-            return out;
-        }
+        if (!rotated) return dest.set(x, y, z);
 
-        q[0] = qx;
-        q[1] = qy;
-        q[2] = qz;
-        q[3] = qw;
-        return FrameQuat.rotate(q, x, y, z, out);
+        return FrameQuat.rotate(q.set(qx, qy, qz, qw), x, y, z, dest);
     }
 
-    public double[] orientation(double x, double y, double z, double w, double[] out)
+    public Quaterniond orientation(Quaterniondc orientation, Quaterniond dest)
     {
-        out[0] = x;
-        out[1] = y;
-        out[2] = z;
-        out[3] = w;
-        if (!rotated) return out;
+        dest.set(orientation);
+        if (!rotated) return dest;
 
-        q[0] = qx;
-        q[1] = qy;
-        q[2] = qz;
-        q[3] = qw;
-        return FrameQuat.normalize(FrameQuat.mul(q, out, out));
+        return FrameQuat.normalize(FrameQuat.mul(q.set(qx, qy, qz, qw), dest, dest));
     }
 
-    public double[] kick(double x, double y, double z, double[] out)
+    public Vector3d kick(double x, double y, double z, Vector3d dest)
     {
         double ox = x - cx, oy = y - cy, oz = z - cz;
-        out[0] = lx + wy * oz - wz * oy;
-        out[1] = ly + wz * ox - wx * oz;
-        out[2] = lz + wx * oy - wy * ox;
-        return out;
+        return dest.set(lx + wy * oz - wz * oy, ly + wz * ox - wx * oz, lz + wx * oy - wy * ox);
     }
 
     public double[] bounds(double minX, double minY, double minZ, double maxX, double maxY, double maxZ, double[] out)
@@ -261,22 +239,18 @@ public final class FrameShift
             ez = Math.abs(2.0 * (xz - yw)) * hx + Math.abs(2.0 * (yz + xw)) * hy + Math.abs(1.0 - 2.0 * (xx + yy)) * hz;
         }
 
-        out[0] = v[0] - ex;
-        out[1] = v[1] - ey;
-        out[2] = v[2] - ez;
-        out[3] = v[0] + ex;
-        out[4] = v[1] + ey;
-        out[5] = v[2] + ez;
+        out[0] = v.x - ex;
+        out[1] = v.y - ey;
+        out[2] = v.z - ez;
+        out[3] = v.x + ex;
+        out[4] = v.y + ey;
+        out[5] = v.z + ez;
         return out;
     }
 
-    public double[] look(float yaw, float pitch, double[] out)
+    public Vector3d look(float yaw, float pitch, Vector3d dest)
     {
-        FrameLook.direction(yaw, pitch, out);
-        direction(out[0], out[1], out[2], out);
-        double x = out[0], y = out[1], z = out[2];
-        out[0] = FrameLook.yaw(x, z, yaw);
-        out[1] = FrameLook.pitch(x, y, z);
-        return out;
+        FrameLook.direction(yaw, pitch, dest);
+        return direction(dest.x, dest.y, dest.z, dest);
     }
 }

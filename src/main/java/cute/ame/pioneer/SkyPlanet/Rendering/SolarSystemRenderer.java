@@ -58,7 +58,7 @@ public final class SolarSystemRenderer
     private final Matrix4f cullMatrix = new Matrix4f();
     private final Matrix4f cullMatrixOriented = new Matrix4f();
     private final FrustumIntersection frustum = new FrustumIntersection();
-    private final double[] frameCam = new double[3];
+    private final Vector3d frameCam = new Vector3d();
     private final Quaternionf frameRotation = new Quaternionf();
 
     public void renderSky(Matrix4f frustumMatrix, Matrix4f projectionMatrix, float partialTick, Camera camera, boolean isFoggy, Runnable skyFogSetup, ClientLevel level)
@@ -155,7 +155,7 @@ public final class SolarSystemRenderer
 
         Vec3 cam = camera.getPosition();
         if (binding.type() == PioneerAPI.BindingType.SPACE && ClientFrames.virtualOf(system, cam.x, cam.y, cam.z, tick, partialTick, frameCam))
-            return new Vec3(frameCam[0], frameCam[1], frameCam[2]);
+            return new Vec3(frameCam.x, frameCam.y, frameCam.z);
 
         return cam;
     }

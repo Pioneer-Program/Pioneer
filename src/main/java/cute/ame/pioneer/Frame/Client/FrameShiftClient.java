@@ -1,6 +1,8 @@
 package cute.ame.pioneer.Frame.Client;
 
+import cute.ame.pioneer.Core.Frame.FrameLook;
 import cute.ame.pioneer.Core.Frame.FrameShift;
+import cute.ame.pioneer.Frame.Network.FrameShiftAckPayload;
 import cute.ame.pioneer.Frame.Network.FrameShiftPayload;
 import cute.ame.pioneer.Pioneer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
@@ -16,6 +18,8 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
+import org.joml.Vector3d;
 
 import java.util.UUID;
 
@@ -24,7 +28,7 @@ public final class FrameShiftClient
 {
     private static final FrameShift SHIFT = new FrameShift();
     private static final double SABLE_TURN_LIMIT = 1.0e-6;
-    private static final double[] P = new double[4];
+    private static final Vector3d P = new Vector3d();
     private static boolean bobPending;
     private static float bobLag, bobLagO;
 
@@ -57,20 +61,36 @@ public final class FrameShiftClient
             Entity entity = level.getEntity(entities[i]);
             if (entity != null) shift(entity, shift, i >= p.riders());
         }
+
+        confirmRider(minecraft.player, entities, p.riders());
+    }
+
+    private static void confirmRider(LocalPlayer player, int[] entities, int riders)
+    {
+        if (player == null) return;
+
+        int id = player.getId();
+        for (int i = 0; i < riders; ++i)
+        {
+            if (entities[i] != id) continue;
+
+            PacketDistributor.sendToServer(FrameShiftAckPayload.INSTANCE);
+            return;
+        }
     }
 
     private static void shift(Entity entity, FrameShift shift, boolean look)
     {
         shift.position(entity.xo, entity.yo, entity.zo, P);
-        entity.xo = P[0];
-        entity.yo = P[1];
-        entity.zo = P[2];
+        entity.xo = P.x;
+        entity.yo = P.y;
+        entity.zo = P.z;
         shift.position(entity.xOld, entity.yOld, entity.zOld, P);
-        entity.xOld = P[0];
-        entity.yOld = P[1];
-        entity.zOld = P[2];
+        entity.xOld = P.x;
+        entity.yOld = P.y;
+        entity.zOld = P.z;
         shift.position(entity.getX(), entity.getY(), entity.getZ(), P);
-        double x = P[0], y = P[1], z = P[2];
+        double x = P.x, y = P.y, z = P.z;
         entity.setPos(x, y, z);
         if (shift.rotated) turn(entity, shift, look);
 
@@ -81,7 +101,7 @@ public final class FrameShiftClient
     {
         Vec3 d = entity.getDeltaMovement();
         shift.direction(d.x, d.y, d.z, P);
-        entity.setDeltaMovement(P[0], P[1], P[2]);
+        entity.setDeltaMovement(P.x, P.y, P.z);
         if (!look)
         {
             if (entity instanceof LocalPlayer player) completeSableTurn(player, shift);
@@ -91,9 +111,10 @@ public final class FrameShiftClient
 
         float yaw = entity.getYRot();
         shift.look(yaw, entity.getXRot(), P);
-        float delta = (float) P[0] - yaw;
-        entity.setYRot((float) P[0]);
-        entity.setXRot((float) P[1]);
+        float turnedYaw = FrameLook.yaw(P, yaw);
+        float delta = turnedYaw - yaw;
+        entity.setYRot(turnedYaw);
+        entity.setXRot(FrameLook.pitch(P));
         entity.yRotO += delta;
         entity.xRotO = entity.getXRot();
         if (entity instanceof LivingEntity living)
@@ -123,8 +144,8 @@ public final class FrameShiftClient
         bobPending = true;
         shift.look(yaw, pitch, P);
         double sableYaw = -Math.toDegrees(2.0 * shift.qy / shift.qw);
-        float dYaw = (float) Mth.wrapDegrees(Mth.wrapDegrees(P[0] - yaw) - sableYaw);
-        float dPitch = (float) P[1] - pitch;
+        float dYaw = (float) Mth.wrapDegrees(Mth.wrapDegrees((double) FrameLook.yaw(P, yaw) - yaw) - sableYaw);
+        float dPitch = FrameLook.pitch(P) - pitch;
         player.setYRot(yaw + dYaw);
         player.setXRot(pitch + dPitch);
         player.yRotO += dYaw;

@@ -2,13 +2,13 @@ package cute.ame.pioneer.Frame;
 
 import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.Core.Frame.FrameParent;
-import cute.ame.pioneer.Core.Frame.FrameQuat;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
 import cute.ame.pioneer.SkyPlanet.Rendering.CelestialMath;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
+import org.joml.Quaterniond;
 import org.joml.Vector3d;
 
 import javax.annotation.Nullable;
@@ -84,14 +84,14 @@ public final class FrameBodies
     @Nullable
     public static Body nearest(SolarSystemDefinition system, double x, double y, double z, long tick, double partial, double[] distance)
     {
-        double[] p = new double[3];
+        Vector3d p = new Vector3d();
         Body best = null;
         double bestD = Double.POSITIVE_INFINITY;
 
         for (Body body : bodies(system))
         {
             body.positionAt(tick, partial, p);
-            double dx = x - p[0], dy = y - p[1], dz = z - p[2];
+            double dx = x - p.x, dy = y - p.y, dz = z - p.z;
             double d = Math.sqrt(dx * dx + dy * dy + dz * dz);
             if (d < bestD)
             {
@@ -123,73 +123,54 @@ public final class FrameBodies
                        double radius) implements FrameParent
     {
         @Override
-        public double[] positionAt(long tick, double partial, double[] out)
+        public Vector3d positionAt(long tick, double partial, Vector3d dest)
         {
-            if (planet == null)
-            {
-                out[0] = out[1] = out[2] = 0.0;
-                return out;
-            }
+            if (planet == null) return dest.zero();
 
             Vector3d p = planet.elements().positionAt(tick, partial, SCRATCH.get());
-            out[0] = p.x;
-            out[1] = p.y;
-            out[2] = p.z;
-            if (parent == null) return out;
+            dest.set(p.x, p.y, p.z);
+            if (parent == null) return dest;
 
             parent.elements().positionAt(tick, partial, p);
-            out[0] += p.x;
-            out[1] += p.y;
-            out[2] += p.z;
-            return out;
+            dest.x += p.x;
+            dest.y += p.y;
+            dest.z += p.z;
+            return dest;
         }
 
         @Override
-        public double[] velocityAt(long tick, double partial, double[] out)
+        public Vector3d velocityAt(long tick, double partial, Vector3d dest)
         {
-            if (planet == null)
-            {
-                out[0] = out[1] = out[2] = 0.0;
-                return out;
-            }
+            if (planet == null) return dest.zero();
 
             Vector3d v = planet.elements().velocityAt(tick, partial, SCRATCH.get());
-            out[0] = v.x;
-            out[1] = v.y;
-            out[2] = v.z;
-            if (parent == null) return out;
+            dest.set(v.x, v.y, v.z);
+            if (parent == null) return dest;
 
             parent.elements().velocityAt(tick, partial, v);
-            out[0] += v.x;
-            out[1] += v.y;
-            out[2] += v.z;
-            return out;
+            dest.x += v.x;
+            dest.y += v.y;
+            dest.z += v.z;
+            return dest;
         }
 
         @Override
-        public double[] orientationAt(long tick, double partial, double[] out)
+        public Quaterniond orientationAt(long tick, double partial, Quaterniond dest)
         {
-            if (planet == null) return FrameQuat.identity(out);
+            if (planet == null) return dest.identity();
 
             double tilt = Math.toRadians(planet.axialTilt()) * 0.5, phase = CelestialMath.axialPhase(planet.axialRotationSpeed(), tick, partial) * 0.5;
             double sz = Math.sin(tilt), cz = Math.cos(tilt), sy = Math.sin(phase), cy = Math.cos(phase);
-            out[0] = -sz * sy;
-            out[1] = cz * sy;
-            out[2] = sz * cy;
-            out[3] = cz * cy;
-            return out;
+            return dest.set(-sz * sy, cz * sy, sz * cy, cz * cy);
         }
 
         @Override
-        public double[] spinAt(long tick, double[] out)
+        public Vector3d spinAt(long tick, Vector3d dest)
         {
-            out[0] = out[1] = out[2] = 0.0;
-            if (planet == null) return out;
+            if (planet == null) return dest.zero();
 
             double tilt = Math.toRadians(planet.axialTilt()), rate = CelestialMath.axialRate(planet.axialRotationSpeed());
-            out[0] = -Math.sin(tilt) * rate;
-            out[1] = Math.cos(tilt) * rate;
-            return out;
+            return dest.set(-Math.sin(tilt) * rate, Math.cos(tilt) * rate, 0.0);
         }
 
         public double parkDistance()
@@ -197,16 +178,16 @@ public final class FrameBodies
             return Math.max(3.0 * radius, radius + 500.0);
         }
 
-        public double[] parkingPoint(double fromX, double fromY, double fromZ, long tick, double[] out)
+        public Vector3d parkingPoint(double fromX, double fromY, double fromZ, long tick, Vector3d dest)
         {
-            positionAt(tick, 0.0, out);
-            double dx = fromX - out[0], dy = fromY - out[1], dz = fromZ - out[2];
+            positionAt(tick, 0.0, dest);
+            double dx = fromX - dest.x, dy = fromY - dest.y, dz = fromZ - dest.z;
             double len = Math.sqrt(dx * dx + dy * dy + dz * dz);
             if (len < 1.0e-9)
             {
-                dx = -out[0];
-                dy = -out[1];
-                dz = -out[2];
+                dx = -dest.x;
+                dy = -dest.y;
+                dz = -dest.z;
                 len = Math.sqrt(dx * dx + dy * dy + dz * dz);
             }
 
@@ -218,10 +199,10 @@ public final class FrameBodies
             }
 
             double k = parkDistance() / len;
-            out[0] += dx * k;
-            out[1] += dy * k;
-            out[2] += dz * k;
-            return out;
+            dest.x += dx * k;
+            dest.y += dy * k;
+            dest.z += dz * k;
+            return dest;
         }
     }
 }

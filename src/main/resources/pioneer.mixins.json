@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "Frame.EntityFrameStampMixin",
+    "Frame.HeldMovesMixin",
     "Player.DebugSpectatorFlightSpeedMixin",
     "Player.SpaceFallDamageMixin",
     "Player.SwimPoseMixin",

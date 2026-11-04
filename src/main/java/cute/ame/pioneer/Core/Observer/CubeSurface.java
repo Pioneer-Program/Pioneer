@@ -1,6 +1,7 @@
 package cute.ame.pioneer.Core.Observer;
 
 import cute.ame.pioneer.Core.Frame.FrameQuat;
+import org.joml.Quaterniond;
 import org.joml.Vector3d;
 
 public final class CubeSurface
@@ -31,15 +32,15 @@ public final class CubeSurface
 
     private static final double FACE_STRIDE = 4.0;
 
-    private static final double[][] ORIENTATION = new double[6][4];
+    private static final Quaterniond[] ORIENTATION = new Quaterniond[6];
 
     static
     {
         for (int face = 0; face < 6; face++)
         {
             double[] v = V[face], w = W[face];
-            double[] east = {w[1] * v[2] - w[2] * v[1], w[2] * v[0] - w[0] * v[2], w[0] * v[1] - w[1] * v[0]};
-            FrameQuat.fromAxes(east, w, v, ORIENTATION[face]);
+            Vector3d east = new Vector3d(w[1] * v[2] - w[2] * v[1], w[2] * v[0] - w[0] * v[2], w[0] * v[1] - w[1] * v[0]);
+            ORIENTATION[face] = FrameQuat.fromAxes(east, new Vector3d(w[0], w[1], w[2]), new Vector3d(v[0], v[1], v[2]), new Quaterniond());
         }
     }
 
@@ -87,14 +88,9 @@ public final class CubeSurface
         out[0] = -b[0]; out[1] = -b[1]; out[2] = -b[2];
     }
 
-    public static double[] orientation(int face, double[] out)
+    public static Quaterniond orientation(int face, Quaterniond dest)
     {
-        double[] q = ORIENTATION[face];
-        out[0] = q[0];
-        out[1] = q[1];
-        out[2] = q[2];
-        out[3] = q[3];
-        return out;
+        return dest.set(ORIENTATION[face]);
     }
 
     public static int fromPointKm(double halfExtentKm, double x, double y, double z, double[] uvAltOut)

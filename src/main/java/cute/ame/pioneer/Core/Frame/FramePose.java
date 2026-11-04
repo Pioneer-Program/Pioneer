@@ -1,11 +1,14 @@
 package cute.ame.pioneer.Core.Frame;
 
+import org.joml.Quaterniond;
+import org.joml.Vector3d;
+
 public final class FramePose
 {
-    private final double[] p = new double[3];
-    private final double[] q = new double[4];
-    private final double[] b = new double[4];
-    private final double[] r = new double[3];
+    private final Vector3d p = new Vector3d();
+    private final Vector3d r = new Vector3d();
+    private final Quaterniond q = new Quaterniond();
+    private final Quaterniond b = new Quaterniond();
     public double px, py, pz;
     public double qx, qy, qz, qw = 1.0;
     public boolean rotated;
@@ -20,65 +23,63 @@ public final class FramePose
             if (fixed)
             {
                 parent.orientationAt(tick, partial, b);
-                FrameQuat.rotate(b, p[0], p[1], p[2], p);
+                FrameQuat.rotate(b, p.x, p.y, p.z, p);
                 FrameQuat.mul(b, q, q);
                 rotated = true;
             }
 
             parent.positionAt(tick, partial, r);
-            p[0] += r[0];
-            p[1] += r[1];
-            p[2] += r[2];
+            p.x += r.x;
+            p.y += r.y;
+            p.z += r.z;
         }
 
-        px = p[0];
-        py = p[1];
-        pz = p[2];
-        qx = q[0];
-        qy = q[1];
-        qz = q[2];
-        qw = q[3];
+        px = p.x;
+        py = p.y;
+        pz = p.z;
+        qx = q.x;
+        qy = q.y;
+        qz = q.z;
+        qw = q.w;
         return this;
     }
 
-    public double[] velocity(FrameMotion motion, FrameParent parent, boolean fixed, long tick, double partial, double[] out)
+    public Vector3d velocity(FrameMotion motion, FrameParent parent, boolean fixed, long tick, double partial, Vector3d dest)
     {
-        motion.velocityAt(tick, partial, out);
-        if (parent == null) return out;
+        motion.velocityAt(tick, partial, dest);
+        if (parent == null) return dest;
 
         if (fixed)
         {
             parent.orientationAt(tick, partial, b);
-            FrameQuat.rotate(b, out[0], out[1], out[2], out);
+            FrameQuat.rotate(b, dest.x, dest.y, dest.z, dest);
             motion.positionAt(tick, partial, p);
-            FrameQuat.rotate(b, p[0], p[1], p[2], p);
+            FrameQuat.rotate(b, p.x, p.y, p.z, p);
             parent.spinAt(tick, r);
-            out[0] += r[1] * p[2] - r[2] * p[1];
-            out[1] += r[2] * p[0] - r[0] * p[2];
-            out[2] += r[0] * p[1] - r[1] * p[0];
+            dest.x += r.y * p.z - r.z * p.y;
+            dest.y += r.z * p.x - r.x * p.z;
+            dest.z += r.x * p.y - r.y * p.x;
         }
 
         parent.velocityAt(tick, partial, r);
-        out[0] += r[0];
-        out[1] += r[1];
-        out[2] += r[2];
-        return out;
+        dest.x += r.x;
+        dest.y += r.y;
+        dest.z += r.z;
+        return dest;
     }
 
-    public double[] angularVelocity(FrameMotion motion, FrameParent parent, boolean fixed, long tick, double[] out)
+    public Vector3d angularVelocity(FrameMotion motion, FrameParent parent, boolean fixed, long tick, Vector3d dest)
     {
-        out[0] = motion.wx;
-        out[1] = motion.wy;
-        out[2] = motion.wz;
-        if (parent == null || !fixed) return out;
+        dest.set(motion.wx, motion.wy, motion.wz);
+        if (parent == null || !fixed) return dest;
 
         parent.orientationAt(tick, 0.0, b);
-        FrameQuat.rotate(b, out[0], out[1], out[2], out);
+        FrameQuat.rotate(b, dest.x, dest.y, dest.z, dest);
         parent.spinAt(tick, r);
-        out[0] += r[0];
-        out[1] += r[1];
-        out[2] += r[2];
-        return out;
+        dest.x += r.x;
+        dest.y += r.y;
+        dest.z += r.z;
+        return dest;
     }
 
     public FramePose identity()
@@ -93,103 +94,79 @@ public final class FramePose
     public FrameMotion reparent(FrameMotion m, FrameParent from, boolean fromFixed, FrameParent to, boolean toFixed, long now)
     {
         m.rebase(now);
-        double[] v = velocity(m, from, fromFixed, now, 0.0, new double[3]);
-        double[] w = {m.wx, m.wy, m.wz};
-        double[] a = {m.ax, m.ay, m.az};
-        double[] turn = new double[4];
+        Vector3d v = velocity(m, from, fromFixed, now, 0.0, new Vector3d());
+        Vector3d w = new Vector3d(m.wx, m.wy, m.wz);
+        Vector3d a = new Vector3d(m.ax, m.ay, m.az);
+        Quaterniond turn = new Quaterniond();
         if (fromFixed && from != null)
         {
             from.orientationAt(now, 0.0, turn);
-            FrameQuat.rotate(turn, w[0], w[1], w[2], w);
-            FrameQuat.rotate(turn, a[0], a[1], a[2], a);
+            FrameQuat.rotate(turn, w.x, w.y, w.z, w);
+            FrameQuat.rotate(turn, a.x, a.y, a.z, a);
         }
 
         set(m, from, fromFixed, now, 0.0);
-        double[] o = {px, py, pz};
-        double[] t = orientation(new double[4]);
+        Vector3d o = new Vector3d(px, py, pz);
+        Quaterniond t = orientation(new Quaterniond());
         if (to != null)
         {
-            double[] c = to.positionAt(now, 0.0, new double[3]);
-            double[] u = to.velocityAt(now, 0.0, new double[3]);
-            for (int i = 0; i < 3; i++)
-            {
-                o[i] -= c[i];
-                v[i] -= u[i];
-            }
-
+            Vector3d c = to.positionAt(now, 0.0, new Vector3d());
+            Vector3d u = to.velocityAt(now, 0.0, new Vector3d());
+            o.x -= c.x;
+            o.y -= c.y;
+            o.z -= c.z;
+            v.x -= u.x;
+            v.y -= u.y;
+            v.z -= u.z;
             if (toFixed)
             {
-                double[] s = to.spinAt(now, new double[3]);
-                v[0] -= s[1] * o[2] - s[2] * o[1];
-                v[1] -= s[2] * o[0] - s[0] * o[2];
-                v[2] -= s[0] * o[1] - s[1] * o[0];
+                Vector3d s = to.spinAt(now, new Vector3d());
+                v.x -= s.y * o.z - s.z * o.y;
+                v.y -= s.z * o.x - s.x * o.z;
+                v.z -= s.x * o.y - s.y * o.x;
 
-                FrameQuat.conjugate(to.orientationAt(now, 0.0, turn), turn);
-                FrameQuat.rotate(turn, o[0], o[1], o[2], o);
-                FrameQuat.rotate(turn, v[0], v[1], v[2], v);
-                FrameQuat.rotate(turn, w[0], w[1], w[2], w);
-                FrameQuat.rotate(turn, a[0], a[1], a[2], a);
+                to.orientationAt(now, 0.0, turn).conjugate(turn);
+                FrameQuat.rotate(turn, o.x, o.y, o.z, o);
+                FrameQuat.rotate(turn, v.x, v.y, v.z, v);
+                FrameQuat.rotate(turn, w.x, w.y, w.z, w);
+                FrameQuat.rotate(turn, a.x, a.y, a.z, a);
                 FrameQuat.normalize(FrameQuat.mul(turn, t, t));
             }
         }
 
-        return m.set(now, o[0], o[1], o[2], v[0], v[1], v[2], a[0], a[1], a[2]).orient(t[0], t[1], t[2], t[3]).spin(w[0], w[1], w[2]);
+        return m.set(now, o.x, o.y, o.z, v.x, v.y, v.z, a.x, a.y, a.z).orient(t.x, t.y, t.z, t.w).spin(w.x, w.y, w.z);
     }
 
-    public double[] toSystem(double ox, double oy, double oz, double[] out)
+    public Vector3d toSystem(double ox, double oy, double oz, Vector3d dest)
     {
-        directionToSystem(ox, oy, oz, out);
-        out[0] += px;
-        out[1] += py;
-        out[2] += pz;
-        return out;
+        directionToSystem(ox, oy, oz, dest);
+        dest.x += px;
+        dest.y += py;
+        dest.z += pz;
+        return dest;
     }
 
-    public double[] toLocal(double sx, double sy, double sz, double[] out)
+    public Vector3d toLocal(double sx, double sy, double sz, Vector3d dest)
     {
-        return directionToLocal(sx - px, sy - py, sz - pz, out);
+        return directionToLocal(sx - px, sy - py, sz - pz, dest);
     }
 
-    public double[] directionToSystem(double x, double y, double z, double[] out)
+    public Vector3d directionToSystem(double x, double y, double z, Vector3d dest)
     {
-        if (!rotated)
-        {
-            out[0] = x;
-            out[1] = y;
-            out[2] = z;
-            return out;
-        }
+        if (!rotated) return dest.set(x, y, z);
 
-        q[0] = qx;
-        q[1] = qy;
-        q[2] = qz;
-        q[3] = qw;
-        return FrameQuat.rotate(q, x, y, z, out);
+        return FrameQuat.rotate(q.set(qx, qy, qz, qw), x, y, z, dest);
     }
 
-    public double[] directionToLocal(double x, double y, double z, double[] out)
+    public Vector3d directionToLocal(double x, double y, double z, Vector3d dest)
     {
-        if (!rotated)
-        {
-            out[0] = x;
-            out[1] = y;
-            out[2] = z;
-            return out;
-        }
+        if (!rotated) return dest.set(x, y, z);
 
-        q[0] = -qx;
-        q[1] = -qy;
-        q[2] = -qz;
-        q[3] = qw;
-        return FrameQuat.rotate(q, x, y, z, out);
+        return FrameQuat.rotate(q.set(-qx, -qy, -qz, qw), x, y, z, dest);
     }
 
-    public double[] orientation(double[] out)
+    public Quaterniond orientation(Quaterniond dest)
     {
-        out[0] = qx;
-        out[1] = qy;
-        out[2] = qz;
-        out[3] = qw;
-        return out;
+        return dest.set(qx, qy, qz, qw);
     }
 }

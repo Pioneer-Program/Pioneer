@@ -17,6 +17,8 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.CustomizeGuiOverlayEvent;
+import org.joml.Quaterniond;
+import org.joml.Vector3d;
 
 import java.util.List;
 import java.util.Locale;
@@ -55,22 +57,22 @@ public final class FrameClientOverlay
         FrameMotion m = e.motion();
 
         SolarSystemDefinition system = FrameBodies.systemOf(minecraft.level.dimension());
-        double[] feet = new double[3], cam = new double[3];
+        Vector3d feet = new Vector3d(), cam = new Vector3d();
         ClientFrames.virtualOf(system, player.getX(), player.getY(), player.getZ(), tick, partial, feet);
         Vec3 c = minecraft.gameRenderer.getMainCamera().getPosition();
         ClientFrames.virtualOf(system, c.x, c.y, c.z, tick, partial, cam);
 
         FramePose pose = ClientFrames.pose(system, c.x, c.z, tick, partial);
-        double[] q = pose == null ? FrameQuat.identity(new double[4]) : pose.orientation(new double[4]);
+        Quaterniond q = pose == null ? new Quaterniond() : pose.orientation(new Quaterniond());
 
         left.add(String.format(Locale.ROOT, "id #%d cell %d,%d (%d known)", e.id(), grid.ix(e.cell()), grid.iz(e.cell()), ClientFrames.known()));
         left.add(e.parent().isEmpty() ? "parent none" : "parent " + e.parent() + (e.fixed() ? " (fixed)" : ""));
-        left.add(String.format(Locale.ROOT, "vfeet %.2f %.2f %.2f", feet[0], feet[1], feet[2]));
-        left.add(String.format(Locale.ROOT, "vcam %.2f %.2f %.2f", cam[0], cam[1], cam[2]));
+        left.add(String.format(Locale.ROOT, "vfeet %.2f %.2f %.2f", feet.x, feet.y, feet.z));
+        left.add(String.format(Locale.ROOT, "vcam %.2f %.2f %.2f", cam.x, cam.y, cam.z));
         left.add(String.format(Locale.ROOT, "speed %.1f u/s", m.speedAt(tick) * 20.0));
         left.add(String.format(Locale.ROOT, "accel %.1f u/s2", m.accel() * 400.0));
         left.add(String.format(Locale.ROOT, "spin %.1f deg/s", Math.toDegrees(m.spinRate()) * 20.0));
-        left.add(String.format(Locale.ROOT, "tilt %.1f deg", FrameQuat.angleDegrees(q[0], q[1], q[2], q[3])));
-        left.add(FrameBodies.nearestText(system, cam[0], cam[1], cam[2], tick, partial));
+        left.add(String.format(Locale.ROOT, "tilt %.1f deg", FrameQuat.angleDegrees(q.x, q.y, q.z, q.w)));
+        left.add(FrameBodies.nearestText(system, cam.x, cam.y, cam.z, tick, partial));
     }
 }

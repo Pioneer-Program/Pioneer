@@ -8,6 +8,7 @@ import cute.ame.pioneer.Frame.Network.FrameSyncPayload;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
 import net.minecraft.client.Minecraft;
 import org.joml.Quaternionf;
+import org.joml.Vector3d;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -120,7 +121,7 @@ public final class ClientFrames
         return parent;
     }
 
-    public static boolean virtualOf(@Nullable SolarSystemDefinition system, double x, double y, double z, long tick, double partial, double[] out)
+    public static boolean virtualOf(@Nullable SolarSystemDefinition system, double x, double y, double z, long tick, double partial, Vector3d out)
     {
         FramePose pose = pose(system, x, z, tick, partial);
         if (pose == null) return false;

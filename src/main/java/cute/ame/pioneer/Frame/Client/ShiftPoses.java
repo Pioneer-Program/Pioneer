@@ -7,16 +7,14 @@ import org.joml.Vector3d;
 
 public final class ShiftPoses
 {
-    public static Pose3d apply(Pose3d pose, FrameShift shift, double[] scratch)
+    public static Pose3d apply(Pose3d pose, FrameShift shift)
     {
         Vector3d p = pose.position();
-        shift.position(p.x, p.y, p.z, scratch);
-        p.set(scratch[0], scratch[1], scratch[2]);
+        shift.position(p.x, p.y, p.z, p);
         if (!shift.rotated) return pose;
 
         Quaterniond q = pose.orientation();
-        shift.orientation(q.x, q.y, q.z, q.w, scratch);
-        q.set(scratch[0], scratch[1], scratch[2], scratch[3]);
+        shift.orientation(q, q);
         return pose;
     }
 

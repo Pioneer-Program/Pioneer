@@ -1,14 +1,17 @@
 package cute.ame.pioneer.Core.Frame;
 
+import org.joml.Quaterniond;
+import org.joml.Vector3d;
+
 public interface FrameParent
 {
     String name();
 
-    double[] positionAt(long tick, double partial, double[] out);
+    Vector3d positionAt(long tick, double partial, Vector3d dest);
 
-    double[] velocityAt(long tick, double partial, double[] out);
+    Vector3d velocityAt(long tick, double partial, Vector3d dest);
 
-    double[] orientationAt(long tick, double partial, double[] out);
+    Quaterniond orientationAt(long tick, double partial, Quaterniond dest);
 
-    double[] spinAt(long tick, double[] out);
+    Vector3d spinAt(long tick, Vector3d dest);
 }

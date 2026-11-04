@@ -11,13 +11,14 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import org.joml.Vector3d;
 
 import java.util.Optional;
 
 public final class SeamlessThresholdDetector
 {
     private static final int CHECK_INTERVAL_TICKS = 5;
-    private static final double[] AT = new double[3];
+    private static final Vector3d AT = new Vector3d();
 
     public enum ThresholdKind { NONE, SURFACE_APPROACHING_ORBIT, SPACE_APPROACHING_PLANET }
 
@@ -74,7 +75,7 @@ public final class SeamlessThresholdDetector
             PlanetDefinition planet = body.planet();
             if (planet == null || planet.dimension().isEmpty()) continue;
 
-            double altitude = FrameAPI.altitudeKm(body, planet, now, AT[0], AT[1], AT[2], limit);
+            double altitude = FrameAPI.altitudeKm(body, planet, now, AT.x, AT.y, AT.z, limit);
             if (altitude <= limit)
                 return new ThresholdResult(ThresholdKind.SPACE_APPROACHING_PLANET, Optional.of(planet), altitude);
         }
