@@ -1,6 +1,5 @@
 package cute.ame.pioneer.Registrie;
 
-import cute.ame.pioneer.Block.CeramicTiles;
 import cute.ame.pioneer.Fluid.Block.BarometerBlock;
 import cute.ame.pioneer.Fluid.Block.MassSpectrometerBlock;
 import cute.ame.pioneer.Fluid.Block.PipeBlock;
@@ -21,6 +20,10 @@ import cute.ame.pioneer.Spaceship.Block.ShipController;
 import cute.ame.pioneer.Spaceship.Block.ThrusterBlock;
 import cute.ame.pioneer.Thermal.Block.ThermalActuatorBlock;
 import cute.ame.pioneer.Thermal.Block.ThermalConductorBlock;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.MapColor;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -51,9 +54,24 @@ public final class ModBlocks
         AridDust::new
     );
 
-    public static final DeferredBlock<CeramicTiles> CERAMIC_TILES = BLOCKS.register(
+    public static final DeferredBlock<Block> CERAMIC_TILES = BLOCKS.register(
         "ceramic_tiles",
-        CeramicTiles::new
+        () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_GRAY)
+            .requiresCorrectToolForDrops()
+            .strength(2.0f, 8.0f)
+            .sound(SoundType.METAL)
+        )
+    );
+
+    public static final DeferredBlock<Block> MOISSANITE = BLOCKS.register(
+        "moissanite",
+        () -> new Block(BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_GRAY)
+            .requiresCorrectToolForDrops()
+            .strength(3.0f, 10.0f)
+            .sound(SoundType.TUFF_BRICKS)
+        )
     );
 
     public static final DeferredBlock<AridRock> ARID_ROCK = BLOCKS.register(

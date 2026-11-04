@@ -18,7 +18,12 @@ public class ModCreativeModeTabs {
             () -> CreativeModeTab.builder().icon(() -> new ItemStack(ModItems.CERAMIC_TILES.get()))
                     .title(Component.translatable("creativetab.pioneer.pioneer"))
                     .displayItems((itemDisplayParameters, output) -> {
+                            output.accept(ModBlocks.ARID_DUST);
+                            output.accept(ModBlocks.ARID_ROCK);
+                            output.accept(ModBlocks.ARID_ROCK_CRACKED);
+                            output.accept(ModBlocks.ARID_ROCK_POLISHED);
                             output.accept(ModBlocks.CERAMIC_TILES);
+                            output.accept(ModBlocks.MOISSANITE);
                             output.accept(ModBlocks.VACUUM_PIPE);
                             output.accept(ModBlocks.VACUUM_TANK);
                             output.accept(ModBlocks.VACUUM_PUMP);

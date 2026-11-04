@@ -1,4 +1,10 @@
 {
+  "block.pioneer.arid_dust": "Arid Dust",
+  "block.pioneer.arid_rock": "Arid Rock",
+  "block.pioneer.arid_rock_cracked": "Cracked Arid Rock",
+  "block.pioneer.arid_rock_polished": "Polished Arid Rock",
+  "block.pioneer.ceramic_tiles": "Ceramic Tiles",
+  "block.pioneer.moissanite": "Moissanite",
   "block.pioneer.vacuum_tank": "Vacuum Tank",
   "block.pioneer.vacuum_pipe": "Vacuum Pipe",
   "block.pioneer.vacuum_pump": "Vacuum Pump",
