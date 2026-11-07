@@ -18,7 +18,8 @@ public final class CloudVolumeBaker implements LUTBaker
     {
         final int res = params.resolution();
         final int tiles = (int) Math.ceil(Math.sqrt(res));
-        final int atlas = res * tiles;
+        final int tile = res + 1;
+        final int atlas = tile * tiles;
         final int slice = res * res;
         final long seed = params.seed();
 
@@ -55,13 +56,22 @@ public final class CloudVolumeBaker implements LUTBaker
 
         IntStream.range(0, res).parallel().forEach(z ->
         {
-            int row = ((z / tiles) * res) * atlas + (z % tiles) * res;
-            int i0 = z * slice;
-            int i1 = ((z + 1) % res) * slice;
+            final int ox = (z % tiles) * tile;
+            final int oy = (z / tiles) * tile;
+            final int b0 = z * slice;
+            final int b1 = ((z + 1) % res) * slice;
 
-            for (int y = 0; y < res; y++, row += atlas)
-                for (int x = 0; x < res; x++, i0++, i1++)
-                    px[row + x] = NoiseUtil.toRGBA(shape[i0], shape[i1], detail[i0], detail[i1]);
+            for (int y = 0; y < tile; y++)
+            {
+                final int sy = (y == res ? 0 : y) * res;
+                final int row = (oy + y) * atlas + ox;
+
+                for (int x = 0; x < tile; x++)
+                {
+                    final int s = sy + (x == res ? 0 : x);
+                    px[row + x] = NoiseUtil.toRGBA(shape[b0 + s], shape[b1 + s], detail[b0 + s], detail[b1 + s]);
+                }
+            }
         });
 
         return BakingMath.blit(px, atlas, atlas);
