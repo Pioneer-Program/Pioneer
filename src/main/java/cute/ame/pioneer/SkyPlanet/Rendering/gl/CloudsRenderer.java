@@ -1,15 +1,17 @@
 package cute.ame.pioneer.SkyPlanet.Rendering.gl;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
 import cute.ame.pioneer.Core.Compat.VeilSkyShaderHelper;
-import cute.ame.pioneer.Core.Render.Helper.CloudShadowParams;
-import cute.ame.pioneer.Core.Render.Helper.CubeGeometry;
-import cute.ame.pioneer.Core.Render.Helper.SamplerBinder;
 import cute.ame.pioneer.Core.Render.Baking.LUT.Bakers.CloudVolumeBaker;
 import cute.ame.pioneer.Core.Render.Baking.LUT.BuiltinLUTs;
 import cute.ame.pioneer.Core.Render.Baking.LUT.LUTParams;
 import cute.ame.pioneer.Core.Render.Baking.LUT.LUTRegistry;
+import cute.ame.pioneer.Core.Render.Helper.CloudShadowParams;
+import cute.ame.pioneer.Core.Render.Helper.CubeGeometry;
+import cute.ame.pioneer.Core.Render.Helper.SamplerBinder;
 import cute.ame.pioneer.Pioneer;
 import cute.ame.pioneer.SkyPlanet.Data.CloudsDefinition;
 import net.minecraft.resources.ResourceLocation;
@@ -41,6 +43,12 @@ public final class CloudsRenderer
     private static final float SUN_MARCH_SCALE = 2.0f;
 
     private static final float VOLUME_FREQ_SCALE = 1.0f / CloudVolumeBaker.BASE_FREQ;
+    private static final float SHAPE_FREQ_SCALE = 0.6f;
+    private static final float DETAIL_RATIO = 3.1f;
+    private static final double DETAIL_DRIFT = 1.6;
+    private static final double DETAIL_RISE = 0.25;
+    private static final float DETILE_STRENGTH = 0.6f;
+    private static final float[] VOLUME_BASIS = volumeBasis(0.61, 0.43, 0.29);
     private static final long NOISE_SEED = 0xCC45A4f34L;
 
     private static final int UNIT_NOISE_VOLUME = 4;
@@ -59,13 +67,24 @@ public final class CloudsRenderer
         final float extinction = 6.0f / shellThickness;
         final float maxSegmentLen = shellThickness * 12.0f;
 
-        final float volumeFreq = Math.max(clouds.noiseScale() * BASE_FREQ_MULT, 0.01f) * VOLUME_FREQ_SCALE;
+        final float volumeFreq = Math.max(clouds.noiseScale() * BASE_FREQ_MULT, 0.01f) * VOLUME_FREQ_SCALE * SHAPE_FREQ_SCALE;
         final float coverageBias = (clouds.coverage() - 0.5f) * COVERAGE_GAIN;
 
         final double windSpeed = clouds.windSpeed() * 0.025d;
-        final double windT = timeSeconds * TIME_SCALE * windSpeed;
-        final float windOX = wrapUnit(windT * clouds.windX() * volumeFreq);
-        final float windOZ = wrapUnit(windT * clouds.windZ() * volumeFreq);
+        final double windT = timeSeconds * TIME_SCALE * windSpeed * volumeFreq;
+        final double windX = windT * clouds.windX();
+        final double windZ = windT * clouds.windZ();
+        final float[] basis = VOLUME_BASIS;
+        final float windOX = wrapUnit(basis[0] * windX + basis[2] * windZ);
+        final float windOY = wrapUnit(basis[3] * windX + basis[5] * windZ);
+        final float windOZ = wrapUnit(basis[6] * windX + basis[8] * windZ);
+
+        final double detailX = windX * DETAIL_RATIO * DETAIL_DRIFT;
+        final double detailY = windT * DETAIL_RATIO * DETAIL_RISE;
+        final double detailZ = windZ * DETAIL_RATIO * DETAIL_DRIFT;
+        final float detailOX = wrapUnit(basis[0] * detailX + basis[1] * detailY + basis[2] * detailZ);
+        final float detailOY = wrapUnit(basis[3] * detailX + basis[4] * detailY + basis[5] * detailZ);
+        final float detailOZ = wrapUnit(basis[6] * detailX + basis[7] * detailY + basis[8] * detailZ);
 
         final double driftAngle = wrapAngle(timeSeconds * WEATHER_DRIFT * windSpeed);
         final float driftSin = (float) Math.sin(driftAngle);
@@ -104,14 +123,18 @@ public final class CloudsRenderer
             set(shader, "uCloudOuter", cloudOuter);
             set(shader, "uAtmoBoundRadius", cloudBoundRadius);
 
-            set(shader, "uCoverage", clouds.coverage());
             set(shader, "uCoverageBias", coverageBias);
             set(shader, "uDensity", clouds.density());
             set(shader, "uErosion", clouds.erosion());
 
-            set(shader, "uWindOffset", windOX, 0.0f, windOZ);
+            set(shader, "uVolumeX", basis[0] * volumeFreq, basis[1] * volumeFreq, basis[2] * volumeFreq);
+            set(shader, "uVolumeY", basis[3] * volumeFreq, basis[4] * volumeFreq, basis[5] * volumeFreq);
+            set(shader, "uVolumeZ", basis[6] * volumeFreq, basis[7] * volumeFreq, basis[8] * volumeFreq);
+            set(shader, "uWindOffset", windOX, windOY, windOZ);
+            set(shader, "uDetailOffset", detailOX, detailOY, detailOZ);
+            set(shader, "uDetailRatio", DETAIL_RATIO);
+            set(shader, "uDetile", DETILE_STRENGTH);
             set(shader, "uWeatherDriftSC", driftSin, driftCos);
-            set(shader, "uVolumeFreq", volumeFreq);
             set(shader, "uInvShellThickness", invShellThickness);
             set(shader, "uExtinction", extinction);
             set(shader, "uMaxSegmentLen", maxSegmentLen);
@@ -139,6 +162,20 @@ public final class CloudsRenderer
         RenderSystem.defaultBlendFunc();
         RenderSystem.depthMask(true);
         CloudShadowParams.publish(weatherLut, coverageBias, driftSin, driftCos, cloudInner, 1.0f);
+    }
+
+    private static float[] volumeBasis(double yaw, double pitch, double roll)
+    {
+        final double cz = Math.cos(yaw), sz = Math.sin(yaw);
+        final double cx = Math.cos(pitch), sx = Math.sin(pitch);
+        final double cy = Math.cos(roll), sy = Math.sin(roll);
+
+        return new float[]
+                {
+                        (float) (cz * cy - sz * sx * sy), (float) (-sz * cx), (float) (cz * sy + sz * sx * cy),
+                        (float) (sz * cy + cz * sx * sy), (float) (cz * cx), (float) (sz * sy - cz * sx * cy),
+                        (float) (-cx * sy), (float) sx, (float) (cx * cy)
+                };
     }
 
     private static float wrapUnit(double v)

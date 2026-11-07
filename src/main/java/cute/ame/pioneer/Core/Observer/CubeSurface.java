@@ -1,5 +1,6 @@
 package cute.ame.pioneer.Core.Observer;
 
+import cute.ame.pioneer.Core.Frame.FrameQuat;
 import org.joml.Vector3d;
 
 public final class CubeSurface
@@ -29,6 +30,18 @@ public final class CubeSurface
     };
 
     private static final double FACE_STRIDE = 4.0;
+
+    private static final double[][] ORIENTATION = new double[6][4];
+
+    static
+    {
+        for (int face = 0; face < 6; face++)
+        {
+            double[] v = V[face], w = W[face];
+            double[] east = {w[1] * v[2] - w[2] * v[1], w[2] * v[0] - w[0] * v[2], w[0] * v[1] - w[1] * v[0]};
+            FrameQuat.fromAxes(east, w, v, ORIENTATION[face]);
+        }
+    }
 
     public record Crossing(int face, double blockX, double blockZ, double u, double v, int exitEdge, int entryEdge) {}
 
@@ -72,6 +85,31 @@ public final class CubeSurface
     {
         double[] b = V[face];
         out[0] = -b[0]; out[1] = -b[1]; out[2] = -b[2];
+    }
+
+    public static double[] orientation(int face, double[] out)
+    {
+        double[] q = ORIENTATION[face];
+        out[0] = q[0];
+        out[1] = q[1];
+        out[2] = q[2];
+        out[3] = q[3];
+        return out;
+    }
+
+    public static int fromPointKm(double halfExtentKm, double x, double y, double z, double[] uvAltOut)
+    {
+        double ax = Math.abs(x), ay = Math.abs(y), az = Math.abs(z);
+        int face;
+        if (ax >= ay && ax >= az) face = x > 0 ? FACE_RIGHT : FACE_LEFT;
+        else if (ay >= az) face = y > 0 ? FACE_TOP : FACE_BOTTOM;
+        else face = z > 0 ? FACE_FRONT : FACE_BACK;
+
+        double[] a = U[face], b = V[face], c = W[face];
+        uvAltOut[0] = (a[0] * x + a[1] * y + a[2] * z) / halfExtentKm;
+        uvAltOut[1] = (b[0] * x + b[1] * y + b[2] * z) / halfExtentKm;
+        uvAltOut[2] = c[0] * x + c[1] * y + c[2] * z - halfExtentKm;
+        return face;
     }
 
     public static Vector3d toDirection(int face, double u, double v, Vector3d dest)

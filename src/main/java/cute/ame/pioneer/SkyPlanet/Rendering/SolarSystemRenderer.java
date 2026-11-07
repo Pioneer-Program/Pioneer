@@ -8,19 +8,24 @@ import cute.ame.pioneer.Core.Observer.ObserverState;
 import cute.ame.pioneer.Core.Observer.ObserverStates;
 import cute.ame.pioneer.Core.Observer.PlanetCube;
 import cute.ame.pioneer.Core.Render.Debug.GPUProfiler;
+import cute.ame.pioneer.Frame.Client.ClientFrames;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
 import cute.ame.pioneer.SkyPlanet.Data.SunDefinition;
-import cute.ame.pioneer.SkyPlanet.Physics.PlanetEnvironment;
 import cute.ame.pioneer.SkyPlanet.Physics.PhysicalScale;
+import cute.ame.pioneer.SkyPlanet.Physics.PlanetEnvironment;
 import cute.ame.pioneer.SkyPlanet.Physics.SkyBrightness;
 import cute.ame.pioneer.SkyPlanet.Rendering.ShellProjector.Projected;
-import cute.ame.pioneer.SkyPlanet.Rendering.gl.*;
+import cute.ame.pioneer.SkyPlanet.Rendering.gl.AtmosphereRenderer;
+import cute.ame.pioneer.SkyPlanet.Rendering.gl.BodyRenderer;
+import cute.ame.pioneer.SkyPlanet.Rendering.gl.CloudsRenderer;
+import cute.ame.pioneer.SkyPlanet.Rendering.gl.GalaxyRenderer;
+import cute.ame.pioneer.SkyPlanet.Rendering.gl.RingRenderer;
+import cute.ame.pioneer.SkyPlanet.Rendering.gl.SunRenderer;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
 import net.minecraft.world.phys.Vec3;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
@@ -29,7 +34,6 @@ import org.joml.Vector3d;
 import org.joml.Vector3f;
 
 import javax.annotation.Nullable;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -53,6 +57,8 @@ public final class SolarSystemRenderer
     private final Matrix4f cullMatrix = new Matrix4f();
     private final Matrix4f cullMatrixOriented = new Matrix4f();
     private final FrustumIntersection frustum = new FrustumIntersection();
+    private final double[] frameCam = new double[3];
+    private final Quaternionf frameRotation = new Quaternionf();
 
     public void renderSky(Matrix4f frustumMatrix, Matrix4f projectionMatrix, float partialTick, Camera camera, boolean isFoggy, Runnable skyFogSetup, ClientLevel level)
     {
@@ -95,20 +101,22 @@ public final class SolarSystemRenderer
 
         ResourceLocation selfPlanetId = binding.planetId();
         ResourceLocation excludedPlanetId = null;
-        float selfAscensionProgress = 0.0f;
+//        float selfAscensionProgress = 0.0f;
         Vector3d selfOffsetKm = new Vector3d();
 
         if (isPlanetLocked && obs.hasBody())
         {
             obs.bodyKm(selfOffsetKm).negate();
             obs.body().computeTrueRotation(tick, partialTick).transform(selfOffsetKm);
+            effectiveCamPos = effectiveCamPos.subtract(selfOffsetKm.x, selfOffsetKm.y, selfOffsetKm.z);
 
-            float renderDistance = Math.max(Minecraft.getInstance().gameRenderer.getRenderDistance(), 32.0f) * .5f;
-            double fadeEndBlocks = PlanetCube.REFERENCE_LEVEL + renderDistance;
-
-            //FIX: AVOID PLANET TO BUG WITH CAMERA NEAR PLANE
-            double altitudeBlocks = obs.altitudeBlocks();
-            selfAscensionProgress = Mth.clamp((float) ((altitudeBlocks - PlanetCube.REFERENCE_LEVEL) / Math.max(fadeEndBlocks - PlanetCube.REFERENCE_LEVEL, 1.0)), 0.0f, 1.0f);
+// WIP to test the planet renderer in the surface bug, and find a proper fix (i really want to kms)
+//            float renderDistance = Math.max(Minecraft.getInstance().gameRenderer.getRenderDistance(), 32.0f) * .5f;
+//            double fadeEndBlocks = PlanetCube.REFERENCE_LEVEL + renderDistance;
+//
+//            //FIX: AVOID PLANET TO BUG WITH CAMERA NEAR PLANE
+//            double altitudeBlocks = obs.altitudeBlocks();
+//            selfAscensionProgress = Mth.clamp((float) ((altitudeBlocks - PlanetCube.REFERENCE_LEVEL) / Math.max(fadeEndBlocks - PlanetCube.REFERENCE_LEVEL, 1.0)), 0.0f, 1.0f);
         }
 
         ps.pushPose();
@@ -126,7 +134,10 @@ public final class SolarSystemRenderer
             starVis = SkyBrightness.starVisibility(horizon.transform(new Vector3f(worldSun)).y, self);
         }
 
-        CelestialFrameContext ctx = new CelestialFrameContext(effectiveCamPos, selfPlanetId, selfAscensionProgress, excludedPlanetId, selfOffsetKm, selfAscensionProgress, tick, !isPlanetLocked, binding.type() == PioneerAPI.BindingType.SURFACE, horizon, starVis);
+        if (horizon == null && binding.type() == PioneerAPI.BindingType.SPACE)
+            horizon = ClientFrames.skyRotation(system, camera.getPosition().x, camera.getPosition().z, tick, partialTick, frameRotation);
+
+        CelestialFrameContext ctx = new CelestialFrameContext(effectiveCamPos, selfPlanetId, 1.0f, excludedPlanetId, selfOffsetKm, 1.0f, tick, !isPlanetLocked, binding.type() == PioneerAPI.BindingType.SURFACE, horizon, starVis);
         renderSystemUnified(ps, system, ctx, partialTick, camera.getPosition(), projMat, animSeconds);
         ps.popPose();
     }
@@ -143,7 +154,11 @@ public final class SolarSystemRenderer
             }
         }
 
-        return camera.getPosition();
+        Vec3 cam = camera.getPosition();
+        if (binding.type() == PioneerAPI.BindingType.SPACE && ClientFrames.virtualOf(system, cam.x, cam.y, cam.z, tick, partialTick, frameCam))
+            return new Vec3(frameCam[0], frameCam[1], frameCam[2]);
+
+        return cam;
     }
 
     private void renderSystemUnified(PoseStack ps, SolarSystemDefinition system, CelestialFrameContext ctx, float partialTick, Vec3 realCamPos, Matrix4f projMat, double animSeconds)

@@ -13,16 +13,20 @@ uniform float uCamDist;
 uniform float uPlanetHalfExtent;
 uniform float uCloudInner;
 uniform float uCloudOuter;
-uniform float uAtmoBoundRadius;
+// uAtmoBoundRadius
 
-uniform float uCoverage;
 uniform float uCoverageBias;
 uniform float uDensity;
 uniform float uErosion;
 
+uniform vec3 uVolumeX;
+uniform vec3 uVolumeY;
+uniform vec3 uVolumeZ;
 uniform vec3 uWindOffset;
+uniform vec3 uDetailOffset;
+uniform float uDetailRatio;
+uniform float uDetile;
 uniform vec2 uWeatherDriftSC;
-uniform float uVolumeFreq;
 uniform float uInvShellThickness;
 uniform float uExtinction;
 uniform float uMaxSegmentLen;
@@ -46,13 +50,21 @@ const float PI = 3.14159265359;
 const float NIGHT_CUTOFF = -0.55;
 const float SHADOW_SKIP_DENSITY = 0.02;
 const float ALPHA_CUTOFF = 0.99;
+const float SHAPE_SLOPE = 1.6;
+const float TAPER_FLAT = 0.30;
+const float TAPER_TALL = 0.85;
+const float TAPER_PIVOT = 0.4;
+const float COVERAGE_RANGE = 1.4;
+const float EROSION_GAIN = 1.5;
+const float EROSION_CORE = 0.75;
+const float EROSION_MAX = 0.95;
+const float SHADOW_EXTINCTION = 3.5;
+const float SHADOW_SCATTER = 0.7;
 
 const float NV_RES = 64.0;
 const float NV_TILES = 8.0;
-const float NV_ATLAS = 512.0;
-const float NV_TILE_UV = NV_RES / NV_ATLAS;
-const float NV_INSET = (NV_RES - 1.0) / NV_ATLAS;
-const float NV_HALF = 0.5 / NV_ATLAS;
+const float NV_TILE = NV_RES + 1.0;
+const float NV_INV_ATLAS = 1.0 / (NV_TILE * NV_TILES);
 const float NV_INV_T = 1.0 / NV_TILES;
 
 float clamp01(float v) { return clamp(v, 0.0, 1.0); }
@@ -63,49 +75,46 @@ float sdBox(vec3 p, float halfExtent)
     return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
 }
 
-vec2 raySphere(vec3 origin, vec3 dir, float radius)
+vec2 rayBox(vec3 invDir, vec3 oi, float halfExtent)
 {
-    float b = dot(origin, dir);
-    float c = dot(origin, origin) - radius * radius;
-    float disc = b * b - c;
-    if (disc < 0.0) return vec2(1.0, -1.0);
-    float s = sqrt(disc);
-    return vec2(-b - s, -b + s);
-}
-
-vec2 rayBox(vec3 origin, vec3 dir, float halfExtent)
-{
-    vec3 invDir = 1.0 / mix(dir, vec3(1e-6), lessThan(abs(dir), vec3(1e-6)));
-    vec3 t0 = (-vec3(halfExtent) - origin) * invDir;
-    vec3 t1 = ( vec3(halfExtent) - origin) * invDir;
-    vec3 tmin = min(t0, t1);
-    vec3 tmax = max(t0, t1);
-    return vec2(max(max(tmin.x, tmin.y), tmin.z), min(min(tmax.x, tmax.y), tmax.z));
+    vec3 k = abs(invDir) * halfExtent;
+    vec3 t1 = -oi - k;
+    vec3 t2 = -oi + k;
+    return vec2(max(max(t1.x, t1.y), t1.z), min(min(t2.x, t2.y), t2.z));
 }
 
 vec2 tileOffset(float slice)
 {
-    return vec2(mod(slice, NV_TILES), floor(slice * NV_INV_T)) * NV_TILE_UV;
+    return vec2(mod(slice, NV_TILES), floor(slice * NV_INV_T)) * NV_TILE;
 }
 
-vec4 sampleVolume(vec3 p)
+vec3 toVolume(vec3 p)
+{
+    return vec3(dot(uVolumeX, p), dot(uVolumeY, p), dot(uVolumeZ, p));
+}
+
+vec4 fetchVolume(vec3 p, out float fz)
 {
     p = fract(p);
-    vec2 uv = p.xy * NV_INSET + NV_HALF;
-
     float z  = p.z * NV_RES;
-    float z0 = floor(z);
-    float fz = z - z0;
-
-    return mix(texture(uNoiseVolumeLUT, uv + tileOffset(mod(z0, NV_RES))), texture(uNoiseVolumeLUT, uv + tileOffset(mod(z0 + 1.0, NV_RES))), fz);
+    float z0 = min(floor(z), NV_RES - 1.0);
+    fz = z - z0;
+    vec2 texel = tileOffset(z0) + p.xy * NV_RES + 0.5;
+    return textureLod(uNoiseVolumeLUT, texel * NV_INV_ATLAS, 0.0);
 }
 
-vec4 sampleVolumeCoarse(vec3 p)
+float sampleShape(vec3 p)
 {
-    p = fract(p);
-    vec2 uv = p.xy * NV_INSET + NV_HALF;
-    float slice = mod(floor(p.z * NV_RES + 0.5), NV_RES);
-    return texture(uNoiseVolumeLUT, uv + tileOffset(slice));
+    float fz;
+    vec4 n = fetchVolume(p, fz);
+    return mix(n.r, n.g, fz);
+}
+
+float sampleDetail(vec3 p)
+{
+    float fz;
+    vec4 n = fetchVolume(p, fz);
+    return mix(n.b, n.a, fz);
 }
 
 vec2 octaEncode(vec3 n)
@@ -117,22 +126,21 @@ vec2 octaEncode(vec3 n)
     return uv * 0.5 + 0.5;
 }
 
-vec2 sampleWeather(vec3 dirN)
+vec4 sampleWeather(vec3 dirN)
 {
     vec3 d = vec3(dirN.x * uWeatherDriftSC.y - dirN.z * uWeatherDriftSC.x, dirN.y, dirN.x * uWeatherDriftSC.x + dirN.z * uWeatherDriftSC.y);
-    return texture(uWeatherLUT, octaEncode(d)).rg;
+    return textureLod(uWeatherLUT, octaEncode(d), 0.0);
 }
 
-float shapeDensity(vec4 n, float coverage, float cloudType, float alt01)
+float shapeFade(float alt01, float bottomEdge, float topEdge)
 {
-    float bottomFade = smoothstep(0.0, mix(0.35, 0.08, cloudType), alt01);
-    float topFade = smoothstep(1.0, mix(0.55, 0.85, cloudType), alt01);
+    return smoothstep(0.0, bottomEdge, alt01) * (1.0 - smoothstep(topEdge, 1.0, alt01));
+}
 
-    float shaped = clamp01((n.r - (1.0 - coverage)) / max(coverage, 0.05)) * bottomFade * topFade;
-    if (shaped <= 0.001) return 0.0;
-
-    float erosionNoise = n.b * 0.5;
-    return clamp01(shaped - erosionNoise * uErosion * (1.0 - shaped * 0.5)) * uDensity;
+float erode(float shaped, float detail)
+{
+    float e = min(detail * uErosion * (EROSION_GAIN - shaped * EROSION_CORE), EROSION_MAX);
+    return clamp01((shaped - e) / (1.0 - e)) * uDensity;
 }
 
 float henyeyGreenstein(float cosTheta, float g)
@@ -146,21 +154,26 @@ float phaseCloud(float cosTheta, float g)
     return mix(henyeyGreenstein(cosTheta, -g * 0.25), henyeyGreenstein(cosTheta, g), 0.7);
 }
 
-float sunShadowDensity(vec3 origin, float cloudInner, float cloudOuter, float planetHalf, float coverage, float cloudType)
+float sunShadowDensity(vec3 origin, vec3 volumePos, vec3 sunStep, vec3 sunStepVolume, float cloudInner, float cloudOuter, float planetHalf, float coverage, float bottomEdge, float topEdge, float taperScale)
 {
-    float stepSize = uSunMarchLen * uInvSunSteps;
+    float weight = uDensity * uSunMarchLen * uInvSunSteps;
     float accum = 0.0;
 
     for (int i = 0; i < MAX_SUN_STEPS; i++)
     {
         if (i >= uSunSteps) break;
 
-        vec3 samplePos = origin + uSunDir * (stepSize * (float(i) + 0.5));
-        float alt = sdBox(samplePos, planetHalf);
-        if (alt < cloudInner - 0.02 || alt > cloudOuter + 0.02) continue;
+        float s = float(i) + 0.5;
+        float alt = sdBox(origin + sunStep * s, planetHalf);
+        if (alt <= cloudInner || alt >= cloudOuter) continue;
 
         float alt01 = clamp01((alt - cloudInner) * uInvShellThickness);
-        accum += shapeDensity(sampleVolumeCoarse(samplePos * uVolumeFreq + uWindOffset), coverage, cloudType, alt01) * stepSize;
+        float covEff = coverage * (1.0 - (alt01 - TAPER_PIVOT) * taperScale);
+        float fade = shapeFade(alt01, bottomEdge, topEdge);
+        if (clamp01(covEff * SHAPE_SLOPE) * fade <= 0.0) continue;
+
+        float shape = sampleShape(volumePos + sunStepVolume * s);
+        accum += clamp01((shape - 1.0 + covEff) * SHAPE_SLOPE) * fade * weight;
 
         if (accum > 1.2) break;
     }
@@ -183,28 +196,45 @@ void main()
     float cloudInner = max(uCloudInner, 1e-4);
     float cloudOuter = max(uCloudOuter, cloudInner + 1e-4);
 
-    vec2 atmoHit = raySphere(camPos, rayDir, uAtmoBoundRadius);
-    if (atmoHit.y <= atmoHit.x || atmoHit.y <= 0.0) { discard; }
+    vec3 invDir = 1.0 / mix(rayDir, vec3(1e-6), lessThan(abs(rayDir), vec3(1e-6)));
+    vec3 oi = camPos * invDir;
 
-    vec2 outerBoxHit = rayBox(camPos, rayDir, planetHalf + cloudOuter);
+    vec2 outerBoxHit = rayBox(invDir, oi, planetHalf + cloudOuter);
     if (outerBoxHit.x >= outerBoxHit.y || outerBoxHit.y <= 0.0) { discard; }
 
-    vec2 groundHit = rayBox(camPos, rayDir, planetHalf);
+    vec2 groundHit = rayBox(invDir, oi, planetHalf);
     if (groundHit.x < 0.0 && groundHit.y > 0.0) { discard; }
 
-    vec2 innerBoxHit = rayBox(camPos, rayDir, planetHalf + cloudInner);
-    bool camInsideOuter = outerBoxHit.x < 0.0 && outerBoxHit.y > 0.0;
+    vec2 innerBoxHit = rayBox(invDir, oi, planetHalf + cloudInner);
 
     float tStart = max(outerBoxHit.x, 0.0);
     float tEnd = outerBoxHit.y;
+    bool innerHit = innerBoxHit.x < innerBoxHit.y && innerBoxHit.y > 0.0;
+    bool groundAhead = groundHit.x < groundHit.y && groundHit.x > 0.0;
 
-    bool hitsInner = camInsideOuter ? (innerBoxHit.y > tStart && innerBoxHit.x < 0.0) : (innerBoxHit.x < innerBoxHit.y && innerBoxHit.x > tStart);
-    if (hitsInner) tEnd = min(tEnd, camInsideOuter ? innerBoxHit.y : innerBoxHit.x);
-    if (groundHit.y > tStart && groundHit.x > 0.0) tEnd = min(tEnd, groundHit.x);
+    if (innerHit)
+    {
+        if (innerBoxHit.x <= 0.0)
+        {
+            if (groundAhead) { discard; }
+            tStart = max(tStart, innerBoxHit.y);
+        }
+        else
+        {
+            tEnd = min(tEnd, innerBoxHit.x);
+        }
+    }
+    if (groundAhead) tEnd = min(tEnd, groundHit.x);
 
     if (tEnd <= tStart) { discard; }
 
     float stepSize = (min(tEnd, tStart + uMaxSegmentLen) - tStart) / float(uViewSteps);
+    float sigma = stepSize * uExtinction;
+
+    vec3 sunStep = uSunDir * (uSunMarchLen * uInvSunSteps);
+    vec3 sunStepVolume = toVolume(sunStep);
+    vec3 volumeOrigin = toVolume(camPos);
+    vec3 volumeDir = toVolume(rayDir);
 
     float phase = phaseCloud(dot(rayDir, uSunDir), clamp(uMieG, 0.0, 0.99));
 
@@ -221,7 +251,8 @@ void main()
     {
         if (i >= uViewSteps || accumAlpha > ALPHA_CUTOFF) break;
 
-        vec3 samplePos = camPos + rayDir * t;
+        float ts = t;
+        vec3 samplePos = camPos + rayDir * ts;
         t += stepSize;
 
         vec3 nrm = samplePos * inversesqrt(dot(samplePos, samplePos));
@@ -231,21 +262,37 @@ void main()
 
         if (dayAmt <= 0.001) continue;
 
-        vec2  weather  = sampleWeather(nrm);
-        float coverage = clamp01(weather.x + uCoverageBias);
-        if (coverage <= 0.001) continue;
-
         float alt = sdBox(samplePos, planetHalf);
+        if (alt <= cloudInner || alt >= cloudOuter) continue;
         float alt01 = clamp01((alt - cloudInner) * uInvShellThickness);
 
-        float density = shapeDensity(sampleVolume(samplePos * uVolumeFreq + uWindOffset), coverage, weather.y, alt01);
+        vec4 weather = sampleWeather(nrm);
+        float coverage = weather.x * COVERAGE_RANGE + uCoverageBias;
+        if (coverage <= 0.001) continue;
+
+        float bottomEdge = mix(0.35, 0.08, weather.y);
+        float topEdge = mix(0.55, 0.85, weather.y);
+        float taperScale = mix(TAPER_FLAT, TAPER_TALL, weather.y);
+        float fade = shapeFade(alt01, bottomEdge, topEdge);
+        float covEff = coverage * (1.0 - (alt01 - TAPER_PIVOT) * taperScale);
+        if (clamp01(covEff * SHAPE_SLOPE) * fade <= 0.001) continue;
+
+        vec3 lattice = volumeOrigin + volumeDir * ts + vec3(weather.zw, weather.z - weather.w) * uDetile;
+        vec3 volumePos = lattice + uWindOffset;
+
+        float shaped = clamp01((sampleShape(volumePos) - 1.0 + covEff) * SHAPE_SLOPE) * fade;
+        if (shaped <= 0.001) continue;
+
+        float density = erode(shaped, sampleDetail(lattice * uDetailRatio + uDetailOffset));
         if (density <= 0.001) continue;
 
         float directLight = 1.0;
         if (density > SHADOW_SKIP_DENSITY)
         {
-            float shadowDepth = sunShadowDensity(samplePos, cloudInner, cloudOuter, planetHalf, coverage, weather.y);
-            directLight = exp(-shadowDepth * 5.0);
+            float shadowDepth = sunShadowDensity(samplePos, volumePos, sunStep, sunStepVolume, cloudInner, cloudOuter, planetHalf, coverage, bottomEdge, topEdge, taperScale);
+            float soft = exp(-shadowDepth * SHADOW_EXTINCTION);
+            float hard = soft * soft;
+            directLight = max(hard * hard, SHADOW_SCATTER * soft);
         }
 
         float duskAmt = 1.0 - abs(clamp(sunFacing, -0.4, 0.4)) * 2.5;
@@ -257,7 +304,7 @@ void main()
 
         litColor = mix(litColor, litColor * duskTint, duskAmt * 0.85) * dayAmt;
 
-        float sampleAlpha = clamp01(1.0 - exp(-density * stepSize * uExtinction));
+        float sampleAlpha = clamp01(1.0 - exp(-density * sigma));
         float weight = sampleAlpha * (1.0 - accumAlpha);
         accumColor += litColor * weight;
         accumAlpha += weight;
@@ -265,6 +312,7 @@ void main()
 
     if (accumAlpha <= 0.003) { discard; }
 
-    vec3 tonemapped = accumColor * uColor / (1.0 + accumColor * 0.5);
+    vec3 radiance = accumColor / accumAlpha;
+    vec3 tonemapped = radiance * uColor / (1.0 + radiance * 0.5);
     fragColor = vec4(clamp(tonemapped, 0.0, 1.0), clamp01(accumAlpha));
 }

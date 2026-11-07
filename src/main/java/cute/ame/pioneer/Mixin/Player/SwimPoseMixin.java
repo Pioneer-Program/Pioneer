@@ -1,6 +1,5 @@
 package cute.ame.pioneer.Mixin.Player;
 
-import cute.ame.pioneer.Core.API.PioneerAPI;
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -13,10 +12,11 @@ public abstract class SwimPoseMixin
   @Inject(method = "aiStep", at = @At("RETURN"))
   private void pioneer$overrideSwimPose(CallbackInfo ci)
   {
-    Player self = (Player) (Object) this;
-    if (self.isInWater()) return;
-
-    boolean shouldSwim = PioneerAPI.getGravityFor(self.level().dimension()) == 0.0f;
-    if (self.isSwimming() != shouldSwim) self.setSwimming(shouldSwim);
+      //WARN: temp disabled cuz it was annoying
+//    Player self = (Player) (Object) this;
+//    if (self.isInWater()) return;
+//
+//    boolean shouldSwim = PioneerAPI.getGravityFor(self.level().dimension()) == 0.0f;
+//    if (self.isSwimming() != shouldSwim) self.setSwimming(shouldSwim);
   }
 }
