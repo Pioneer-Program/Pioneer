@@ -14,7 +14,8 @@ public final class PioneerDebugCommand
             .then(ShadingDebugCommand.build())
             .then(ObserverDebugCommand.build())
             .then(TimeDebugCommand.build())
-                .then(FrameDebugCommand.build())
+            .then(FrameDebugCommand.build())
+            .then(KelpDebugCommand.build())
         );
     }
 }

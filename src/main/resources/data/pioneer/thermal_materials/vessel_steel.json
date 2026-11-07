@@ -1,8 +1,8 @@
 {
   "blocks": [
-    "pioneer:vaccum_tank",
-    "pioneer:vaccum_pipe",
-    "pioneer:vaccum_pump",
+    "pioneer:vacuum_tank",
+    "pioneer:vacuum_pipe",
+    "pioneer:vacuum_pump",
     "pioneer:valve",
     "pioneer:vent"
   ],
