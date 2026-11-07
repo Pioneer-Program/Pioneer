@@ -32,6 +32,8 @@ public class Config
     public static ModConfigSpec.DoubleValue FRAME_CLUSTER_LINK;
     public static ModConfigSpec.DoubleValue FRAME_SPLIT_DISTANCE;
     public static ModConfigSpec.DoubleValue FRAME_EDGE_MARGIN;
+    public static ModConfigSpec.DoubleValue FRAME_MERGE_DISTANCE;
+    public static ModConfigSpec.DoubleValue FRAME_PRELOAD_DISTANCE;
 
     static final ModConfigSpec SPEC;
     static
@@ -73,6 +75,8 @@ public class Config
         FRAME_CLUSTER_LINK = BUILDER.defineInRange("frame_cluster_link", 512.0, 16.0, 4096.0);
         FRAME_SPLIT_DISTANCE = BUILDER.defineInRange("frame_split_distance", 1536.0, 64.0, 32768.0);
         FRAME_EDGE_MARGIN = BUILDER.defineInRange("frame_edge_margin", 256.0, 0.0, 4096.0);
+        FRAME_MERGE_DISTANCE = BUILDER.defineInRange("frame_merge_distance", 768.0, 64.0, 16384.0);
+        FRAME_PRELOAD_DISTANCE = BUILDER.defineInRange("frame_preload_distance", 4096.0, 0.0, 65536.0);
         BUILDER.pop();
 
         SPEC = BUILDER.build();

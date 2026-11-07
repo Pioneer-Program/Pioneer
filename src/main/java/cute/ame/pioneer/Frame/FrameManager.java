@@ -22,6 +22,7 @@ import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
+import dev.ryanhcode.sable.sublevel.SubLevel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.SectionPos;
@@ -30,9 +31,11 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.TicketType;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.phys.AABB;
 import net.neoforged.neoforge.common.NeoForge;
@@ -44,6 +47,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -57,6 +61,10 @@ public final class FrameManager extends SavedData
     private static final int WAIT_NONE = 0, WAIT_CELL = 1, WAIT_HEIGHT = 2, WAIT_DORMANT = 3;
     private static final String STAMP = "pioneer_frame_cell";
     private static final int ADOPT_NONE = 0;
+    private static final int MERGE_DORMANT = 1, MERGE_ABSENT = 2, MERGE_CELL = 3, MERGE_EDGE = 4, MERGE_APART = 5;
+    private static final int SPHERE = 8, PRELOAD_TICKS = 300, PRELOAD_REACH = 32;
+    private static final int FOLLOW_ALL = 0, FOLLOW_SHIPS = 1, FOLLOW_KEEP = 2;
+    private static final TicketType<ChunkPos> PRELOAD = TicketType.create("pioneer_frame_preload", Comparator.comparingLong(ChunkPos::toLong), PRELOAD_TICKS);
 
     private static final SavedData.Factory<FrameManager> FACTORY = new SavedData.Factory<>(FrameManager::fromConfig, FrameManager::load, null);
     private final ArrayList<LocalFrame> frames = new ArrayList<>(8);
@@ -70,11 +78,26 @@ public final class FrameManager extends SavedData
     private final FrameGroups groups = new FrameGroups();
     private final ArrayList<ServerSubLevel> strayShips = new ArrayList<>(4);
     private final ArrayList<ServerPlayer> strayPlayers = new ArrayList<>(2);
+    private final ArrayList<CellForward> forwards = new ArrayList<>(4);
+    private final FramePose mergePose = new FramePose();
+    private final FrameBox content = new FrameBox();
+    private final FrameShift scratchShift = new FrameShift(), mergeShift = new FrameShift();
+    private final FramePose shiftFrom = new FramePose(), shiftTo = new FramePose();
+    private final Vector3d fromVelocity = new Vector3d(), fromSpin = new Vector3d(), toVelocity = new Vector3d(), toSpin = new Vector3d();
+    private final double[] mergeBox = new double[6];
+    private final Vector3d mergePoint = new Vector3d(), mergeVelocity = new Vector3d(), mergeSpin = new Vector3d();
+    private double[] spheres = new double[8 * SPHERE];
+    private ServerSubLevel[] carried = new ServerSubLevel[2];
+    private LocalFrame[] pairFrom = new LocalFrame[4], pairTo = new LocalFrame[4];
+    private double[] pairGap = new double[4];
+    private boolean[] pairPredicted = new boolean[4];
+    private int pairs;
     private int adoptWaitKey;
     private String adoptWaitText = "";
     private double centerX, centerY, centerZ, driftX, driftY, driftZ;
     private FrameShift[] cellShift;
-    private long shiftEpoch;
+    private long[] cellLine;
+    private long shiftEpoch, lineCount;
     private FrameGrid grid;
     private LocalFrame[] byCell;
     private int[] strays;
@@ -148,6 +171,8 @@ public final class FrameManager extends SavedData
         manager.nextId = Math.max(tag.getInt("next"), 1);
         manager.shiftEpoch = tag.contains("shiftEpoch") ? tag.getLong("shiftEpoch") : manager.shiftEpoch;
         loadCellShifts(manager, tag.getList("cellShifts", Tag.TAG_COMPOUND));
+        loadCellLines(manager, tag.getList("cellLines", Tag.TAG_COMPOUND), tag.getList("cellForwards", Tag.TAG_COMPOUND));
+        manager.lineCount = tag.getLong("lineCount");
 
         ListTag list = tag.getList("frames", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++)
@@ -197,6 +222,25 @@ public final class FrameManager extends SavedData
         }
     }
 
+    private static void loadCellLines(FrameManager manager, ListTag lines, ListTag links)
+    {
+        for (int i = 0, n = lines.size(); i < n; ++i)
+        {
+            CompoundTag t = lines.getCompound(i);
+            int cell = manager.grid.cell(t.getInt("ix"), t.getInt("iz"));
+            if (cell >= 0) manager.cellLine[cell] = t.getLong("line");
+        }
+
+        for (int i = 0, n = links.size(); i < n; ++i)
+        {
+            CompoundTag t = links.getCompound(i);
+            int from = manager.grid.cell(t.getInt("ix"), t.getInt("iz")), to = manager.grid.cell(t.getInt("tix"), t.getInt("tiz"));
+            if (from < 0 || to < 0) continue;
+
+            manager.forwards.add(new CellForward(from, t.getLong("line"), to, t.getLong("toLine"), readShift(t, new FrameShift())));
+        }
+    }
+
     private static FrameShift readShift(CompoundTag t, FrameShift out)
     {
         out.identity();
@@ -242,50 +286,53 @@ public final class FrameManager extends SavedData
         return t;
     }
 
-    public void stamp(Entity entity)
+    static double closest(double rx, double ry, double rz, double ux, double uy, double uz, double horizon)
     {
-        CompoundTag data = entity.getPersistentData();
-        int cell = grid.cellAt(entity.getX(), entity.getZ());
-        if (cell < 0)
-        {
-            data.remove(STAMP);
-            return;
-        }
-
-        CompoundTag t = new CompoundTag();
-        t.putLong("epoch", shiftEpoch);
-        t.putInt("cell", cell);
-        FrameShift shift = cellShift[cell];
-        if (shift != null) writeShift(shift, t);
-
-        data.put(STAMP, t);
+        double uu = ux * ux + uy * uy + uz * uz;
+        double t = uu > 0.0 ? Math.max(0.0, Math.min(horizon, -(rx * ux + ry * uy + rz * uz) / uu)) : 0.0;
+        double dx = rx + ux * t, dy = ry + uy * t, dz = rz + uz * t;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
-    public boolean restore(Entity entity)
+    private static void ticket(ServerLevel level, LocalFrame.Member m)
     {
-        int cell = grid.cellAt(entity.getX(), entity.getZ());
-        if (cell < 0) return false;
+        FrameBox box = m.box;
+        int x0 = SectionPos.blockToSectionCoord(Mth.floor(box.minX)), x1 = SectionPos.blockToSectionCoord(Mth.floor(box.maxX));
+        int z0 = SectionPos.blockToSectionCoord(Mth.floor(box.minZ)), z1 = SectionPos.blockToSectionCoord(Mth.floor(box.maxZ));
+        int cx = (x0 + x1) >> 1, cz = (z0 + z1) >> 1;
+        int reach = Math.min(PRELOAD_REACH, 2 + Math.max(x1 - x0 + 1, z1 - z0 + 1) / 2);
+        ChunkPos pos = m.ticket;
+        if (pos == null || pos.x != cx || pos.z != cz) m.ticket = pos = new ChunkPos(cx, cz);
 
-        FrameShift now = cellShift[cell];
-        CompoundTag data = entity.getPersistentData();
-        if (data.contains(STAMP, Tag.TAG_COMPOUND))
+        level.getChunkSource().addRegionTicket(PRELOAD, pos, reach, pos);
+    }
+
+    private static LocalFrame heavier(LocalFrame a, LocalFrame b)
+    {
+        if (a.mass != b.mass) return a.mass > b.mass ? a : b;
+        if (a.players.size() != b.players.size()) return a.players.size() > b.players.size() ? a : b;
+
+        return a.id < b.id ? a : b;
+    }
+
+    private static LocalFrame keeper(LocalFrame a, LocalFrame b)
+    {
+        if ((a.absent > 0) != (b.absent > 0)) return a.absent > 0 ? a : b;
+        if (a.players.isEmpty() != b.players.isEmpty()) return a.players.isEmpty() ? b : a;
+
+        return heavier(a, b);
+    }
+
+    private static String mergeReason(LocalFrame from, LocalFrame kept, int reason)
+    {
+        return switch (reason)
         {
-            CompoundTag t = data.getCompound(STAMP);
-            if (t.getLong("epoch") != shiftEpoch || t.getInt("cell") != cell) return false;
-
-            readShift(t, stampShift);
-        }
-        else if (now == null || shiftEpoch != 1L) return false;
-        else stampShift.identity();
-
-        if (now == null ? stampShift.isIdentity() : stampShift.sameAs(now)) return false;
-
-        stampShift.invert();
-        if (now != null) stampShift.then(now);
-
-        FrameTransfer.settle(entity, stampShift, stampPoint);
-        stamp(entity);
-        return true;
+            case MERGE_DORMANT -> (kept.dormant + from.dormant) + " dormant member(s)";
+            case MERGE_ABSENT -> "logged-out player(s) in both frames";
+            case MERGE_CELL -> "content would leave the cell of #" + kept.id;
+            case MERGE_EDGE -> "content would reach the edge of the cell of #" + kept.id;
+            default -> "content farther than the split distance";
+        };
     }
 
     private static double halfDiagonal(double minX, double minY, double minZ, double maxX, double maxY, double maxZ)
@@ -429,13 +476,25 @@ public final class FrameManager extends SavedData
         return list;
     }
 
-    private void setGrid(FrameGrid grid)
+    public void stamp(Entity entity)
     {
-        this.grid = grid;
-        this.byCell = new LocalFrame[grid.cellCount()];
-        this.strays = new int[grid.cellCount()];
-        this.cellShift = new FrameShift[grid.cellCount()];
-        ++shiftEpoch;
+        CompoundTag data = entity.getPersistentData();
+        int cell = grid.cellAt(entity.getX(), entity.getZ());
+        if (cell < 0)
+        {
+            data.remove(STAMP);
+            return;
+        }
+
+        CompoundTag t = new CompoundTag();
+        t.putLong("epoch", shiftEpoch);
+        t.putInt("cell", cell);
+        if (cellLine[cell] != 0L) t.putLong("line", cellLine[cell]);
+
+        FrameShift shift = cellShift[cell];
+        if (shift != null) writeShift(shift, t);
+
+        data.put(STAMP, t);
     }
 
     private void settleRecords(ServerLevel level, @Nullable ServerSubLevelContainer container)
@@ -560,14 +619,34 @@ public final class FrameManager extends SavedData
         return frame;
     }
 
-    public void drop(ServerLevel level, LocalFrame frame)
+    public boolean restore(Entity entity)
     {
-        requireLive(frame);
-        refresh(level);
-        if (!frame.members.isEmpty() || !frame.players.isEmpty())
-            throw new FrameError("Frame #" + frame.id + " is not empty, release it instead");
+        int cell = grid.cellAt(entity.getX(), entity.getZ());
+        if (cell < 0) return false;
 
-        remove(level, frame);
+        long line = 0L;
+        CompoundTag data = entity.getPersistentData();
+        if (data.contains(STAMP, Tag.TAG_COMPOUND))
+        {
+            CompoundTag t = data.getCompound(STAMP);
+            if (t.getLong("epoch") != shiftEpoch || t.getInt("cell") != cell) return false;
+
+            line = t.getLong("line");
+            readShift(t, stampShift);
+        }
+        else if (shiftEpoch != 1L) return false;
+        else stampShift.identity();
+
+        if (line != cellLine[cell]) cell = follow(cell, line);
+        else if (cellShift[cell] == null ? stampShift.isIdentity() : stampShift.sameAs(cellShift[cell])) return false;
+        else stampShift.invert();
+
+        if (cell < 0) return false;
+        if (cellShift[cell] != null) stampShift.then(cellShift[cell]);
+
+        FrameTransfer.settle(entity, stampShift, stampPoint);
+        stamp(entity);
+        return true;
     }
 
     private boolean areaTicking(ServerLevel level, FrameBox box)
@@ -678,26 +757,21 @@ public final class FrameManager extends SavedData
             && (Mth.floor(maxZ) >> shift) >= origin.y && (Mth.floor(minZ) >> shift) < origin.y + side;
     }
 
-    public FrameMaintenance maintain(ServerLevel level, FrameMaintenance out)
+    private int follow(int cell, long line)
     {
-        out.clear();
-        refresh(level);
-        if (frames.isEmpty() && strayShips.isEmpty() && strayPlayers.isEmpty()) return out;
+        stampShift.invert();
+        for (int hop = 0, n = forwards.size(); hop < n; ++hop)
+        {
+            CellForward link = forward(cell, line);
+            if (link == null) return -1;
 
-        out.adopted = adoptStrays(level, out);
-        if (out.adopted > 0) refresh(level);
+            stampShift.then(link.shift());
+            cell = link.to();
+            line = link.toLine();
+            if (line == cellLine[cell]) return cell;
+        }
 
-        out.split = splitFrames(level, out);
-        if (out.split > 0) refresh(level);
-
-        out.recentered = recenterDrifting(level, out);
-        if (out.recentered > 0) refresh(level);
-
-        out.swept = sweepEmpty(level);
-        out.frames = frames.size();
-        for (int i = 0, n = frames.size(); i < n; ++i) out.dormant += frames.get(i).dormant;
-
-        return out;
+        return -1;
     }
 
     public FrameReport recenter(ServerLevel level, LocalFrame frame)
@@ -718,43 +792,42 @@ public final class FrameManager extends SavedData
         return report;
     }
 
-    private int recenterDrifting(ServerLevel level, FrameMaintenance out)
+    @Nullable
+    private CellForward forward(int cell, long line)
     {
-        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
-        if (container == null) return 0;
-
-        double distance = Math.min(Config.FRAME_RECENTER_DISTANCE.get(), Math.max(16.0, grid.halfCell() - Config.FRAME_EDGE_MARGIN.get()));
-        double speed = Config.FRAME_RECENTER_SPEED.get();
-        int period = Config.FRAME_MAINTAIN_PERIOD.get();
-        double ahead = period > 0 ? period / TICKS_PER_SECOND : 1.0;
-        double cy = grid.centerY(), room = Math.min(level.getMaxBuildHeight() - cy, cy - level.getMinBuildHeight());
-        int moved = 0;
-        for (int i = 0; i < frames.size(); ++i)
+        for (int i = 0, n = forwards.size(); i < n; ++i)
         {
-            LocalFrame f = frames.get(i);
-            boolean edge = f.edgeRecenter;
-            f.edgeRecenter = false;
-            if (!barycenter(f, container) || !(edge || due(centerX, centerY, centerZ, driftX, driftY, driftZ, distance, speed, ahead, room)))
-            {
-                f.waitKey = WAIT_NONE;
-                continue;
-            }
-
-            int wait = f.dormant > 0 ? WAIT_DORMANT + 4 * f.dormant : fit(level, f);
-            if (wait != WAIT_NONE)
-            {
-                waiting(f, wait, out);
-                continue;
-            }
-
-            f.waitKey = WAIT_NONE;
-            double offset = Math.sqrt(centerX * centerX + centerY * centerY + centerZ * centerZ), drift = Math.sqrt(driftX * driftX + driftY * driftY + driftZ * driftZ);
-            move(level, f);
-            Pioneer.LOGGER.info("frame #{} recentered by the pass: offset {} speed {} u/s", f.id, String.format(Locale.ROOT, "%.1f", offset), String.format(Locale.ROOT, "%.1f", drift));
-            ++moved;
+            CellForward link = forwards.get(i);
+            if (link.from() == cell && link.line() == line) return link;
         }
 
-        return moved;
+        return null;
+    }
+
+    private void handOver(int from, int to, FrameShift shift)
+    {
+        FrameShift link = new FrameShift();
+        if (cellShift[from] != null) link.set(cellShift[from]);
+        else link.identity();
+
+        link.then(shift);
+        if (cellShift[to] != null) link.then(scratchShift.set(cellShift[to]).invert());
+
+        forwards.add(new CellForward(from, cellLine[from], to, cellLine[to], link));
+        cellLine[from] = ++lineCount;
+        cellShift[from] = null;
+        setDirty();
+    }
+
+    private void setGrid(FrameGrid grid)
+    {
+        this.grid = grid;
+        this.byCell = new LocalFrame[grid.cellCount()];
+        this.strays = new int[grid.cellCount()];
+        this.cellShift = new FrameShift[grid.cellCount()];
+        this.cellLine = new long[grid.cellCount()];
+        forwards.clear();
+        ++shiftEpoch;
     }
 
     public void adopt(ServerLevel level)
@@ -1053,16 +1126,41 @@ public final class FrameManager extends SavedData
         return due(ox, oy, oz, groups.groupVel[p], groups.groupVel[p + 1], groups.groupVel[p + 2], distance, speed, ahead, room) ? FrameEvent.Reason.DORMANT : null;
     }
 
-    private boolean crosses(ServerLevel level, LocalFrame f, int g, double horizon, double margin)
+    public void drop(ServerLevel level, LocalFrame frame)
     {
-        int b = g * 6, p = g * 3;
-        double[] box = groups.groupBox;
-        double vx = groups.groupVel[p] * horizon, vy = groups.groupVel[p + 1] * horizon, vz = groups.groupVel[p + 2] * horizon;
-        double cx = grid.centerX(f.cell), cz = grid.centerZ(f.cell), half = grid.halfCell() - margin;
-        if (box[b] + Math.min(0.0, vx) < cx - half || box[b + 3] + Math.max(0.0, vx) > cx + half) return true;
-        if (box[b + 2] + Math.min(0.0, vz) < cz - half || box[b + 5] + Math.max(0.0, vz) > cz + half) return true;
+        requireLive(frame);
+        refresh(level);
+        if (!frame.members.isEmpty() || !frame.players.isEmpty())
+            throw new FrameError("Frame #" + frame.id + " is not empty, release it instead");
+        if (frame.dormant > 0)
+            throw new FrameError("Frame #" + frame.id + " has " + frame.dormant + " dormant member(s), they would be left without a frame");
 
-        return box[b + 1] + Math.min(0.0, vy) < level.getMinBuildHeight() || box[b + 4] + Math.max(0.0, vy) > level.getMaxBuildHeight();
+        remove(level, frame);
+    }
+
+    public FrameMaintenance maintain(ServerLevel level, FrameMaintenance out)
+    {
+        out.clear();
+        refresh(level);
+        if (frames.isEmpty() && strayShips.isEmpty() && strayPlayers.isEmpty()) return out;
+
+        out.adopted = adoptStrays(level, out);
+        if (out.adopted > 0) refresh(level);
+
+        out.split = splitFrames(level, out);
+        if (out.split > 0) refresh(level);
+
+        out.recentered = recenterDrifting(level, out);
+        if (out.recentered > 0) refresh(level);
+
+        out.merged = mergeFrames(level, out);
+        if (out.merged > 0) refresh(level);
+
+        out.swept = sweepEmpty(level);
+        out.frames = frames.size();
+        for (int i = 0, n = frames.size(); i < n; ++i) out.dormant += frames.get(i).dormant;
+
+        return out;
     }
 
     private boolean splitGroup(ServerLevel level, LocalFrame f, int g, List<ServerSubLevel> ships, List<ServerPlayer> players, FrameEvent.Reason reason, long now, FrameMaintenance out)
@@ -1110,6 +1208,346 @@ public final class FrameManager extends SavedData
         }
 
         out.waiting.add(f.splitWaitText);
+    }
+
+    private int recenterDrifting(ServerLevel level, FrameMaintenance out)
+    {
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        if (container == null) return 0;
+
+        double distance = Math.min(Config.FRAME_RECENTER_DISTANCE.get(), Math.max(16.0, grid.halfCell() - Config.FRAME_EDGE_MARGIN.get()));
+        double speed = Config.FRAME_RECENTER_SPEED.get();
+        int period = Config.FRAME_MAINTAIN_PERIOD.get();
+        double ahead = period > 0 ? period / TICKS_PER_SECOND : 1.0;
+        double cy = grid.centerY(), room = Math.min(level.getMaxBuildHeight() - cy, cy - level.getMinBuildHeight());
+        int moved = 0;
+        for (int i = 0; i < frames.size(); ++i)
+        {
+            LocalFrame f = frames.get(i);
+            boolean edge = f.edgeRecenter, ships = barycenter(f, container);
+            f.edgeRecenter = false;
+            f.driftX = ships ? driftX : 0.0;
+            f.driftY = ships ? driftY : 0.0;
+            f.driftZ = ships ? driftZ : 0.0;
+            int led = ships && !edge ? lead(f, container) : FOLLOW_ALL;
+            if (!ships || !(edge || due(centerX, centerY, centerZ, driftX, driftY, driftZ, distance, speed, ahead, room)))
+            {
+                f.waitKey = WAIT_NONE;
+                continue;
+            }
+
+            int wait = f.dormant > 0 ? WAIT_DORMANT + 4 * f.dormant : fit(level, f);
+            if (wait != WAIT_NONE)
+            {
+                waiting(f, wait, out);
+                continue;
+            }
+
+            f.waitKey = WAIT_NONE;
+            double offset = Math.sqrt(centerX * centerX + centerY * centerY + centerZ * centerZ), drift = Math.sqrt(driftX * driftX + driftY * driftY + driftZ * driftZ);
+            move(level, f);
+            f.driftX -= driftX;
+            f.driftY -= driftY;
+            f.driftZ -= driftZ;
+            String on = led == FOLLOW_SHIPS ? " (on the ships its players are on)" : led == FOLLOW_KEEP ? " (its players float, velocity kept)" : "";
+            Pioneer.LOGGER.info("frame #{} recentered by the pass: offset {} speed {} u/s{}", f.id, String.format(Locale.ROOT, "%.1f", offset), String.format(Locale.ROOT, "%.1f", drift), on);
+            ++moved;
+        }
+
+        return moved;
+    }
+
+    private int lead(LocalFrame f, ServerSubLevelContainer container)
+    {
+        int players = f.players.size();
+        if (players == 0) return FOLLOW_ALL;
+        if (carried.length < players) carried = new ServerSubLevel[2 * players];
+
+        int count = 0;
+        for (int i = 0; i < players; ++i)
+        {
+            ServerPlayer player = f.players.get(i);
+            SubLevel ship = Sable.HELPER.getVehicleSubLevel(player);
+            if (ship == null) ship = Sable.HELPER.getTrackingSubLevel(player);
+            if (!(ship instanceof ServerSubLevel s) || !f.members.contains(s) || seen(s, count)) continue;
+
+            carried[count++] = s;
+        }
+
+        if (count == 0)
+        {
+            driftX = driftY = driftZ = 0.0;
+            return FOLLOW_KEEP;
+        }
+
+        PhysicsPipeline pipeline = container.physicsSystem().getPipeline();
+        boolean weightless = f.mass <= 0.0;
+        Vector3d first = carried[0].logicalPose().position();
+        double rx = first.x, ry = first.y, rz = first.z;
+        double total = 0.0, sx = 0.0, sy = 0.0, sz = 0.0, px = 0.0, py = 0.0, pz = 0.0;
+        for (int i = 0; i < count; ++i)
+        {
+            ServerSubLevel ship = carried[i];
+            carried[i] = null;
+            double m = weightless ? 1.0 : FrameTransfer.massOf(ship);
+            if (m <= 0.0) m = 1.0;
+
+            Vector3d p = ship.logicalPose().position();
+            sx += m * (p.x - rx);
+            sy += m * (p.y - ry);
+            sz += m * (p.z - rz);
+            pipeline.getLinearVelocity(ship, linear);
+            px += m * linear.x;
+            py += m * linear.y;
+            pz += m * linear.z;
+            total += m;
+        }
+
+        centered(f, rx + sx / total, ry + sy / total, rz + sz / total, px / total, py / total, pz / total);
+        return FOLLOW_SHIPS;
+    }
+
+    private boolean seen(ServerSubLevel ship, int count)
+    {
+        for (int i = 0; i < count; ++i) if (carried[i] == ship) return true;
+
+        return false;
+    }
+
+    private boolean crosses(ServerLevel level, LocalFrame f, int g, double horizon, double margin)
+    {
+        int p = g * 3;
+        return leaves(level, f.cell, groups.groupBox, g * 6, groups.groupVel[p] * horizon, groups.groupVel[p + 1] * horizon, groups.groupVel[p + 2] * horizon, margin);
+    }
+
+    private boolean leaves(ServerLevel level, int cell, double[] box, int b, double vx, double vy, double vz, double margin)
+    {
+        double cx = grid.centerX(cell), cz = grid.centerZ(cell), half = grid.halfCell() - margin;
+        if (box[b] + Math.min(0.0, vx) < cx - half || box[b + 3] + Math.max(0.0, vx) > cx + half) return true;
+        if (box[b + 2] + Math.min(0.0, vz) < cz - half || box[b + 5] + Math.max(0.0, vz) > cz + half) return true;
+
+        return box[b + 1] + Math.min(0.0, vy) < level.getMinBuildHeight() || box[b + 4] + Math.max(0.0, vy) > level.getMaxBuildHeight();
+    }
+
+    private int mergeFrames(ServerLevel level, FrameMaintenance out)
+    {
+        int n = frames.size();
+        if (n < 2) return 0;
+
+        double merge = Config.FRAME_MERGE_DISTANCE.get(), preload = Math.max(merge, Config.FRAME_PRELOAD_DISTANCE.get());
+        int period = Config.FRAME_MAINTAIN_PERIOD.get();
+        double horizon = 2.0 * (period > 0 ? period / TICKS_PER_SECOND : 1.0);
+        long now = level.getGameTime();
+        if (spheres.length < n * SPHERE) spheres = new double[2 * n * SPHERE];
+
+        for (int i = 0; i < n; ++i) sphere(frames.get(i), now, i * SPHERE);
+
+        pairs = 0;
+        for (int i = 0; i < n; ++i)
+        {
+            int a = i * SPHERE;
+            if (spheres[a + 7] == 0.0) continue;
+
+            for (int j = i + 1; j < n; ++j)
+            {
+                int b = j * SPHERE;
+                if (spheres[b + 7] == 0.0) continue;
+
+                double rx = spheres[b] - spheres[a], ry = spheres[b + 1] - spheres[a + 1], rz = spheres[b + 2] - spheres[a + 2];
+                double reach = spheres[a + 6] + spheres[b + 6];
+                double gap = closest(rx, ry, rz, spheres[b + 3] - spheres[a + 3], spheres[b + 4] - spheres[a + 4], spheres[b + 5] - spheres[a + 5], horizon) - reach;
+                if (gap >= preload) continue;
+
+                LocalFrame fa = frames.get(i), fb = frames.get(j);
+                preload(level, fa, fb, gap, out);
+                preload(level, fb, fa, gap, out);
+                if (gap < merge) addPair(fa, fb, gap, Math.sqrt(rx * rx + ry * ry + rz * rz) - reach >= merge);
+            }
+        }
+
+        sortPairs();
+        int merged = 0;
+        for (int p = 0; p < pairs; ++p)
+        {
+            LocalFrame fa = pairFrom[p], fb = pairTo[p];
+            pairFrom[p] = pairTo[p] = null;
+            if (fa.mergeBusy || fb.mergeBusy || !live(fa) || !live(fb)) continue;
+            if (tryMerge(level, fa, fb, pairPredicted[p], horizon, out)) ++merged;
+        }
+
+        for (int i = 0, m = frames.size(); i < m; ++i)
+        {
+            LocalFrame f = frames.get(i);
+            if (!f.mergeWaitSeen) f.mergeWaitKey = 0L;
+            if (!f.preloadSeen) f.preloadKey = 0;
+        }
+
+        return merged;
+    }
+
+    private void sphere(LocalFrame f, long now, int s)
+    {
+        f.mergeBusy = f.mergeWaitSeen = f.preloadSeen = false;
+        content.clear();
+        if (!f.box.isEmpty()) content.include(f.box.minX, f.box.minY, f.box.minZ, f.box.maxX, f.box.maxY, f.box.maxZ);
+        if (f.dormant > 0)
+        {
+            for (int r = 0, n = f.records.size(); r < n; ++r)
+            {
+                LocalFrame.Member m = f.records.get(r);
+                if (!m.loaded) content.include(m.box.minX, m.box.minY, m.box.minZ, m.box.maxX, m.box.maxY, m.box.maxZ);
+            }
+        }
+
+        if (content.isEmpty())
+        {
+            spheres[s + 7] = 0.0;
+            return;
+        }
+
+        FrameParent parent = f.parent(system());
+        double ox = 0.5 * (content.minX + content.maxX) - grid.centerX(f.cell), oy = 0.5 * (content.minY + content.maxY) - grid.centerY(), oz = 0.5 * (content.minZ + content.maxZ) - grid.centerZ(f.cell);
+        mergePose.set(f.motion, parent, f.fixed, now, 0.0).toSystem(ox, oy, oz, mergePoint);
+        mergePose.velocity(f.motion, parent, f.fixed, now, 0.0, mergeVelocity);
+        mergePose.angularVelocity(f.motion, parent, f.fixed, now, mergeSpin);
+        double rx = mergePoint.x - mergePose.px, ry = mergePoint.y - mergePose.py, rz = mergePoint.z - mergePose.pz;
+        double vx = mergeVelocity.x + mergeSpin.y * rz - mergeSpin.z * ry, vy = mergeVelocity.y + mergeSpin.z * rx - mergeSpin.x * rz, vz = mergeVelocity.z + mergeSpin.x * ry - mergeSpin.y * rx;
+        spheres[s] = mergePoint.x;
+        spheres[s + 1] = mergePoint.y;
+        spheres[s + 2] = mergePoint.z;
+        if (f.members.isEmpty()) mergePoint.zero();
+        else mergePose.directionToSystem(f.driftX, f.driftY, f.driftZ, mergePoint);
+
+        spheres[s + 3] = vx * TICKS_PER_SECOND + mergePoint.x;
+        spheres[s + 4] = vy * TICKS_PER_SECOND + mergePoint.y;
+        spheres[s + 5] = vz * TICKS_PER_SECOND + mergePoint.z;
+        spheres[s + 6] = halfDiagonal(content.minX, content.minY, content.minZ, content.maxX, content.maxY, content.maxZ);
+        spheres[s + 7] = 1.0;
+    }
+
+    private void preload(ServerLevel level, LocalFrame holder, LocalFrame target, double gap, FrameMaintenance out)
+    {
+        if (holder.players.isEmpty() || target.dormant == 0 || target.preloadSeen) return;
+
+        target.preloadSeen = true;
+        ++out.preloading;
+        for (int r = 0, n = target.records.size(); r < n; ++r)
+        {
+            LocalFrame.Member m = target.records.get(r);
+            if (!m.loaded) ticket(level, m);
+        }
+
+        if (target.preloadKey == target.dormant) return;
+
+        target.preloadKey = target.dormant;
+        Pioneer.LOGGER.info("frame preloading #{}: {} dormant member(s), #{} with a player at {}", target.id, target.dormant, holder.id, String.format(Locale.ROOT, "%.0f", gap));
+    }
+
+    private void addPair(LocalFrame a, LocalFrame b, double gap, boolean predicted)
+    {
+        if (pairs == pairGap.length)
+        {
+            int size = 2 * pairs;
+            pairFrom = Arrays.copyOf(pairFrom, size);
+            pairTo = Arrays.copyOf(pairTo, size);
+            pairGap = Arrays.copyOf(pairGap, size);
+            pairPredicted = Arrays.copyOf(pairPredicted, size);
+        }
+
+        pairFrom[pairs] = a;
+        pairTo[pairs] = b;
+        pairGap[pairs] = gap;
+        pairPredicted[pairs] = predicted;
+        ++pairs;
+    }
+
+    private void sortPairs()
+    {
+        for (int i = 1; i < pairs; ++i)
+        {
+            LocalFrame a = pairFrom[i], b = pairTo[i];
+            double gap = pairGap[i];
+            boolean predicted = pairPredicted[i];
+            int k = i - 1;
+            for (; k >= 0 && pairGap[k] > gap; --k)
+            {
+                pairFrom[k + 1] = pairFrom[k];
+                pairTo[k + 1] = pairTo[k];
+                pairGap[k + 1] = pairGap[k];
+                pairPredicted[k + 1] = pairPredicted[k];
+            }
+
+            pairFrom[k + 1] = a;
+            pairTo[k + 1] = b;
+            pairGap[k + 1] = gap;
+            pairPredicted[k + 1] = predicted;
+        }
+    }
+
+    private boolean tryMerge(ServerLevel level, LocalFrame a, LocalFrame b, boolean predicted, double horizon, FrameMaintenance out)
+    {
+        LocalFrame kept = keeper(a, b), from = kept == a ? b : a;
+        if (kept.dormant + from.dormant > 0) return mergeWaiting(from, kept, MERGE_DORMANT, out);
+        if (from.absent > 0) return mergeWaiting(from, kept, MERGE_ABSENT, out);
+
+        FrameShift shift = shift(from, kept, level.getGameTime(), mergeShift);
+        FrameBox box = from.box;
+        double[] moved = shift.bounds(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, mergeBox);
+        if (!fits(level, kept.cell, moved)) return mergeWaiting(from, kept, MERGE_CELL, out);
+
+        if (from.members.isEmpty()) mergeVelocity.zero();
+        else shift.direction(from.driftX, from.driftY, from.driftZ, mergeVelocity);
+
+        shift.kick(0.5 * (moved[0] + moved[3]), 0.5 * (moved[1] + moved[4]), 0.5 * (moved[2] + moved[5]), mergePoint);
+        double vx = (mergeVelocity.x + mergePoint.x) * horizon, vy = (mergeVelocity.y + mergePoint.y) * horizon, vz = (mergeVelocity.z + mergePoint.z) * horizon;
+        if (leaves(level, kept.cell, moved, 0, vx, vy, vz, Config.FRAME_EDGE_MARGIN.get()))
+            return mergeWaiting(from, kept, MERGE_EDGE, out);
+        if (mainGap(level, kept, moved) > Config.FRAME_SPLIT_DISTANCE.get())
+            return mergeWaiting(from, kept, MERGE_APART, out);
+
+        List<ServerSubLevel> ships = List.copyOf(from.members);
+        int players = from.players.size();
+        FrameTransfer.carry(level, ships, List.copyOf(from.players), entitiesInCell(level, from.cell), shift);
+        handOver(from.cell, kept.cell, shift);
+        kept.mergeBusy = true;
+        String how = predicted ? "predicted" : "close";
+        Pioneer.LOGGER.info("frame #{} merged #{} ({}): ships={} players={}", kept.id, from.id, how, ships.size(), players);
+        NeoForge.EVENT_BUS.post(new FrameEvent.Merged(level, kept, from, ships, players, predicted));
+        remove(level, from);
+        return true;
+    }
+
+    private double mainGap(ServerLevel level, LocalFrame kept, double[] box)
+    {
+        ServerSubLevelContainer container = SubLevelContainer.getContainer(level);
+        PhysicsPipeline pipeline = container == null ? null : container.physicsSystem().getPipeline();
+        groups.clear();
+        for (int s = 0, n = kept.members.size(); s < n; ++s) addShip(kept.members.get(s), pipeline);
+
+        for (int s = 0, n = kept.players.size(); s < n; ++s) addPlayer(kept.players.get(s));
+
+        groups.link(Config.FRAME_CLUSTER_LINK.get());
+        int b = mainGroup(kept) * 6;
+        double[] g = groups.groupBox;
+        double dx = Math.max(0.0, Math.max(g[b] - box[3], box[0] - g[b + 3]));
+        double dy = Math.max(0.0, Math.max(g[b + 1] - box[4], box[1] - g[b + 4]));
+        double dz = Math.max(0.0, Math.max(g[b + 2] - box[5], box[2] - g[b + 5]));
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    private boolean mergeWaiting(LocalFrame from, LocalFrame kept, int reason, FrameMaintenance out)
+    {
+        from.mergeWaitSeen = true;
+        long key = ((long) kept.id << 32) | ((long) reason << 24) | (kept.dormant + from.dormant);
+        if (from.mergeWaitKey != key)
+        {
+            from.mergeWaitKey = key;
+            from.mergeWaitText = "merge #" + from.id + " into #" + kept.id + " waiting: " + mergeReason(from, kept, reason);
+            Pioneer.LOGGER.info("frame {}", from.mergeWaitText);
+        }
+
+        out.waiting.add(from.mergeWaitText);
+        return false;
     }
 
     @Nullable
@@ -1314,6 +1752,8 @@ public final class FrameManager extends SavedData
     {
         requireLive(frame);
         refresh(level);
+        if (frame.dormant > 0)
+            throw new FrameError("Frame #" + frame.id + " has " + frame.dormant + " dormant member(s), they cannot be moved");
 
         long now = level.getGameTime();
         Vector3d v = velocityOf(frame, now, new Vector3d());
@@ -1364,17 +1804,26 @@ public final class FrameManager extends SavedData
 
     private FrameShift shift(@Nullable LocalFrame from, @Nullable LocalFrame to, long now)
     {
-        Vector3d fromVelocity = new Vector3d(), fromSpin = new Vector3d(), toVelocity = new Vector3d(), toSpin = new Vector3d();
-        FramePose a = state(from, now, new FramePose(), fromVelocity, fromSpin);
-        FramePose b = state(to, now, new FramePose(), toVelocity, toSpin);
+        return shift(from, to, now, new FrameShift());
+    }
+
+    private FrameShift shift(@Nullable LocalFrame from, @Nullable LocalFrame to, long now, FrameShift out)
+    {
+        FramePose a = state(from, now, shiftFrom, fromVelocity, fromSpin);
+        FramePose b = state(to, now, shiftTo, toVelocity, toSpin);
         double fx = from == null ? 0.0 : grid.centerX(from.cell), fy = from == null ? 0.0 : grid.centerY(), fz = from == null ? 0.0 : grid.centerZ(from.cell);
         double tx = to == null ? 0.0 : grid.centerX(to.cell), ty = to == null ? 0.0 : grid.centerY(), tz = to == null ? 0.0 : grid.centerZ(to.cell);
-        return new FrameShift().between(a, fx, fy, fz, fromVelocity, fromSpin, b, tx, ty, tz, toVelocity, toSpin).scaleKick(TICKS_PER_SECOND);
+        return out.between(a, fx, fy, fz, fromVelocity, fromSpin, b, tx, ty, tz, toVelocity, toSpin).scaleKick(TICKS_PER_SECOND);
     }
 
     private FramePose state(@Nullable LocalFrame frame, long now, FramePose out, Vector3d velocity, Vector3d spin)
     {
-        if (frame == null) return out.identity();
+        if (frame == null)
+        {
+            velocity.zero();
+            spin.zero();
+            return out.identity();
+        }
 
         FrameParent parent = frame.parent(system());
         out.velocity(frame.motion, parent, frame.fixed, now, 0.0, velocity);
@@ -1426,6 +1875,41 @@ public final class FrameManager extends SavedData
         return swept;
     }
 
+    private void saveCellLines(CompoundTag tag)
+    {
+        ListTag lines = new ListTag();
+        for (int c = 0; c < cellLine.length; ++c)
+        {
+            if (cellLine[c] == 0L) continue;
+
+            CompoundTag t = new CompoundTag();
+            t.putInt("ix", grid.ix(c));
+            t.putInt("iz", grid.iz(c));
+            t.putLong("line", cellLine[c]);
+            lines.add(t);
+        }
+
+        if (lines.isEmpty()) return;
+
+        ListTag links = new ListTag();
+        for (int i = 0, n = forwards.size(); i < n; ++i)
+        {
+            CellForward link = forwards.get(i);
+            CompoundTag t = writeShift(link.shift(), new CompoundTag());
+            t.putInt("ix", grid.ix(link.from()));
+            t.putInt("iz", grid.iz(link.from()));
+            t.putLong("line", link.line());
+            t.putInt("tix", grid.ix(link.to()));
+            t.putInt("tiz", grid.iz(link.to()));
+            t.putLong("toLine", link.toLine());
+            links.add(t);
+        }
+
+        tag.put("cellLines", lines);
+        tag.put("cellForwards", links);
+        tag.putLong("lineCount", lineCount);
+    }
+
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries)
     {
@@ -1446,6 +1930,8 @@ public final class FrameManager extends SavedData
         }
 
         if (!shifts.isEmpty()) tag.put("cellShifts", shifts);
+
+        saveCellLines(tag);
 
         ListTag list = new ListTag();
         for (LocalFrame f : frames)
@@ -1494,5 +1980,9 @@ public final class FrameManager extends SavedData
         }
         tag.put("frames", list);
         return tag;
+    }
+
+    private record CellForward(int from, long line, int to, long toLine, FrameShift shift)
+    {
     }
 }

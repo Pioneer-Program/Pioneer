@@ -82,6 +82,43 @@ public abstract class FrameEvent extends Event
         }
     }
 
+    public static final class Merged extends FrameEvent
+    {
+        private final LocalFrame absorbed;
+        private final List<ServerSubLevel> ships;
+        private final int players;
+        private final boolean predicted;
+
+        public Merged(ServerLevel level, LocalFrame frame, LocalFrame absorbed, List<ServerSubLevel> ships, int players, boolean predicted)
+        {
+            super(level, frame);
+            this.absorbed = absorbed;
+            this.ships = ships;
+            this.players = players;
+            this.predicted = predicted;
+        }
+
+        public LocalFrame absorbed()
+        {
+            return absorbed;
+        }
+
+        public List<ServerSubLevel> ships()
+        {
+            return ships;
+        }
+
+        public int players()
+        {
+            return players;
+        }
+
+        public boolean predicted()
+        {
+            return predicted;
+        }
+    }
+
     public static final class Created extends FrameEvent
     {
         public Created(ServerLevel level, LocalFrame frame)

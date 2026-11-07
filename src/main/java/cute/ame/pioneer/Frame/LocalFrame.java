@@ -7,6 +7,7 @@ import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
 import dev.ryanhcode.sable.companion.math.BoundingBox3dc;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.phys.AABB;
 
 import javax.annotation.Nullable;
@@ -46,6 +47,11 @@ public final class LocalFrame
     int splitWaitKey;
     String splitWaitText = "";
     boolean edgeRecenter;
+    double driftX, driftY, driftZ;
+    boolean mergeBusy, mergeWaitSeen, preloadSeen;
+    long mergeWaitKey;
+    String mergeWaitText = "";
+    int preloadKey;
     @Nullable
     private FrameParent parent;
     @Nullable
@@ -245,6 +251,8 @@ public final class LocalFrame
         double mass;
         boolean loaded;
         long absentSince = -1L;
+        @Nullable
+        ChunkPos ticket;
 
         Member(UUID id)
         {

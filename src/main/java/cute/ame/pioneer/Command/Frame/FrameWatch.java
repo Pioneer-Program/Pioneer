@@ -58,6 +58,13 @@ public final class FrameWatch
     }
 
     @SubscribeEvent
+    public static void onMerged(FrameEvent.Merged event)
+    {
+        if (!WATCHERS.isEmpty())
+            tell(event, "MERGED #" + event.absorbed().id + " ships=" + event.ships().size() + " players=" + event.players() + " (" + (event.predicted() ? "predicted" : "close") + ")");
+    }
+
+    @SubscribeEvent
     public static void onChanged(FrameEvent.Changed event)
     {
         if (!WATCHERS.isEmpty()) tell(event, event.cause().name());

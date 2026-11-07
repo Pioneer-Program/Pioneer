@@ -12,6 +12,7 @@ import dev.ryanhcode.sable.api.sublevel.ServerSubLevelContainer;
 import dev.ryanhcode.sable.api.sublevel.SubLevelContainer;
 import dev.ryanhcode.sable.sublevel.ServerSubLevel;
 import dev.ryanhcode.sable.sublevel.SubLevel;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -174,7 +175,11 @@ public final class FrameTransfer
             }
 
             player.connection.teleport(x, y, z, player.getYRot(), player.getXRot(), ALL_RELATIVE);
-            if (kick || shift.rotated) push(player, shift, x, y, z, p);
+            if (kick || shift.rotated)
+            {
+                push(player, shift, x, y, z, p);
+                player.connection.send(new ClientboundSetEntityMotionPacket(player));
+            }
 
             report.free++;
         }
