@@ -1,21 +1,24 @@
 package cute.ame.pioneer.Seamless;
 
 import cute.ame.pioneer.Config;
+import cute.ame.pioneer.Core.API.Frame.FrameAPI;
 import cute.ame.pioneer.Core.API.PioneerAPI;
 import cute.ame.pioneer.Core.Observer.ObserverState;
 import cute.ame.pioneer.Core.Observer.ObserverStates;
+import cute.ame.pioneer.Frame.FrameBodies;
 import cute.ame.pioneer.SkyPlanet.Data.PlanetDefinition;
-import cute.ame.pioneer.SkyPlanet.Data.SolarSystemDefinition;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import org.joml.Vector3d;
 
-import java.util.List;
 import java.util.Optional;
 
 public final class SeamlessThresholdDetector
 {
     private static final int CHECK_INTERVAL_TICKS = 5;
+    private static final Vector3d AT = new Vector3d();
 
     public enum ThresholdKind { NONE, SURFACE_APPROACHING_ORBIT, SPACE_APPROACHING_PLANET }
 
@@ -40,7 +43,7 @@ public final class SeamlessThresholdDetector
         return switch (binding.type())
         {
             case SURFACE -> evaluateSurface(player);
-            case SPACE -> evaluateSpaceProximity(player, binding);
+            case SPACE -> evaluateSpaceProximity(player);
         };
     }
 
@@ -56,36 +59,27 @@ public final class SeamlessThresholdDetector
         return new ThresholdResult(ThresholdKind.SURFACE_APPROACHING_ORBIT, Optional.empty(), altKm);
     }
 
-    private static ThresholdResult evaluateSpaceProximity(ServerPlayer player, PioneerAPI.DimensionBinding binding)
+    private static ThresholdResult evaluateSpaceProximity(ServerPlayer player)
     {
-        Optional<SolarSystemDefinition> systemOpt = PioneerAPI.getSolarSystem(binding.systemId());
-        if (systemOpt.isEmpty()) return ThresholdResult.NONE_RESULT;
+        if (!FrameAPI.systemPosition(player, AT)) return ThresholdResult.NONE_RESULT;
 
-        List<PlanetDefinition> planets = systemOpt.get().allPlanetsFlat();
+        return evaluateFrameProximity(player.serverLevel());
+    }
 
-        PlanetDefinition closest = null;
-        double closestDist = Double.MAX_VALUE;
-
-        for (PlanetDefinition planet : planets)
+    private static ThresholdResult evaluateFrameProximity(ServerLevel level)
+    {
+        long now = level.getGameTime();
+        double limit = FrameAPI.reentryAltitudeKm();
+        for (FrameBodies.Body body : FrameAPI.bodies(level))
         {
-            if (planet.dimension().isEmpty()) continue;
+            PlanetDefinition planet = body.planet();
+            if (planet == null || planet.dimension().isEmpty()) continue;
 
-            double[] pos = planet.currentWorldPosition(player.level().getGameTime());
-            double dx = player.getX() - pos[0];
-            double dy = player.getY() - pos[1];
-            double dz = player.getZ() - pos[2];
-            double dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-
-            double approachRadius = planet.approachRadius() + approachMarginFor(player, planet.approachRadius());
-            if (dist <= approachRadius && dist < closestDist)
-            {
-                closest = planet;
-                closestDist = dist;
-            }
+            double altitude = FrameAPI.altitudeKm(body, planet, now, AT.x, AT.y, AT.z, limit);
+            if (altitude <= limit)
+                return new ThresholdResult(ThresholdKind.SPACE_APPROACHING_PLANET, Optional.of(planet), altitude);
         }
-
-        if (closest == null) return ThresholdResult.NONE_RESULT;
-        return new ThresholdResult(ThresholdKind.SPACE_APPROACHING_PLANET, Optional.of(closest), closestDist);
+        return ThresholdResult.NONE_RESULT;
     }
 
     private static double surfaceApproachMarginKm(ServerPlayer player, ObserverState obs)
@@ -94,14 +88,5 @@ public final class SeamlessThresholdDetector
         double kmPerTick = blocksPerTick * obs.body().verticalScale() * 1.0e-3;
         double travelledBetweenChecks = kmPerTick * CHECK_INTERVAL_TICKS * 2.0;
         return Math.max(0.05, travelledBetweenChecks);
-    }
-
-    private static double approachMarginFor(ServerPlayer player, double approachRadius)
-    {
-        double speed = player.getDeltaMovement().length() * 20.0;
-        double velocityMargin = speed * 2.0;
-        double maxMargin = approachRadius * 0.5;
-        double minMargin = Math.min(2.0, approachRadius * 0.1);
-        return Math.min(maxMargin, Math.max(minMargin, velocityMargin));
     }
 }

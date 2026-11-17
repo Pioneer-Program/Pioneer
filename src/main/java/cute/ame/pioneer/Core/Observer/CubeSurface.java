@@ -1,5 +1,7 @@
 package cute.ame.pioneer.Core.Observer;
 
+import cute.ame.pioneer.Core.Frame.FrameQuat;
+import org.joml.Quaterniond;
 import org.joml.Vector3d;
 
 public final class CubeSurface
@@ -29,6 +31,18 @@ public final class CubeSurface
     };
 
     private static final double FACE_STRIDE = 4.0;
+
+    private static final Quaterniond[] ORIENTATION = new Quaterniond[6];
+
+    static
+    {
+        for (int face = 0; face < 6; face++)
+        {
+            double[] v = V[face], w = W[face];
+            Vector3d east = new Vector3d(w[1] * v[2] - w[2] * v[1], w[2] * v[0] - w[0] * v[2], w[0] * v[1] - w[1] * v[0]);
+            ORIENTATION[face] = FrameQuat.fromAxes(east, new Vector3d(w[0], w[1], w[2]), new Vector3d(v[0], v[1], v[2]), new Quaterniond());
+        }
+    }
 
     public record Crossing(int face, double blockX, double blockZ, double u, double v, int exitEdge, int entryEdge) {}
 
@@ -72,6 +86,26 @@ public final class CubeSurface
     {
         double[] b = V[face];
         out[0] = -b[0]; out[1] = -b[1]; out[2] = -b[2];
+    }
+
+    public static Quaterniond orientation(int face, Quaterniond dest)
+    {
+        return dest.set(ORIENTATION[face]);
+    }
+
+    public static int fromPointKm(double halfExtentKm, double x, double y, double z, double[] uvAltOut)
+    {
+        double ax = Math.abs(x), ay = Math.abs(y), az = Math.abs(z);
+        int face;
+        if (ax >= ay && ax >= az) face = x > 0 ? FACE_RIGHT : FACE_LEFT;
+        else if (ay >= az) face = y > 0 ? FACE_TOP : FACE_BOTTOM;
+        else face = z > 0 ? FACE_FRONT : FACE_BACK;
+
+        double[] a = U[face], b = V[face], c = W[face];
+        uvAltOut[0] = (a[0] * x + a[1] * y + a[2] * z) / halfExtentKm;
+        uvAltOut[1] = (b[0] * x + b[1] * y + b[2] * z) / halfExtentKm;
+        uvAltOut[2] = c[0] * x + c[1] * y + c[2] * z - halfExtentKm;
+        return face;
     }
 
     public static Vector3d toDirection(int face, double u, double v, Vector3d dest)

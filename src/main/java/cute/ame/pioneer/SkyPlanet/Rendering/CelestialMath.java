@@ -9,10 +9,21 @@ public final class CelestialMath
 
     public static float axialPhaseRadians(float axialRotationSpeedDays, long tick, float partialTick)
     {
+        return (float) axialPhase(axialRotationSpeedDays, tick, partialTick);
+    }
+
+    public static double axialPhase(double axialRotationSpeedDays, long tick, double partialTick)
+    {
         double dayTicks = axialRotationSpeedDays * (double) TICKS_PER_DAY;
-        if (!(Math.abs(dayTicks) > 1.0e-6)) return 0.0f;
-        double phase = ((tick + partialTick) / dayTicks) % 1.0;
-        return (float) (phase * 2.0 * Math.PI);
+        if (!(Math.abs(dayTicks) > 1.0e-6)) return 0.0;
+
+        return (((double) tick + partialTick) / dayTicks) % 1.0 * 2.0 * Math.PI;
+    }
+
+    public static double axialRate(double axialRotationSpeedDays)
+    {
+        double dayTicks = axialRotationSpeedDays * (double) TICKS_PER_DAY;
+        return Math.abs(dayTicks) > 1.0e-6 ? 2.0 * Math.PI / dayTicks : 0.0;
     }
 
     public static Quaternionf planetOrientation(float axialTiltDegrees, float axialRotationSpeedDays, long tick, float partialTick)

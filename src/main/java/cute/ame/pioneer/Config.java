@@ -20,6 +20,20 @@ public class Config
 
     public static ModConfigSpec.IntValue SENSOR_PERIOD_TICKS;
 
+    public static ModConfigSpec.IntValue FRAME_GRID_RADIUS;
+    public static ModConfigSpec.IntValue FRAME_CELL_SPACING;
+    public static ModConfigSpec.IntValue FRAME_GRID_Y;
+    public static ModConfigSpec.DoubleValue FRAME_RELEASE_MAX_SPEED;
+    public static ModConfigSpec.DoubleValue FRAME_CARRY_RADIUS;
+    public static ModConfigSpec.DoubleValue FRAME_JOIN_RADIUS;
+    public static ModConfigSpec.IntValue FRAME_MAINTAIN_PERIOD;
+    public static ModConfigSpec.DoubleValue FRAME_RECENTER_DISTANCE;
+    public static ModConfigSpec.DoubleValue FRAME_RECENTER_SPEED;
+    public static ModConfigSpec.DoubleValue FRAME_CLUSTER_LINK;
+    public static ModConfigSpec.DoubleValue FRAME_SPLIT_DISTANCE;
+    public static ModConfigSpec.DoubleValue FRAME_EDGE_MARGIN;
+    public static ModConfigSpec.DoubleValue FRAME_MERGE_DISTANCE;
+    public static ModConfigSpec.DoubleValue FRAME_PRELOAD_DISTANCE;
     public static ModConfigSpec.DoubleValue SCRUBBER_RATE;
 
     public static ModConfigSpec.DoubleValue KELP_MOL_PER_TICK;
@@ -68,6 +82,23 @@ public class Config
 
         BUILDER.push("ToolBox");
         TOOLBOX_READOUT_PERIOD_TICKS = BUILDER.defineInRange("toolbox_readout_period_ticks", 10, 1, 200);
+        BUILDER.pop();
+
+        BUILDER.push("Frames");
+        FRAME_GRID_RADIUS = BUILDER.defineInRange("frame_grid_radius", 7, 0, 8);
+        FRAME_CELL_SPACING = BUILDER.defineInRange("frame_cell_spacing", 4096, 1024, 65536);
+        FRAME_GRID_Y = BUILDER.defineInRange("frame_grid_y", 0, -256, 256);
+        FRAME_RELEASE_MAX_SPEED = BUILDER.defineInRange("frame_release_max_speed", 100.0, 0.0, 1.0e9);
+        FRAME_CARRY_RADIUS = BUILDER.defineInRange("frame_carry_radius", 16.0, 0.0, 256.0);
+        FRAME_JOIN_RADIUS = BUILDER.defineInRange("frame_join_radius", 256.0, 0.0, 2048.0);
+        FRAME_MAINTAIN_PERIOD = BUILDER.defineInRange("frame_maintain_period", 20, 0, 1200);
+        FRAME_RECENTER_DISTANCE = BUILDER.defineInRange("frame_recenter_distance", 1024.0, 16.0, 3584.0);
+        FRAME_RECENTER_SPEED = BUILDER.defineInRange("frame_recenter_speed", 64.0, 1.0, 1.0e6);
+        FRAME_CLUSTER_LINK = BUILDER.defineInRange("frame_cluster_link", 512.0, 16.0, 4096.0);
+        FRAME_SPLIT_DISTANCE = BUILDER.defineInRange("frame_split_distance", 1536.0, 64.0, 32768.0);
+        FRAME_EDGE_MARGIN = BUILDER.defineInRange("frame_edge_margin", 256.0, 0.0, 4096.0);
+        FRAME_MERGE_DISTANCE = BUILDER.defineInRange("frame_merge_distance", 768.0, 64.0, 16384.0);
+        FRAME_PRELOAD_DISTANCE = BUILDER.defineInRange("frame_preload_distance", 4096.0, 0.0, 65536.0);
         BUILDER.pop();
 
         SPEC = BUILDER.build();
