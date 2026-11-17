@@ -11,40 +11,65 @@ import java.util.stream.IntStream;
 public final class CloudVolumeBaker implements LUTBaker
 {
     public static final int BASE_FREQ = 4;
-    private static final int OCTAVES = 4;
+    private static final int SHAPE_OCTAVES = 3;
 
     @Override
     public NativeImage bake(LUTParams params)
     {
         final int res = params.resolution();
         final int tiles = (int) Math.ceil(Math.sqrt(res));
-        final int atlas = res * tiles;
+        final int tile = res + 1;
+        final int atlas = tile * tiles;
+        final int slice = res * res;
         final long seed = params.seed();
 
-        final int[] px = new int[atlas * atlas];
+        final float[] shape = new float[slice * res];
+        final float[] detail = new float[slice * res];
         final float inv = 1f / res;
 
         IntStream.range(0, res).parallel().forEach(z ->
         {
-            int tileX = (z % tiles) * res;
-            int tileY = (z / tiles) * res;
             float w = z * inv;
+            int i = z * slice;
 
             for (int y = 0; y < res; y++)
             {
                 float v = y * inv;
-                int row = (tileY + y) * atlas + tileX;
 
-                for (int x = 0; x < res; x++)
+                for (int x = 0; x < res; x++, i++)
                 {
                     float u = x * inv;
 
-                    float base = BakingMath.fbmPeriodic(u, v, w, BASE_FREQ, OCTAVES, seed);
-                    float e0 = 1f - BakingMath.worleyPeriodic(u, v, w, 4, seed + 0x51ED2701L);
-                    float e1 = 1f - BakingMath.worleyPeriodic(u, v, w, 8, seed + 0x9E37B31CL);
-                    float e2 = 1f - BakingMath.worleyPeriodic(u, v, w, 16, seed + 0xC2B2AE35L);
+                    float perlin = NoiseUtil.clamp01(BakingMath.perlinFbmPeriodic(u, v, w, BASE_FREQ, SHAPE_OCTAVES, seed) * 0.5f + 0.5f);
+                    float billow = BakingMath.worleyFbmPeriodic(u, v, w, BASE_FREQ, seed + 0x2545F491L);
 
-                    px[row + x] = NoiseUtil.toRGBA(base, e0, e1, e2);
+                    shape[i] = billow + perlin * (1f - billow);
+                    detail[i] = billow;
+                }
+            }
+        });
+
+        BakingMath.equalize(shape);
+        BakingMath.equalize(detail);
+
+        final int[] px = new int[atlas * atlas];
+
+        IntStream.range(0, res).parallel().forEach(z ->
+        {
+            final int ox = (z % tiles) * tile;
+            final int oy = (z / tiles) * tile;
+            final int b0 = z * slice;
+            final int b1 = ((z + 1) % res) * slice;
+
+            for (int y = 0; y < tile; y++)
+            {
+                final int sy = (y == res ? 0 : y) * res;
+                final int row = (oy + y) * atlas + ox;
+
+                for (int x = 0; x < tile; x++)
+                {
+                    final int s = sy + (x == res ? 0 : x);
+                    px[row + x] = NoiseUtil.toRGBA(shape[b0 + s], shape[b1 + s], detail[b0 + s], detail[b1 + s]);
                 }
             }
         });
