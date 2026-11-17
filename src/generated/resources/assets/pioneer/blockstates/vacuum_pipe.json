@@ -1,0 +1,1252 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/connection/down"
+      },
+      "when": {
+        "down": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/rim/down"
+      },
+      "when": {
+        "down": "rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/connection/up"
+      },
+      "when": {
+        "up": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/rim/up"
+      },
+      "when": {
+        "up": "rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/connection/north"
+      },
+      "when": {
+        "north": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/rim/north"
+      },
+      "when": {
+        "north": "rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/connection/south"
+      },
+      "when": {
+        "south": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/rim/south"
+      },
+      "when": {
+        "south": "rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/connection/west"
+      },
+      "when": {
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/rim/west"
+      },
+      "when": {
+        "west": "rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/connection/east"
+      },
+      "when": {
+        "east": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/rim/east"
+      },
+      "when": {
+        "east": "rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/down_0"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/down_1"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "none",
+        "south": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/down_2"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "pipe|rim",
+        "south": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/down_3"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "pipe|rim",
+        "south": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/down_4"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/down_5"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "none",
+        "south": "pipe|rim",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/down_6"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "pipe|rim",
+        "south": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/down_7"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "pipe|rim",
+        "south": "pipe|rim",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/down_8"
+      },
+      "when": {
+        "down": "none",
+        "east": "pipe|rim",
+        "north": "none",
+        "south": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/down_9"
+      },
+      "when": {
+        "down": "none",
+        "east": "pipe|rim",
+        "north": "none",
+        "south": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/down_10"
+      },
+      "when": {
+        "down": "none",
+        "east": "pipe|rim",
+        "north": "pipe|rim",
+        "south": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/down_11"
+      },
+      "when": {
+        "down": "none",
+        "east": "pipe|rim",
+        "north": "pipe|rim",
+        "south": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/down_12"
+      },
+      "when": {
+        "down": "none",
+        "east": "pipe|rim",
+        "north": "none",
+        "south": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/down_13"
+      },
+      "when": {
+        "down": "none",
+        "east": "pipe|rim",
+        "north": "none",
+        "south": "pipe|rim",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/down_14"
+      },
+      "when": {
+        "down": "none",
+        "east": "pipe|rim",
+        "north": "pipe|rim",
+        "south": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/down_15"
+      },
+      "when": {
+        "down": "none",
+        "east": "pipe|rim",
+        "north": "pipe|rim",
+        "south": "pipe|rim",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/up_0"
+      },
+      "when": {
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/up_1"
+      },
+      "when": {
+        "east": "none",
+        "north": "pipe|rim",
+        "south": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/up_2"
+      },
+      "when": {
+        "east": "none",
+        "north": "none",
+        "south": "pipe|rim",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/up_3"
+      },
+      "when": {
+        "east": "none",
+        "north": "pipe|rim",
+        "south": "pipe|rim",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/up_4"
+      },
+      "when": {
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "up": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/up_5"
+      },
+      "when": {
+        "east": "none",
+        "north": "pipe|rim",
+        "south": "none",
+        "up": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/up_6"
+      },
+      "when": {
+        "east": "none",
+        "north": "none",
+        "south": "pipe|rim",
+        "up": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/up_7"
+      },
+      "when": {
+        "east": "none",
+        "north": "pipe|rim",
+        "south": "pipe|rim",
+        "up": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/up_8"
+      },
+      "when": {
+        "east": "pipe|rim",
+        "north": "none",
+        "south": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/up_9"
+      },
+      "when": {
+        "east": "pipe|rim",
+        "north": "pipe|rim",
+        "south": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/up_10"
+      },
+      "when": {
+        "east": "pipe|rim",
+        "north": "none",
+        "south": "pipe|rim",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/up_11"
+      },
+      "when": {
+        "east": "pipe|rim",
+        "north": "pipe|rim",
+        "south": "pipe|rim",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/up_12"
+      },
+      "when": {
+        "east": "pipe|rim",
+        "north": "none",
+        "south": "none",
+        "up": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/up_13"
+      },
+      "when": {
+        "east": "pipe|rim",
+        "north": "pipe|rim",
+        "south": "none",
+        "up": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/up_14"
+      },
+      "when": {
+        "east": "pipe|rim",
+        "north": "none",
+        "south": "pipe|rim",
+        "up": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/up_15"
+      },
+      "when": {
+        "east": "pipe|rim",
+        "north": "pipe|rim",
+        "south": "pipe|rim",
+        "up": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/north_0"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/north_1"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "none",
+        "up": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/north_2"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "none",
+        "north": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/north_3"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "none",
+        "north": "none",
+        "up": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/north_4"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "none",
+        "up": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/north_5"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "none",
+        "up": "pipe|rim",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/north_6"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "none",
+        "north": "none",
+        "up": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/north_7"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "none",
+        "north": "none",
+        "up": "pipe|rim",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/north_8"
+      },
+      "when": {
+        "down": "none",
+        "east": "pipe|rim",
+        "north": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/north_9"
+      },
+      "when": {
+        "down": "none",
+        "east": "pipe|rim",
+        "north": "none",
+        "up": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/north_10"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "pipe|rim",
+        "north": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/north_11"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "pipe|rim",
+        "north": "none",
+        "up": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/north_12"
+      },
+      "when": {
+        "down": "none",
+        "east": "pipe|rim",
+        "north": "none",
+        "up": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/north_13"
+      },
+      "when": {
+        "down": "none",
+        "east": "pipe|rim",
+        "north": "none",
+        "up": "pipe|rim",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/north_14"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "pipe|rim",
+        "north": "none",
+        "up": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/north_15"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "pipe|rim",
+        "north": "none",
+        "up": "pipe|rim",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/south_0"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "south": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/south_1"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "south": "none",
+        "up": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/south_2"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "none",
+        "south": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/south_3"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "none",
+        "south": "none",
+        "up": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/south_4"
+      },
+      "when": {
+        "down": "none",
+        "east": "pipe|rim",
+        "south": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/south_5"
+      },
+      "when": {
+        "down": "none",
+        "east": "pipe|rim",
+        "south": "none",
+        "up": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/south_6"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "pipe|rim",
+        "south": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/south_7"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "pipe|rim",
+        "south": "none",
+        "up": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/south_8"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "south": "none",
+        "up": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/south_9"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "south": "none",
+        "up": "pipe|rim",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/south_10"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "none",
+        "south": "none",
+        "up": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/south_11"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "none",
+        "south": "none",
+        "up": "pipe|rim",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/south_12"
+      },
+      "when": {
+        "down": "none",
+        "east": "pipe|rim",
+        "south": "none",
+        "up": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/south_13"
+      },
+      "when": {
+        "down": "none",
+        "east": "pipe|rim",
+        "south": "none",
+        "up": "pipe|rim",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/south_14"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "pipe|rim",
+        "south": "none",
+        "up": "none",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/south_15"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "pipe|rim",
+        "south": "none",
+        "up": "pipe|rim",
+        "west": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/west_0"
+      },
+      "when": {
+        "down": "none",
+        "north": "none",
+        "south": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/west_1"
+      },
+      "when": {
+        "down": "none",
+        "north": "none",
+        "south": "none",
+        "up": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/west_2"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "north": "none",
+        "south": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/west_3"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "north": "none",
+        "south": "none",
+        "up": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/west_4"
+      },
+      "when": {
+        "down": "none",
+        "north": "none",
+        "south": "pipe|rim",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/west_5"
+      },
+      "when": {
+        "down": "none",
+        "north": "none",
+        "south": "pipe|rim",
+        "up": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/west_6"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "north": "none",
+        "south": "pipe|rim",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/west_7"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "north": "none",
+        "south": "pipe|rim",
+        "up": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/west_8"
+      },
+      "when": {
+        "down": "none",
+        "north": "pipe|rim",
+        "south": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/west_9"
+      },
+      "when": {
+        "down": "none",
+        "north": "pipe|rim",
+        "south": "none",
+        "up": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/west_10"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "north": "pipe|rim",
+        "south": "none",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/west_11"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "north": "pipe|rim",
+        "south": "none",
+        "up": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/west_12"
+      },
+      "when": {
+        "down": "none",
+        "north": "pipe|rim",
+        "south": "pipe|rim",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/west_13"
+      },
+      "when": {
+        "down": "none",
+        "north": "pipe|rim",
+        "south": "pipe|rim",
+        "up": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/west_14"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "north": "pipe|rim",
+        "south": "pipe|rim",
+        "up": "none",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/west_15"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "north": "pipe|rim",
+        "south": "pipe|rim",
+        "up": "pipe|rim",
+        "west": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/east_0"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/east_1"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "up": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/east_2"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/east_3"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "none",
+        "north": "none",
+        "south": "none",
+        "up": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/east_4"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "pipe|rim",
+        "south": "none",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/east_5"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "pipe|rim",
+        "south": "none",
+        "up": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/east_6"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "none",
+        "north": "pipe|rim",
+        "south": "none",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/east_7"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "none",
+        "north": "pipe|rim",
+        "south": "none",
+        "up": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/east_8"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "none",
+        "south": "pipe|rim",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/east_9"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "none",
+        "south": "pipe|rim",
+        "up": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/east_10"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "none",
+        "north": "none",
+        "south": "pipe|rim",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/east_11"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "none",
+        "north": "none",
+        "south": "pipe|rim",
+        "up": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/east_12"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "pipe|rim",
+        "south": "pipe|rim",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/east_13"
+      },
+      "when": {
+        "down": "none",
+        "east": "none",
+        "north": "pipe|rim",
+        "south": "pipe|rim",
+        "up": "pipe|rim"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/east_14"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "none",
+        "north": "pipe|rim",
+        "south": "pipe|rim",
+        "up": "none"
+      }
+    },
+    {
+      "apply": {
+        "model": "pioneer:block/vacuum_pipe/core/east_15"
+      },
+      "when": {
+        "down": "pipe|rim",
+        "east": "none",
+        "north": "pipe|rim",
+        "south": "pipe|rim",
+        "up": "pipe|rim"
+      }
+    }
+  ]
+}

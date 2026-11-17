@@ -1,11 +1,15 @@
 package cute.ame.pioneer.Fluid.BlockEntity;
 
-import cute.ame.celsius.Fluid.BlockEntity.FluidVesselBlockEntity;
-import cute.ame.pioneer.Core.Computer.ComputerPeripheral;
 import cute.ame.celsius.Fluid.Block.FluidVesselBlock;
-import cute.ame.pioneer.Fluid.Block.PumpBlock;
-import cute.ame.pioneer.Fluid.Block.ValveBlock;
+import cute.ame.celsius.Fluid.BlockEntity.FluidVesselBlockEntity;
 import cute.ame.celsius.Fluid.Level.FluidLevelData;
+import cute.ame.pioneer.Core.Computer.ComputerPeripheral;
+import cute.ame.pioneer.Fluid.Block.PumpBlock;
+import cute.ame.pioneer.Fluid.Block.ScrubberBlock;
+import cute.ame.pioneer.Fluid.Block.ValveBlock;
+import cute.ame.pioneer.Fluid.Block.VentBlock;
+import cute.ame.pioneer.Fluid.Block.VentMode;
+import cute.ame.pioneer.LifeSupport.Level.KelpBeds;
 import cute.ame.pioneer.Registrie.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
@@ -13,6 +17,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,14 +27,39 @@ public class PioneerVesselBlockEntity extends FluidVesselBlockEntity implements 
     private static final String K_LABEL = "label";
     private static final String K_POWER = "power";
     private static final String K_THROTTLE = "throttle";
+    private static final String K_FILTER = "filter";
+    private static final String K_SEALED = "sealed";
 
     private String label = "";
     private float throttle = 1.0f;
     private float power = 1.0f;
+    private String filter = "";
+    private int sealed;
 
     public PioneerVesselBlockEntity(BlockPos pos, BlockState state)
     {
         super(ModBlockEntities.FLUID_VESSEL.get(), pos, state);
+    }
+
+    public PioneerVesselBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state)
+    {
+        super(type, pos, state);
+    }
+
+    @Override
+    public void onLoad()
+    {
+        super.onLoad();
+
+        if (getBlockState().getBlock() instanceof VentBlock) KelpBeds.onVentLoaded(this);
+    }
+
+    @Override
+    public void setRemoved()
+    {
+        if (getBlockState().getBlock() instanceof VentBlock) KelpBeds.onVentRemoved(this);
+
+        super.setRemoved();
     }
 
     public float getThrottle()
@@ -85,6 +115,40 @@ public class PioneerVesselBlockEntity extends FluidVesselBlockEntity implements 
         return true;
     }
 
+    public int getSealed()
+    {
+        return sealed;
+    }
+
+    public void setSealed(int mask)
+    {
+        int next = mask & FluidVesselBlock.ALL_PORTS;
+        if (next == sealed) return;
+
+        sealed = next;
+        setChanged();
+    }
+
+    public String getFilter()
+    {
+        return filter.isEmpty() ? ScrubberBlock.DEFAULT_FILTER : filter;
+    }
+
+    public void setFilter(String key)
+    {
+        String next = key == null ? "" : key;
+        if (next.equals(filter)) return;
+
+        filter = next;
+        setChanged();
+
+        if (level instanceof ServerLevel serverLevel)
+        {
+            FluidLevelData data = FluidLevelData.getIfPresent(serverLevel);
+            if (data != null) data.graph().setFilterSpecies(worldPosition, getFilter());
+        }
+    }
+
     @Override
     public String getLabel()
     {
@@ -112,6 +176,14 @@ public class PioneerVesselBlockEntity extends FluidVesselBlockEntity implements 
             if (!matches(channel, ValveBlock.CHANNEL_OPEN)) return false;
 
             ValveBlock.setOpen(level, worldPosition, state, value >= 0.5);
+            return true;
+        }
+
+        if (state.getBlock() instanceof VentBlock)
+        {
+            if (!matches(channel, VentBlock.CHANNEL_MODE) || !Double.isFinite(value)) return false;
+
+            VentBlock.setMode(level, worldPosition, state, VentMode.byIndex((int) Math.round(value)));
             return true;
         }
 
@@ -153,6 +225,8 @@ public class PioneerVesselBlockEntity extends FluidVesselBlockEntity implements 
         label = tag.getString(K_LABEL);
         power = tag.contains(K_POWER) ? tag.getFloat(K_POWER) : 1.0f;
         throttle = tag.contains(K_THROTTLE) ? tag.getFloat(K_THROTTLE) : 1.0f;
+        filter = tag.getString(K_FILTER);
+        sealed = tag.getInt(K_SEALED) & FluidVesselBlock.ALL_PORTS;
     }
 
     @Override
@@ -163,5 +237,7 @@ public class PioneerVesselBlockEntity extends FluidVesselBlockEntity implements 
         if (!label.isEmpty()) tag.putString(K_LABEL, label);
         if (power != 1.0f) tag.putFloat(K_POWER, power);
         if (throttle != 1.0f) tag.putFloat(K_THROTTLE, throttle);
+        if (!filter.isEmpty()) tag.putString(K_FILTER, filter);
+        if (sealed != 0) tag.putInt(K_SEALED, sealed);
     }
 }

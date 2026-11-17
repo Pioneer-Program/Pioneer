@@ -10,6 +10,7 @@
     "Player.SpaceFallDamageMixin",
     "Player.SwimPoseMixin",
     "World.SpaceChunkSaveMixin",
+    "World.KelpBedChangeMixin",
     "World.TimeOfDayMixin"
   ],
   "client": [

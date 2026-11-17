@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "pioneer:block/toolbox"
+    },
+    "facing=east": {
+      "model": "pioneer:block/toolbox",
+      "y": 90
+    },
+    "facing=south": {
+      "model": "pioneer:block/toolbox",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "pioneer:block/toolbox",
+      "y": 270
+    }
+  }
+}
